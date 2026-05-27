@@ -1,0 +1,18 @@
+# Teams Toolkit
+build/
+node_modules/
+.env.local
+*.zip
+
+# Secrets
+env/.env.local
+*.pem
+clientSecrets
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
