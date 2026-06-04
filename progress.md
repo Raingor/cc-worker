@@ -1,28 +1,28 @@
 # Progress Log
 
-## 2026-06-04
+## 2026-06-04 — Excel 分析功能 (Phase 1 + Phase 2)
 
 ### Completed
-- Planning files: task_plan.md, findings.md, progress.md
-- Removed cc-chat; added web/, server/, scripts/
-- sync-instructions.py → server/prompts + web/assets/cc-meta.json
-- Flask API: /health, /v1/chat/completions (Bearer, SSE proxy)
-- GitHub Actions: deploy-pages.yml
-- Local test: health 200, unauthenticated chat 401
+Phase 1 (后端) & Phase 2 (前端) — Excel 文件上传自动分析
 
-### Server deploy (pending SSH)
-- `ssh root@120.79.7.233` failed: Permission denied (publickey)
-- Manual steps:
-  1. `python3 scripts/sync-instructions.py`
-  2. `rsync -av server/ root@120.79.7.233:/home/www/html/cc-worker-api/`
-  3. On server: copy `.env.example` → `.env`, fill APP_TOKEN, AI_* keys
-  4. `bash scripts/setup-server-remote.sh` (or `bash scripts/deploy-api.sh` from Mac)
-  5. `curl https://api.sz-hrhb.com/health`
+### 后端新增
+| 文件 | 说明 |
+|------|------|
+| `server/analysis/reader.py` | Excel 读取：自动检测 SQ&RQ 版本表结构 + Monthly Demand |
+| `server/analysis/stats.py` | 统计分析：汇总统计、版本对比、COO 分类、SKU 波动分析 |
+| `server/analysis/analyzer.py` | 分析编排 + 通用 Excel 兜底分析 |
+| `server/app.py` | 新增 `POST /v1/chat/upload` 文件上传分析端点 |
+| `server/requirements.txt` | 新增 pandas, openpyxl |
 
-### GitHub Pages (after push)
-- Enable Pages → GitHub Actions in repo settings
-- Set secrets: `CC_APP_TOKEN`, optional `CC_API_BASE`
-- URL: https://raingor.github.io/cc-worker/
+### 前端新增
+| 文件 | 变更 |
+|------|------|
+| `web/index.html` | 输入区加 📎 按钮 + file input + drag-drop overlay |
+| `web/assets/app.js` | 文件上传逻辑 + 分析结果渲染 + 拖拽处理 |
+| `web/assets/style.css` | upload-status / drop-overlay / analysis-block 样式 |
 
-### Security
-- Rotate upstream AI key (was in old cc-chat HTML)
+### Test Results
+- SQ&RQ Analysis (5 版本 + Monthly Demand): ✅ 4 个分析表、版本 diff、波动分析
+- Generic Excel: ✅ 兜底分析 + 预览
+- Empty file: ✅ 优雅处理
+- Unsupported type (.pdf): ✅ 拒绝

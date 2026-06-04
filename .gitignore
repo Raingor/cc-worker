@@ -1,27 +1,25 @@
-# Teams Toolkit
-build/
-node_modules/
-server/.venv/
-server/__pycache__/
-server/uwsgi.pid
-server/uwsgi.log
-.env.local
-*.zip
-
-# Secrets
-env/.env.local
-server/.env
-web/config.js
-*.pem
-clientSecrets
-
-# Temp / local
-.tmp-*
-
-# OS
-.DS_Store
-Thumbs.db
 
 # IDE
-.vscode/settings.json
+# OS
+# Secrets
+# Teams Toolkit
+# Temp / local
+*.pem
+*.zip
+.DS_Store
+.env.local
 .idea/
+.tmp-*
+.vscode/settings.json
+Thumbs.db
+__pycache__/
+build/
+clientSecrets
+env/.env.local
+node_modules/
+server/.env
+server/.venv/
+server/__pycache__/
+server/uwsgi.log
+server/uwsgi.pid
+web/config.js

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -11,6 +12,9 @@ import requests
 from dotenv import load_dotenv
 from flask import Flask, Response, jsonify, request
 from flask_cors import CORS
+
+from analysis.analyzer import analyze as analyze_excel
+from analysis.email_sender import send_reminder_email
 
 load_dotenv()
 
@@ -24,6 +28,13 @@ APP_TOKEN = os.getenv("APP_TOKEN", "")
 AI_API_BASE = os.getenv("AI_API_BASE", "https://api.openai.com/v1").rstrip("/")
 AI_API_KEY = os.getenv("AI_API_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
+
+# Email reminder config
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.qq.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+REMINDER_TO = os.getenv("REMINDER_TO", "")
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "cc_instructions.txt"
 
@@ -84,6 +95,71 @@ def _client_messages(body: dict) -> list:
 @APP.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok", "service": "cc-worker-api"})
+
+
+@APP.route("/v1/chat/upload", methods=["POST", "OPTIONS"])
+def upload_file():
+    """Upload an Excel file and return analysis results."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized", "type": "invalid_request_error"}}), 401
+
+    if "file" not in request.files:
+        return jsonify({"error": {"message": "No file provided", "type": "invalid_request_error"}}), 400
+
+    f = request.files["file"]
+    if not f.filename:
+        return jsonify({"error": {"message": "Empty filename", "type": "invalid_request_error"}}), 400
+
+    # Validate file type
+    ext = Path(f.filename).suffix.lower()
+    if ext not in (".xlsx", ".xls", ".csv"):
+        return jsonify({"error": {"message": f"Unsupported file type: {ext}. Accepted: .xlsx, .xls, .csv"}}), 400
+
+    # Save to temp, analyze, clean up
+    tmp = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+    try:
+        f.save(tmp.name)
+        tmp.close()
+
+        result = analyze_excel(tmp.name)
+        return jsonify({
+            "success": True,
+            "analysis": result,
+        })
+    except Exception as e:
+        return jsonify({
+            "error": {"message": f"Analysis failed: {e}", "type": "server_error"},
+        }), 500
+    finally:
+        Path(tmp.name).unlink(missing_ok=True)
+
+
+@APP.route("/v1/reminder/email", methods=["POST", "OPTIONS"])
+def reminder_email():
+    """Send a daily reminder email. Requires SMTP config in .env"""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    if not SMTP_USER or not SMTP_PASSWORD:
+        return jsonify({"error": {"message": "SMTP not configured"}}), 503
+
+    body = request.get_json(silent=True) or {}
+    to_email = body.get("to") or REMINDER_TO
+    if not to_email:
+        return jsonify({"error": {"message": "No recipient (set REMINDER_TO in .env or pass `to`)"}}), 400
+
+    result = send_reminder_email(
+        to_email=to_email,
+        smtp_host=SMTP_HOST,
+        smtp_port=SMTP_PORT,
+        smtp_user=SMTP_USER,
+        smtp_password=SMTP_PASSWORD,
+    )
+    status = 200 if result["success"] else 500
+    return jsonify(result), status
 
 
 @APP.route("/v1/chat/completions", methods=["POST", "OPTIONS"])

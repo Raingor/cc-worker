@@ -298,6 +298,72 @@ body {
 .input-wrap .send-btn.active:hover { background: var(--primary); color: #fff; }
 .input-wrap .send-btn:disabled { opacity: .4; cursor: not-allowed; }
 
+/* Tool button (upload, etc.) */
+.tool-btn {
+  width: 36px; height: 36px; border-radius: 8px; border: none;
+  background: transparent; color: var(--text-secondary); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; transition: all .15s; flex-shrink: 0;
+}
+.tool-btn:hover { background: var(--hover); color: var(--text); }
+
+/* Upload status bar */
+.upload-status {
+  margin-top: 6px; padding: 6px 12px; border-radius: 8px;
+  font-size: 12px; display: flex; align-items: center; gap: 8px;
+}
+.upload-status.loading { background: var(--primary-light); color: var(--primary); }
+.upload-status.error { background: var(--danger-light); color: var(--danger); }
+.upload-status.success { background: #dcfce7; color: #166534; }
+@media (prefers-color-scheme: dark) {
+  .upload-status.success { background: #064e3b; color: #6ee7b7; }
+}
+.upload-status .spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid currentColor; border-top-color: transparent;
+  border-radius: 50%; animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Drag-drop overlay */
+.drop-overlay {
+  position: fixed; inset: 0; background: rgba(37,99,235,0.08);
+  backdrop-filter: blur(2px); z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.drop-msg {
+  background: var(--surface); border: 2px dashed var(--primary);
+  border-radius: 16px; padding: 32px 48px; font-size: 18px;
+  color: var(--primary); box-shadow: var(--shadow);
+}
+
+/* Analysis tables in chat */
+.analysis-block { margin: 8px 0; }
+.analysis-block .a-title {
+  font-weight: 600; font-size: 14px; margin-bottom: 6px;
+  color: var(--text);
+}
+.analysis-block table {
+  border-collapse: collapse; width: 100%; font-size: 12px;
+  margin-bottom: 8px;
+}
+.analysis-block th, .analysis-block td {
+  border: 1px solid var(--border); padding: 4px 8px; text-align: left;
+  white-space: nowrap;
+}
+.analysis-block th { background: var(--bg); font-weight: 600; }
+.analysis-block td:last-child { white-space: normal; }
+
+/* Toggle row (checkbox + label inline) */
+.toggle-row {
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  font-size: 14px; color: var(--text);
+}
+.toggle-row input[type="checkbox"] {
+  width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;
+}
+
 /* ===== Responsive ===== */
 @media (min-width: 768px) {
   body { font-size: 16px; }
@@ -315,4 +381,3 @@ body {
   .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
   .menu-btn { display: none; }
 }
-</style>

@@ -27,6 +27,24 @@
     </div>
     <div class="hint">由管理员提供，用于 Bearer 鉴权</div>
   </div>
+  <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
+  <h2 style="font-size:16px;font-weight:600;margin-bottom:12px;">⏰ 每日工作提醒</h2>
+  <div class="form-group">
+    <label class="toggle-row">
+      <input type="checkbox" id="reminder-enabled" checked>
+      <span>启用每日提醒</span>
+    </label>
+  </div>
+  <div class="form-group" id="reminder-time-group">
+    <label>提醒时间</label>
+    <input type="time" id="reminder-time" value="09:00">
+  </div>
+  <div class="form-group">
+    <label class="toggle-row">
+      <input type="checkbox" id="reminder-browser" checked>
+      <span>浏览器通知</span>
+    </label>
+  </div>
   <div style="display:flex;gap:8px;margin-top:20px;">
     <button class="btn btn-primary" id="save-settings-btn" type="button">保存并开始</button>
   </div>
@@ -66,8 +84,14 @@
     <div class="input-area">
       <div class="input-wrap">
         <textarea id="chat-input" rows="1" placeholder="输入消息…"></textarea>
+        <button class="tool-btn" id="upload-btn" type="button" title="上传 Excel 分析">📎</button>
         <button class="send-btn" id="send-btn" type="button" disabled>↑</button>
       </div>
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none">
+      <div class="upload-status" id="upload-status" style="display:none"></div>
+    </div>
+    <div class="drop-overlay" id="drop-overlay" style="display:none">
+      <div class="drop-msg">📄 松开以上传文件分析</div>
     </div>
   </div>
 </div>

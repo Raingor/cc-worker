@@ -7,6 +7,15 @@ const DEFAULT_APP_TOKEN = (window.CC_CONFIG && window.CC_CONFIG.appToken) || '';
 let meta = { conversation_starters: [] };
 let state = { settings: null, conversations: [], activeId: null, isStreaming: false };
 
+const DAY_REMINDERS = {
+  1: '**周一提醒**：今天要更新 CFC/厦门/墨西哥出运资料，准备好了吗？',
+  2: '**周二提醒**：今天要做 Gap Crasher 缺料检查，还要发墨西哥下周出运装箱单。',
+  3: '**周三提醒**：今天要更新 Order Pattern 并下单，还要发厦门当周出运装箱单。',
+  4: '**周四提醒**：今天工作最多——处理墨西哥和厦门新订单、分析越南波动、分析厦门预测趋势、删除上周 SAP PIR。',
+  5: '**周五提醒**：今天要完成当周 PIR 上传 SAP，还要检查报关资料。',
+};
+const WEEKDAY_CN = ['日', '一', '二', '三', '四', '五', '六'];
+
 async function loadMeta() {
   try {
     const res = await fetch('assets/cc-meta.json');
@@ -24,6 +33,7 @@ function loadState() {
     state.settings = saved.settings || null;
     state.conversations = saved.conversations || [];
     state.activeId = saved.activeId || null;
+    state.lastReminded = saved.lastReminded || null;
   } catch (e) {
     /* ignore */
   }
@@ -42,6 +52,7 @@ function saveState() {
         messages: c.messages,
       })),
       activeId: state.activeId,
+      lastReminded: state.lastReminded,
     })
   );
 }
@@ -59,6 +70,11 @@ function showSettings() {
   const s = state.settings || {};
   document.getElementById('api-base').value = s.apiBase || DEFAULT_API_BASE;
   document.getElementById('app-token').value = s.appToken || DEFAULT_APP_TOKEN;
+  // Reminder settings
+  const r = s.reminder || {};
+  document.getElementById('reminder-enabled').checked = r.enabled !== false;
+  document.getElementById('reminder-time').value = r.time || '09:00';
+  document.getElementById('reminder-browser').checked = r.browser !== false;
 }
 
 function saveSettings() {
@@ -68,7 +84,15 @@ function saveSettings() {
     showStatus('请填写 API 地址和访问令牌', 'error');
     return;
   }
-  state.settings = { apiBase, appToken };
+  state.settings = {
+    apiBase,
+    appToken,
+    reminder: {
+      enabled: document.getElementById('reminder-enabled').checked,
+      time: document.getElementById('reminder-time').value || '09:00',
+      browser: document.getElementById('reminder-browser').checked,
+    },
+  };
   saveState();
   showStatus('设置已保存', 'success');
   setTimeout(startChat, 500);
@@ -377,6 +401,265 @@ function escapeAttr(s) {
     .replace(/'/g, '&#39;');
 }
 
+/* ===== Daily Reminders ===== */
+
+function requestNotificationPermission() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  Notification.requestPermission();
+  return false;
+}
+
+function getTodayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function getDayReminder(jsDay) {
+  return DAY_REMINDERS[jsDay] || null;
+}
+
+function checkReminder() {
+  const r = state.settings?.reminder;
+  if (!r || !r.enabled) return;
+
+  const now = new Date();
+  const jsDay = now.getDay(); // 0=Sun, 1=Mon...
+  const reminderText = getDayReminder(jsDay);
+  if (!reminderText) return; // weekend, no reminder
+
+  // Parse reminder time
+  const [hour, min] = (r.time || '09:00').split(':').map(Number);
+  const reminderTime = new Date(now);
+  reminderTime.setHours(hour, min, 0, 0);
+
+  // Check if it's past reminder time
+  if (now < reminderTime) return;
+
+  // Check if already reminded today
+  const today = getTodayStr();
+  if (state.lastReminded === today) return;
+
+  // Send notification
+  if (r.browser !== false && 'Notification' in window && Notification.permission === 'granted') {
+    const weekdayName = WEEKDAY_CN[jsDay];
+    const title = '⏰ CC 工作助手 - 周' + weekdayName + '提醒';
+    const body = reminderText.replace(/\*\*/g, '');
+    sendBrowserNotification(title, body);
+  }
+
+  state.lastReminded = today;
+  saveState();
+}
+
+function sendBrowserNotification(title, body) {
+  try {
+    const n = new Notification(title, {
+      body: body,
+      icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>',
+      tag: 'cc-worker-reminder',
+      requireInteraction: true,
+    });
+    n.onclick = () => {
+      window.focus();
+      n.close();
+    };
+    setTimeout(() => n.close(), 15000);
+  } catch (e) {
+    console.warn('Notification failed:', e);
+  }
+}
+
+function startReminderTimer() {
+  requestNotificationPermission();
+  checkReminder();
+  setInterval(checkReminder, 60000); // check every minute
+}
+
+/* ===== File Upload & Analysis ===== */
+
+function showUploadStatus(msg, type) {
+  const el = document.getElementById('upload-status');
+  el.innerHTML = type === 'loading' ? '<span class="spinner"></span> ' + msg : msg;
+  el.className = 'upload-status ' + type;
+  el.style.display = 'flex';
+}
+
+function hideUploadStatus() {
+  document.getElementById('upload-status').style.display = 'none';
+}
+
+async function handleFileUpload(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx', 'xls', 'csv'].includes(ext)) {
+    showUploadStatus('不支持的文件类型：.' + ext + '（支持 .xlsx, .xls, .csv）', 'error');
+    return;
+  }
+
+  const maxSize = 20 * 1024 * 1024; // 20MB
+  if (file.size > maxSize) {
+    showUploadStatus('文件过大（' + (file.size / 1024 / 1024).toFixed(1) + 'MB），最大 20MB', 'error');
+    return;
+  }
+
+  if (!state.settings) {
+    showSettings();
+    return;
+  }
+
+  showUploadStatus('正在分析 ' + file.name + ' …', 'loading');
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const resp = await fetch(
+      state.settings.apiBase.replace(/\/+$/, '') + '/v1/chat/upload',
+      {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + state.settings.appToken },
+        body: formData,
+      }
+    );
+
+    if (!resp.ok) {
+      let errMsg = '上传失败 (' + resp.status + ')';
+      try {
+        const err = await resp.json();
+        errMsg = err.error?.message || err.message || errMsg;
+      } catch (e) { /* ignore */ }
+      throw new Error(errMsg);
+    }
+
+    const data = await resp.json();
+    hideUploadStatus();
+    if (data.success && data.analysis) {
+      renderAnalysisMessage(data.analysis);
+    } else {
+      throw new Error(data.error?.message || '分析异常');
+    }
+  } catch (err) {
+    showUploadStatus(err.message, 'error');
+    setTimeout(hideUploadStatus, 5000);
+  }
+}
+
+function renderAnalysisMessage(analysis) {
+  const conv = getActiveConv();
+  if (!conv) return;
+
+  // Build analysis content text
+  let lines = [];
+  lines.push('## 📊 数据分析结果');
+  lines.push('');
+  lines.push(analysis.summary || '文件：' + analysis.filename);
+  lines.push('');
+
+  // Tables
+  if (analysis.tables && analysis.tables.length > 0) {
+    for (const t of analysis.tables) {
+      lines.push('### ' + t.title);
+      lines.push('');
+      // Build markdown table
+      if (t.headers && t.rows && t.rows.length > 0) {
+        lines.push('| ' + t.headers.join(' | ') + ' |');
+        lines.push('| ' + t.headers.map(() => '---').join(' | ') + ' |');
+        for (const r of t.rows) {
+          const vals = t.headers.map(h => String(r[h] ?? ''));
+          lines.push('| ' + vals.join(' | ') + ' |');
+        }
+        lines.push('');
+      }
+    }
+  }
+
+  // Overview stats
+  if (analysis.overview && analysis.overview.total_skus != null) {
+    lines.push('**概要**：' + analysis.overview.total_skus + ' 个 SKU，总数量 '
+      + (analysis.overview.total_quantity || 0).toLocaleString()
+      + '，总金额 ' + (analysis.overview.total_amount || 0).toLocaleString());
+    lines.push('');
+  }
+
+  // Monthly Demand summary
+  const md = analysis.details?.monthly_demand;
+  if (md && md.total_skus != null) {
+    lines.push('**Monthly Demand**：' + md.total_skus + ' 个 SKU（有效 '
+      + md.skus_with_data + '），月总需求 ' + (md.total_monthly_demand || 0).toLocaleString());
+    lines.push('');
+  }
+
+  const content = lines.join('\n');
+
+  // Add as an assistant message
+  const msg = { role: 'assistant', content };
+  conv.messages.push(msg);
+  saveState();
+
+  // Render in UI
+  const msgList = document.getElementById('message-list');
+  document.getElementById('empty-state').style.display = 'none';
+  msgList.appendChild(createMessageElement('assistant', content));
+  scrollToBottom();
+  updateChatTitle();
+}
+
+function setupFileUpload() {
+  const uploadBtn = document.getElementById('upload-btn');
+  const fileInput = document.getElementById('file-input');
+  const dropOverlay = document.getElementById('drop-overlay');
+  const msgList = document.getElementById('message-list');
+
+  // Click upload button → open file picker
+  uploadBtn.addEventListener('click', () => fileInput.click());
+
+  // File selected
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) {
+      handleFileUpload(fileInput.files[0]);
+      fileInput.value = '';
+    }
+  });
+
+  // Drag over message list
+  msgList.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropOverlay.style.display = 'flex';
+  });
+
+  msgList.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropOverlay.style.display = 'none';
+  });
+
+  // Drop
+  dropOverlay.addEventListener('dragover', (e) => { e.preventDefault(); });
+  dropOverlay.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropOverlay.style.display = 'none';
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  });
+
+  // Also handle drop on body (fallback)
+  document.addEventListener('dragover', (e) => { e.preventDefault(); });
+  document.addEventListener('drop', (e) => {
+    if (dropOverlay.style.display === 'flex') {
+      e.preventDefault();
+      dropOverlay.style.display = 'none';
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFileUpload(files[0]);
+      }
+    }
+  });
+}
+
 function bindUi() {
   document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
   document.getElementById('settings-btn').addEventListener('click', showSettings);
@@ -401,8 +684,12 @@ function bindUi() {
 
 async function init() {
   bindUi();
+  setupFileUpload();
   await loadMeta();
   loadState();
+  if (state.settings) {
+    startReminderTimer();
+  }
   if (!state.settings && DEFAULT_APP_TOKEN) {
     state.settings = { apiBase: DEFAULT_API_BASE, appToken: DEFAULT_APP_TOKEN };
     saveState();
