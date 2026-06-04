@@ -14,49 +14,71 @@
 </head>
 <body>
 
-<!-- ===== Settings ===== -->
+<!-- ===== Settings / Login ===== -->
 <div id="settings-screen">
+  <div class="settings-bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
   <div class="settings-card">
-    <div class="settings-brand">
-      <div class="brand-icon">🤖</div>
-      <h1>CC 工作助手</h1>
-      <p class="settings-intro">连接后端服务，开启智能工作辅助</p>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-title">🔌 连接配置</div>
-      <div class="form-group">
-        <label>API 地址</label>
-        <input type="url" id="api-base" placeholder="https://api.sz-hrhb.com">
-        <div class="hint">CC Worker API 根地址</div>
+    <div class="settings-dora">
+      <div class="settings-dora-head">
+        <div class="sd-eye sd-eye-l"><div class="sd-pupil"></div></div>
+        <div class="sd-eye sd-eye-r"><div class="sd-pupil"></div></div>
+        <div class="sd-nose"></div>
+        <div class="sd-mouth"></div>
+        <div class="sd-whisker sd-w1"></div>
+        <div class="sd-whisker sd-w2"></div>
+        <div class="sd-whisker sd-w3"></div>
+        <div class="sd-whisker sd-w4"></div>
       </div>
-      <div class="form-group">
-        <label>访问令牌</label>
-        <div class="password-wrap">
-          <input type="password" id="app-token" autocomplete="off" placeholder="由管理员提供">
-          <button class="toggle-vis" type="button" data-toggle-token><span class="eye-icon">👁</span></button>
+      <div class="settings-bell">🔔</div>
+      <div class="settings-collar"></div>
+    </div>
+    <div class="settings-brand">
+      <h1>CC 工作助手</h1>
+      <p class="settings-intro">输入密码，打开任意门！</p>
+    </div>
+
+    <div class="settings-form">
+      <div class="settings-section">
+        <div class="settings-section-title">🔌 连接配置</div>
+        <div class="form-group">
+          <label>API 地址</label>
+          <input type="url" id="api-base" placeholder="https://api.sz-hrhb.com">
+        </div>
+        <div class="form-group">
+          <label>访问令牌</label>
+          <div class="password-wrap">
+            <input type="password" id="app-token" autocomplete="off" placeholder="由管理员提供">
+            <button class="toggle-vis" type="button" data-toggle-token><span>👁</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">⏰ 每日提醒</div>
+        <div class="form-group">
+          <label class="toggle-row">
+            <span class="toggle-track"><input type="checkbox" id="reminder-enabled" checked><span class="toggle-knob"></span></span>
+            <span>启用每日提醒</span>
+          </label>
+        </div>
+        <div class="form-group" id="reminder-time-group">
+          <label>提醒时间</label>
+          <input type="time" id="reminder-time" value="09:00">
+        </div>
+        <div class="form-group">
+          <label class="toggle-row">
+            <span class="toggle-track"><input type="checkbox" id="reminder-browser" checked><span class="toggle-knob"></span></span>
+            <span>浏览器通知</span>
+          </label>
         </div>
       </div>
     </div>
-    <div class="settings-section">
-      <div class="settings-section-title">⏰ 每日提醒</div>
-      <div class="form-group">
-        <label class="toggle-row">
-          <span class="toggle-track"><input type="checkbox" id="reminder-enabled" checked><span class="toggle-knob"></span></span>
-          <span>启用每日提醒</span>
-        </label>
-      </div>
-      <div class="form-group" id="reminder-time-group">
-        <label>提醒时间</label>
-        <input type="time" id="reminder-time" value="09:00">
-      </div>
-      <div class="form-group">
-        <label class="toggle-row">
-          <span class="toggle-track"><input type="checkbox" id="reminder-browser" checked><span class="toggle-knob"></span></span>
-          <span>浏览器通知</span>
-        </label>
-      </div>
-    </div>
-    <button class="btn btn-primary" id="save-settings-btn" type="button">保存并开始</button>
+
+    <button class="btn btn-primary" id="save-settings-btn" type="button">🚀 出发！</button>
     <div id="settings-status" class="settings-status"></div>
   </div>
 </div>
