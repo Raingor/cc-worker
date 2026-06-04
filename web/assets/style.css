@@ -4,34 +4,34 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root {
-  --blue: #2196F3;
-  --blue-dark: #1565C0;
-  --blue-light: #BBDEFB;
-  --blue-bg: #E3F2FD;
-  --red: #E53935;
-  --red-light: #FFCDD2;
-  --gold: #FFB300;
-  --gold-light: #FFECB3;
-  --orange: #FF8F00;
-  --bg: #F0F4F8;
+  --blue: #4DA6E8;
+  --blue-dark: #3B82C4;
+  --blue-light: #D6EAFA;
+  --blue-bg: #EDF4FB;
+  --red: #E8604C;
+  --red-light: #FCDFDA;
+  --gold: #F5C542;
+  --gold-light: #FDF2D8;
+  --bg: #F4F6FA;
   --surface: #FFFFFF;
-  --surface-alt: #F5F9FF;
-  --text: #1A2332;
-  --text-dim: #5C6B7E;
-  --text-muted: #90A0B5;
-  --border: #D6E3ED;
-  --border-light: #E8EFF5;
-  --radius-sm: 10px;
-  --radius: 16px;
-  --radius-lg: 22px;
-  --radius-xl: 30px;
+  --surface-alt: #F8FAFD;
+  --surface-warm: #FDFBF7;
+  --text: #2C3A4F;
+  --text-dim: #7A8BA0;
+  --text-muted: #A8B8CC;
+  --border: #DEE6F0;
+  --border-light: #E9EEF5;
+  --radius-sm: 12px;
+  --radius: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
   --sidebar-w: 280px;
   --header-h: 60px;
   --font-display: 'Fredoka', system-ui, sans-serif;
   --font-body: 'Nunito', system-ui, sans-serif;
-  --shadow-sm: 0 2px 8px rgba(33,150,243,.13);
-  --shadow: 0 4px 16px rgba(33,150,243,.1);
-  --shadow-lg: 0 8px 32px rgba(33,150,243,.12);
+  --shadow-sm: 0 2px 12px rgba(77,166,232,.08);
+  --shadow: 0 4px 20px rgba(77,166,232,.07);
+  --shadow-lg: 0 12px 40px rgba(77,166,232,.1);
 }
 
 /* --- Base --- */
@@ -79,9 +79,9 @@ body{
 
 .settings-card{
   max-width:400px;margin:0 auto;position:relative;z-index:1;
-  background:var(--surface);border:2px solid var(--border-light);
+  background:var(--surface-warm);border:2px solid var(--border-light);
   border-radius:var(--radius-xl);padding:0 0 28px;
-  box-shadow:0 8px 40px rgba(33,150,243,.12);
+  box-shadow:0 8px 40px rgba(77,166,232,.1);
   overflow:hidden
 }
 
@@ -243,11 +243,11 @@ body{
 
 .sidebar{
   position:fixed;top:0;left:-300px;width:var(--sidebar-w);height:100%;
-  background:var(--surface);z-index:30;
+  background:var(--surface-alt);z-index:30;
   transition:left .3s cubic-bezier(.4,0,.2,1);
   display:flex;flex-direction:column;
-  border-right:1px solid var(--border-light);
-  box-shadow:4px 0 24px rgba(33,150,243,.08)
+  border-right:2px solid var(--border-light);
+  box-shadow:4px 0 24px rgba(77,166,232,.06)
 }
 .sidebar.open{left:0}
 
@@ -291,9 +291,9 @@ body{
 .chat-header{
   height:var(--header-h);display:flex;align-items:center;
   padding:0 14px;
-  background:linear-gradient(180deg,var(--surface),var(--surface-alt));
+  background:var(--surface);
   flex-shrink:0;position:relative;z-index:10;
-  border-bottom:1px solid var(--border-light)
+  border-bottom:2px solid var(--border-light)
 }
 .header-collar{
   position:absolute;top:0;left:50%;transform:translateX(-50%);
@@ -318,40 +318,64 @@ body{
 @keyframes bell-swing{0%,100%{transform:rotate(0)}5%{transform:rotate(-12deg)}10%{transform:rotate(8deg)}15%{transform:rotate(-6deg)}20%{transform:rotate(4deg)}25%{transform:rotate(0)}}
 .header-actions{display:flex;gap:2px}
 
-/* === Stats Panel === */
-.stats-panel{
-  position:absolute;top:var(--header-h);right:8px;z-index:15;
-  width:270px;max-height:360px;
+/* === Modal Overlay === */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(44,58,79,.35);backdrop-filter:blur(4px);
+  z-index:40;animation:fade-in .2s ease
+}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+
+/* === Stats Modal === */
+.stats-modal{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:41;width:340px;max-width:90vw;
   background:var(--surface);border:2px solid var(--border-light);
-  border-radius:var(--radius);box-shadow:var(--shadow-lg);
-  flex-direction:column;overflow:hidden;
-  animation:panel-pop .25s cubic-bezier(.4,0,.2,1)
+  border-radius:var(--radius-xl);box-shadow:0 20px 60px rgba(44,58,79,.2);
+  overflow:hidden;
+  animation:modal-in .3s cubic-bezier(.4,0,.2,1)
 }
-@keyframes panel-pop{from{opacity:0;transform:scale(.95) translateY(-6px)}to{opacity:1;transform:scale(1) translateY(0)}}
-.stats-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 14px 10px;font-size:14px;font-weight:700;
-  border-bottom:1px solid var(--border-light);
-  font-family:var(--font-display);color:var(--blue-dark)
+@keyframes modal-in{from{opacity:0;transform:translate(-50%,-50%) scale(.92) translateY(10px)}to{opacity:1;transform:translate(-50%,-50%) scale(1) translateY(0)}}
+
+.stats-modal-header{
+  display:flex;align-items:center;gap:8px;
+  padding:18px 20px 14px;
+  font-size:16px;font-weight:700;
+  font-family:var(--font-display);color:var(--blue-dark);
+  border-bottom:1px solid var(--border-light)
 }
-.stats-body{padding:12px 14px;overflow-y:auto;flex:1;font-size:13px}
-.stat-loading{color:var(--text-dim);text-align:center;padding:20px 0}
-.spinner-sm{display:inline-block;width:14px;height:14px;border:3px solid var(--blue-light);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
+.stats-modal-header .modal-close{
+  margin-left:auto;
+  background:none;border:none;color:var(--text-muted);cursor:pointer;
+  width:30px;height:30px;border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:all .15s
+}
+.stats-modal-header .modal-close:hover{background:var(--blue-bg);color:var(--text)}
+.stats-modal-icon{font-size:20px}
+
+.stats-modal-body{padding:16px 20px 20px;font-size:13px;line-height:1.6}
+
+.stat-loading{color:var(--text-dim);text-align:center;padding:24px 0;font-size:14px}
+.spinner-sm{display:inline-block;width:16px;height:16px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.stat-section{display:flex;justify-content:space-between;padding:5px 0}
-.stat-label{color:var(--text-dim);font-weight:600}
-.stat-value{font-weight:800;color:var(--text);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.stat-divider{border:none;border-top:2px solid var(--blue-bg);margin:8px 0;border-radius:2px}
-.stat-group-title{font-size:11px;font-weight:800;color:var(--blue-dark);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
-.stat-row{display:flex;justify-content:space-between;padding:4px 0}
-.stat-row .stat-num{font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums}
+
+.stat-card{background:var(--surface-alt);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
+.stat-section{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.stat-section+.stat-section{border-top:1px solid var(--border-light);padding-top:8px;margin-top:4px}
+.stat-label{color:var(--text-dim);font-weight:600;font-size:12px}
+.stat-value{font-weight:700;color:var(--text);font-size:13px}
+.stat-num{font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;font-size:14px}
+.stat-divider{height:1px;background:var(--border-light);margin:12px 0;border:none;border-radius:2px}
+.stat-group-title{font-size:11px;font-weight:700;color:var(--text-dim);margin-bottom:8px;letter-spacing:.5px}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0}
+.stat-row+.stat-row{border-top:1px solid var(--border-light);padding-top:7px;margin-top:3px}
 
 /* === Message Area === */
 .message-list{
   flex:1;overflow-y:auto;padding:16px 12px;
   display:flex;flex-direction:column;gap:10px;
   scroll-behavior:smooth;
-  background:radial-gradient(ellipse 60% 40% at 50% 30%, rgba(33,150,243,.03) 0%, transparent 50%)
+  background:radial-gradient(ellipse 60% 40% at 50% 30%, rgba(77,166,232,.025) 0%, transparent 50%)
 }
 
 /* Empty state — Doraemon face */
@@ -444,27 +468,28 @@ body{
   font-size:13px;font-weight:800;position:relative
 }
 .message.user .avatar{
-  background:linear-gradient(135deg,var(--blue),var(--blue-dark));
-  color:white;font-size:11px
+  background:linear-gradient(135deg,var(--blue),#6CB5E8);
+  color:white;font-size:11px;box-shadow:0 2px 8px rgba(77,166,232,.2)
 }
 .message.assistant .avatar{
-  background:var(--blue-bg);color:var(--blue);font-size:18px
+  background:var(--blue-bg);color:var(--blue);font-size:18px;
+  box-shadow:0 2px 6px rgba(77,166,232,.1)
 }
 
 .bubble{
-  padding:10px 16px;border-radius:var(--radius);font-size:14px;
+  padding:12px 18px;border-radius:var(--radius-lg);font-size:14px;
   line-height:1.7;word-break:break-word;position:relative;
   font-weight:500
 }
 .message.user .bubble{
-  background:linear-gradient(135deg,var(--blue),var(--blue-dark));
+  background:linear-gradient(135deg,var(--blue),#6CB5E8);
   color:white;
-  border-bottom-right-radius:4px;
-  box-shadow:0 3px 12px rgba(33,150,243,.2)
+  border-bottom-right-radius:6px;
+  box-shadow:0 4px 16px rgba(77,166,232,.18)
 }
 .message.assistant .bubble{
   background:var(--surface);border:2px solid var(--border-light);
-  border-bottom-left-radius:4px;
+  border-bottom-left-radius:6px;
   box-shadow:var(--shadow-sm)
 }
 
@@ -501,16 +526,17 @@ body{
 /* === Input Area === */
 .input-area{
   padding:8px 12px 14px;
-  background:linear-gradient(180deg,var(--surface-alt),var(--surface));
-  flex-shrink:0;border-top:2px solid var(--border-light)
+  background:var(--surface);
+  flex-shrink:0;border-top:2px solid var(--border-light);
+  box-shadow:0 -2px 12px rgba(77,166,232,.04)
 }
 .input-wrap{
   display:flex;gap:4px;align-items:flex-end;
-  background:var(--surface);border:2px solid var(--border);
-  border-radius:var(--radius);padding:3px;
+  background:var(--surface);border:2px solid var(--border-light);
+  border-radius:var(--radius-xl);padding:3px 3px 3px 6px;
   transition:border-color .2s,box-shadow .2s
 }
-.input-wrap:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px rgba(33,150,243,.12)}
+.input-wrap:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px rgba(77,166,232,.1)}
 .input-wrap textarea{
   flex:1;border:none;outline:none;resize:none;padding:8px 12px;
   font-size:15px;line-height:1.5;max-height:120px;
@@ -529,7 +555,8 @@ body{
 .tool-btn:hover{background:var(--blue-bg);color:var(--blue)}
 .send-btn{
   background:var(--blue);color:white;
-  box-shadow:0 3px 8px rgba(33,150,243,.25)
+  box-shadow:0 3px 10px rgba(77,166,232,.22);
+  border-radius:var(--radius-sm)
 }
 .send-btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
 .send-btn:not(:disabled):hover{background:var(--blue-dark);transform:scale(1.06);box-shadow:0 4px 14px rgba(33,150,243,.35)}

@@ -849,37 +849,37 @@ function renderStatsPanel() {
   }
   const s = statsCache;
   body.innerHTML =
-    '<div class="stat-section"><div class="stat-label">Provider</div><div class="stat-value">' +
-    (s.provider || '-') +
-    '</div></div>' +
-    '<div class="stat-section"><div class="stat-label">Model</div><div class="stat-value">' +
-    (s.model || '-') +
-    '</div></div>' +
-    '<div class="stat-section"><div class="stat-label">总请求数</div><div class="stat-value">' +
-    s.request_count +
-    '</div></div>' +
-    '<div class="stat-divider"></div>' +
+    '<div class="stat-card">' +
+    '<div class="stat-section"><div class="stat-label">Provider</div><div class="stat-value">' + (s.provider || '-') + '</div></div>' +
+    '<div class="stat-section"><div class="stat-label">Model</div><div class="stat-value">' + (s.model || '-') + '</div></div>' +
+    '<div class="stat-section" style="margin-top:4px"><div class="stat-label">总请求</div><div class="stat-num">' + s.request_count + '</div></div>' +
+    '</div>' +
     '<div class="stat-group-title">📈 累计</div>' +
+    '<div class="stat-card">' +
     row('输入 Token', formatNumber(s.total.prompt)) +
     row('输出 Token', formatNumber(s.total.completion)) +
     row('缓存 Token', formatNumber(s.total.cached || 0)) +
     row('总 Token', formatNumber(s.total.total)) +
-    '<div class="stat-divider"></div>' +
+    '</div>' +
     '<div class="stat-group-title">📅 今日</div>' +
+    '<div class="stat-card">' +
     row('输入 Token', formatNumber(s.today.prompt)) +
     row('输出 Token', formatNumber(s.today.completion)) +
     row('缓存 Token', formatNumber(s.today.cached || 0)) +
-    row('总 Token', formatNumber(s.today.total));
+    row('总 Token', formatNumber(s.today.total)) +
+    '</div>';
 }
 
 function row(label, val) {
-  return '<div class="stat-row"><span>' + label + '</span><span class="stat-num">' + val + '</span></div>';
+  return '<div class="stat-row"><span class="stat-label">' + label + '</span><span class="stat-num">' + val + '</span></div>';
 }
 
 function toggleStats() {
   const panel = document.getElementById('stats-panel');
+  const overlay = document.getElementById('stats-overlay');
   const visible = panel.style.display !== 'none';
-  panel.style.display = visible ? 'none' : 'flex';
+  panel.style.display = visible ? 'none' : 'block';
+  overlay.style.display = visible ? 'none' : 'block';
   if (!visible) {
     fetchStats().then(renderStatsPanel);
   }

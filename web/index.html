@@ -123,13 +123,15 @@
       </div>
     </header>
 
-    <!-- Stats Panel -->
-    <div class="stats-panel" id="stats-panel">
-      <div class="stats-header">
-        <span>📊 用量统计</span>
-        <button class="icon-btn stats-close" id="stats-close" type="button">✕</button>
+    <!-- Stats Modal -->
+    <div class="modal-overlay" id="stats-overlay" style="display:none" onclick="toggleStats()"></div>
+    <div class="stats-modal" id="stats-panel" style="display:none">
+      <div class="stats-modal-header">
+        <span class="stats-modal-icon">📊</span>
+        <span>用量统计</span>
+        <button class="modal-close" id="stats-close" type="button">✕</button>
       </div>
-      <div class="stats-body" id="stats-body">
+      <div class="stats-modal-body" id="stats-body">
         <div class="stat-loading"><span class="spinner-sm"></span> 加载中…</div>
       </div>
     </div>
