@@ -890,6 +890,7 @@ function bindUi() {
   document.getElementById('settings-btn').addEventListener('click', showSettings);
   document.getElementById('stats-btn').addEventListener('click', toggleStats);
   document.getElementById('stats-close').addEventListener('click', toggleStats);
+  document.getElementById('stats-overlay').addEventListener('click', toggleStats);
   document.getElementById('menu-btn').addEventListener('click', toggleSidebar);
   document.getElementById('close-sidebar-btn').addEventListener('click', toggleSidebar);
   document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);
