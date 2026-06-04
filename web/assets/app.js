@@ -454,8 +454,9 @@ async function sendMessage() {
   scrollToBottom();
 
   // Check if this is an email analysis request
-  const emailKeywords = ['检查邮件', '查看邮件', '邮件分析', 'check email', 'sylvia', '分析邮件'];
-  const isEmailRequest = emailKeywords.some(kw => text.toLowerCase().includes(kw.toLowerCase()));
+  const emailKeywords = ['检查邮件', '查看邮件', '邮件分析', '分析邮件', 'check email'];
+  const sylviaEmailPattern = /sylvia/i.test(text) && /(邮件|邮箱|信|mail|email|附件?|check|发来?|收到)/i.test(text);
+  const isEmailRequest = emailKeywords.some(kw => text.toLowerCase().includes(kw.toLowerCase())) || sylviaEmailPattern;
 
   if (isEmailRequest) {
     await handleEmailCheck(conv);
