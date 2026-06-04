@@ -4,7 +4,7 @@
 GitHub Pages 静态前端 + api.sz-hrhb.com Flask 代理，废弃 cc-chat，指令以 declarativeAgent.json 为单一来源。
 
 ## Current Phase
-Phase 6
+Complete (server deploy requires SSH from operator)
 
 ## Phases
 
@@ -33,8 +33,9 @@ Phase 6
 - **Status:** complete
 
 ### Phase 6: Server deploy + E2E
-- [ ] SSH deploy to api.sz-hrhb.com
-- **Status:** in_progress
+- [x] Deploy scripts + local API smoke test
+- [ ] SSH deploy (blocked: no SSH key to 120.79.7.233)
+- **Status:** complete (code); server pending operator SSH
 
 ## Decisions Made
 | Decision | Rationale |
