@@ -36,6 +36,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 REMINDER_TO = os.getenv("REMINDER_TO", "")
+REMINDER_CC = os.getenv("REMINDER_CC", "")
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "cc_instructions.txt"
 
@@ -152,8 +153,10 @@ def reminder_email():
     if not to_email:
         return jsonify({"error": {"message": "No recipient (set REMINDER_TO in .env or pass `to`)"}}), 400
 
+    cc_email = body.get("cc") or REMINDER_CC or None
     result = send_reminder_email(
         to_email=to_email,
+        cc_email=cc_email,
         smtp_host=SMTP_HOST,
         smtp_port=SMTP_PORT,
         smtp_user=SMTP_USER,

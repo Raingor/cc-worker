@@ -73,6 +73,7 @@ def send_reminder_email(
     smtp_port: int,
     smtp_user: str,
     smtp_password: str,
+    cc_email: str | None = None,
     use_ssl: bool = True,
 ) -> dict:
     """Send a daily reminder email. Returns dict with status."""
@@ -82,18 +83,25 @@ def send_reminder_email(
     msg["Subject"] = subject
     msg["From"] = smtp_user
     msg["To"] = to_email
+    if cc_email:
+        msg["Cc"] = cc_email
+
+    # Recipients for actual sending: To + Cc
+    recipients = [to_email]
+    if cc_email:
+        recipients.append(cc_email)
 
     try:
         if use_ssl:
             ctx = ssl.create_default_context()
             with smtplib.SMTP_SSL(smtp_host, smtp_port, context=ctx) as server:
                 server.login(smtp_user, smtp_password)
-                server.send_message(msg)
+                server.send_message(msg, to_addrs=recipients)
         else:
             with smtplib.SMTP(smtp_host, smtp_port) as server:
                 server.starttls()
                 server.login(smtp_user, smtp_password)
-                server.send_message(msg)
+                server.send_message(msg, to_addrs=recipients)
 
         return {"success": True, "to": to_email, "subject": subject}
     except Exception as e:
