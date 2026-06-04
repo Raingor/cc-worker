@@ -79,7 +79,13 @@ def check_and_analyze(
                     continue
                 filename = _decode(part.get_filename())
                 if filename and filename.lower().endswith((".xlsx", ".xls", ".csv")):
-                    attachments.append({"filename": filename, "data": part.get_payload(decode=True)})
+                    payload = part.get_payload(decode=True)
+                    size_bytes = len(payload) if payload else 0
+                    attachments.append({
+                        "filename": filename,
+                        "size": size_bytes,
+                        "data": payload,
+                    })
 
         if not attachments:
             mail.logout()
@@ -93,9 +99,9 @@ def check_and_analyze(
                 tmp.write(att["data"])
                 tmp.close()
                 analysis = analyze_excel(tmp.name)
-                results.append({"filename": att["filename"], "analysis": analysis})
+                results.append({"filename": att["filename"], "size": att["size"], "analysis": analysis})
             except Exception as e:
-                results.append({"filename": att["filename"], "error": str(e)})
+                results.append({"filename": att["filename"], "size": att.get("size", 0), "error": str(e)})
             finally:
                 Path(tmp.name).unlink(missing_ok=True)
 

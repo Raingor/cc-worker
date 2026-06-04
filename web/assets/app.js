@@ -359,8 +359,20 @@ function createMessageElement(role, content) {
   return div;
 }
 
+function formatFileSize(bytes) {
+  if (!bytes || bytes === 0) return '未知';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
 function buildEmailAnalysisContent(data) {
-  let content = `## 📧 邮件分析结果\n\n**来自**: ${data.sender}\n**主题**: ${data.subject}\n**附件**: ${data.attachments_count} 个\n\n`;
+  let attachmentsInfo = data.attachments_count + ' 个';
+  if (data.results && data.results.length > 0) {
+    const sizes = data.results.map(r => r.size != null ? formatFileSize(r.size) : null).filter(Boolean);
+    if (sizes.length > 0) attachmentsInfo += '（' + sizes.join(', ') + '）';
+  }
+  let content = `## 📧 邮件分析结果\n\n**来自**: ${data.sender}\n**主题**: ${data.subject}\n**附件**: ${attachmentsInfo}\n\n`;
   for (const r of data.results) {
     if (r.analysis) {
       content += r.analysis.summary + '\n\n';
