@@ -16,6 +16,7 @@ from flask_cors import CORS
 from analysis.analyzer import analyze as analyze_excel
 from analysis.email_sender import send_reminder_email
 from usage_tracker import get_stats, record_usage
+from conversation_store import list_conversations, get_conversation, upsert_conversation, delete_conversation, pop_last_message
 
 load_dotenv()
 
@@ -209,6 +210,66 @@ def stats():
         data["provider"] = _extract_provider()
         data["model"] = AI_MODEL
     return jsonify(data)
+
+
+@APP.route("/v1/conversations", methods=["GET", "POST", "OPTIONS"])
+def conversations():
+    """List or create conversations."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    # Extract token from auth header
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:].strip()
+    if request.method == "GET":
+        return jsonify(list_conversations(token))
+    # POST: upsert (create or update)
+    body = request.get_json(silent=True) or {}
+    if "id" not in body:
+        return jsonify({"error": {"message": "conversation id required"}}), 400
+    result = upsert_conversation(token, body)
+    return jsonify(result), 200
+
+
+@APP.route("/v1/conversations/<conv_id>", methods=["GET", "PUT", "DELETE", "OPTIONS"])
+def conversation_detail(conv_id):
+    """Get, update, or delete a single conversation."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:].strip()
+
+    if request.method == "GET":
+        c = get_conversation(token, conv_id)
+        if not c:
+            return jsonify({"error": {"message": "not found"}}), 404
+        return jsonify(c)
+
+    if request.method == "PUT":
+        body = request.get_json(silent=True) or {}
+        body["id"] = conv_id
+        result = upsert_conversation(token, body)
+        return jsonify(result)
+
+    if request.method == "DELETE":
+        ok = delete_conversation(token, conv_id)
+        return jsonify({"deleted": ok}), (200 if ok else 404)
+
+
+@APP.route("/v1/conversations/<conv_id>/pop", methods=["POST", "OPTIONS"])
+def conversation_pop(conv_id):
+    """Remove last message (rollback on streaming error)."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:].strip()
+    ok = pop_last_message(token, conv_id)
+    return jsonify({"deleted": ok})
 
 
 @APP.route("/v1/chat/completions", methods=["POST", "OPTIONS"])

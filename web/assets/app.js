@@ -1,6 +1,6 @@
 /* CC 工作助手 — GitHub Pages 前端 */
 
-const STORAGE_KEY = 'cc-web-state';
+const STORAGE_KEY = 'cc-web-settings';
 const DEFAULT_API_BASE = (window.CC_CONFIG && window.CC_CONFIG.apiBase) || 'https://api.sz-hrhb.com';
 const DEFAULT_APP_TOKEN = (window.CC_CONFIG && window.CC_CONFIG.appToken) || '';
 
@@ -31,8 +31,6 @@ function loadState() {
     if (!raw) return;
     const saved = JSON.parse(raw);
     state.settings = saved.settings || null;
-    state.conversations = saved.conversations || [];
-    state.activeId = saved.activeId || null;
     state.lastReminded = saved.lastReminded || null;
   } catch (e) {
     /* ignore */
@@ -44,17 +42,81 @@ function saveState() {
     STORAGE_KEY,
     JSON.stringify({
       settings: state.settings,
-      conversations: state.conversations.map((c) => ({
-        id: c.id,
-        title: c.title,
-        createdAt: c.createdAt,
-        updatedAt: c.updatedAt,
-        messages: c.messages,
-      })),
-      activeId: state.activeId,
       lastReminded: state.lastReminded,
     })
   );
+}
+
+function apiUrl(path) {
+  if (!state.settings) return '';
+  return state.settings.apiBase.replace(/\/+$/, '') + path;
+}
+
+function apiHeaders() {
+  return { Authorization: 'Bearer ' + (state.settings?.appToken || '') };
+}
+
+async function fetchConversations() {
+  if (!state.settings) return;
+  try {
+    const resp = await fetch(apiUrl('/v1/conversations'), { headers: apiHeaders() });
+    if (resp.ok) {
+      const list = await resp.json();
+      state.conversations = list;
+      // Load active conversation's messages
+      if (state.activeId) {
+        const detailResp = await fetch(apiUrl('/v1/conversations/' + state.activeId), { headers: apiHeaders() });
+        if (detailResp.ok) {
+          const detail = await detailResp.json();
+          const idx = state.conversations.findIndex(c => c.id === state.activeId);
+          if (idx >= 0) state.conversations[idx].messages = detail.messages || [];
+          return;
+        }
+      }
+      // No active conv or fetch failed → load first conv messages
+      if (list.length > 0 && !state.activeId) {
+        state.activeId = list[0].id;
+        const detailResp = await fetch(apiUrl('/v1/conversations/' + list[0].id), { headers: apiHeaders() });
+        if (detailResp.ok) {
+          const detail = await detailResp.json();
+          state.conversations[0].messages = detail.messages || [];
+        }
+      }
+    }
+  } catch (e) {
+    /* ignore network errors */
+  }
+}
+
+async function syncConversation(convId) {
+  if (!state.settings || !convId) return;
+  const conv = state.conversations.find(c => c.id === convId);
+  if (!conv) return;
+  try {
+    await fetch(apiUrl('/v1/conversations'), {
+      method: 'POST',
+      headers: { ...apiHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: conv.id,
+        title: conv.title,
+        messages: conv.messages,
+      }),
+    });
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+async function deleteConversationFromServer(convId) {
+  if (!state.settings) return;
+  try {
+    await fetch(apiUrl('/v1/conversations/' + convId), {
+      method: 'DELETE',
+      headers: apiHeaders(),
+    });
+  } catch (e) {
+    /* ignore */
+  }
 }
 
 function showStatus(msg, type) {
@@ -95,12 +157,15 @@ function saveSettings() {
   };
   saveState();
   showStatus('设置已保存', 'success');
-  setTimeout(startChat, 500);
+  setTimeout(() => startChat().then(fetchConversations), 500);
 }
 
-function startChat() {
+async function startChat() {
   document.getElementById('settings-screen').classList.remove('active');
   document.getElementById('chat-screen').classList.add('active');
+  state.conversations = [];
+  state.activeId = null;
+  await fetchConversations();
   renderConversationList();
   renderMessages();
   renderStarters();
@@ -119,7 +184,7 @@ function genId() {
   return 'conv_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
 }
 
-function newConversation() {
+async function newConversation() {
   const conv = {
     id: genId(),
     title: '新对话',
@@ -129,7 +194,7 @@ function newConversation() {
   };
   state.conversations.push(conv);
   state.activeId = conv.id;
-  saveState();
+  await syncConversation(conv.id);
   renderConversationList();
   renderMessages();
   renderStarters();
@@ -138,9 +203,21 @@ function newConversation() {
   document.getElementById('chat-input').focus();
 }
 
-function switchConversation(id) {
+async function switchConversation(id) {
   state.activeId = id;
-  saveState();
+  // Fetch full conversation with messages
+  if (state.settings) {
+    try {
+      const resp = await fetch(apiUrl('/v1/conversations/' + id), { headers: apiHeaders() });
+      if (resp.ok) {
+        const detail = await resp.json();
+        const idx = state.conversations.findIndex(c => c.id === id);
+        if (idx >= 0) {
+          state.conversations[idx].messages = detail.messages || [];
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }
   renderConversationList();
   renderMessages();
   renderStarters();
@@ -151,14 +228,14 @@ function switchConversation(id) {
   }
 }
 
-function deleteConversation(id, e) {
+async function deleteConversation(id, e) {
   e.stopPropagation();
   if (!confirm('删除此对话？')) return;
+  await deleteConversationFromServer(id);
   state.conversations = state.conversations.filter((c) => c.id !== id);
   if (state.activeId === id) {
     state.activeId = state.conversations.length ? state.conversations[0].id : null;
   }
-  saveState();
   renderConversationList();
   renderMessages();
   renderStarters();
@@ -294,7 +371,9 @@ async function sendMessage() {
   scrollToBottom();
 
   state.isStreaming = true;
-  const apiUrl = state.settings.apiBase.replace(/\/+$/, '') + '/v1/chat/completions';
+  // Sync user message to server
+  syncConversation(conv.id);
+  const chatApiUrl = apiUrl('/v1/chat/completions');
 
   try {
     const apiMessages = conv.messages.slice(0, -1).map((m) => ({
@@ -302,7 +381,7 @@ async function sendMessage() {
       content: m.content,
     }));
 
-    const response = await fetch(apiUrl, {
+    const response = await fetch(chatApiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -365,11 +444,13 @@ async function sendMessage() {
       '</div><p style="margin-top:8px;color:var(--text-secondary);font-size:13px;">请检查 API 地址与访问令牌，或联系管理员。</p>';
     assistantEl.classList.remove('typing');
     conv.messages.pop();
+    // Sync rollback to server
+    fetch(chatApiUrl.replace('/v1/chat/completions', '/v1/conversations/' + conv.id + '/pop'), { method: 'POST', headers: apiHeaders() }).catch(() => {});
   }
 
   state.isStreaming = false;
   autoTitle(conv);
-  saveState();
+  syncConversation(conv.id);
   renderConversationList();
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input').focus();
@@ -595,7 +676,7 @@ function renderAnalysisMessage(analysis) {
   // Add as an assistant message
   const msg = { role: 'assistant', content };
   conv.messages.push(msg);
-  saveState();
+  syncConversation(conv.id);
 
   // Render in UI
   const msgList = document.getElementById('message-list');
@@ -764,7 +845,7 @@ async function init() {
     state.settings = { apiBase: DEFAULT_API_BASE, appToken: DEFAULT_APP_TOKEN };
     saveState();
   }
-  if (state.settings) startChat();
+  if (state.settings) await startChat();
   else showSettings();
 }
 
