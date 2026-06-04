@@ -336,6 +336,8 @@ function createMessageElement(role, content) {
   const avatar = document.createElement('div');
   avatar.className = 'avatar';
   avatar.textContent = role === 'user' ? 'CC' : '🤖';
+  const col = document.createElement('div');
+  col.className = 'msg-col';
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
   if (role === 'user') {
@@ -347,8 +349,28 @@ function createMessageElement(role, content) {
       bubble.textContent = content;
     }
   }
+  col.appendChild(bubble);
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'copy-btn';
+  copyBtn.textContent = '📋';
+  copyBtn.title = '复制';
+  copyBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(content).then(() => {
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = '✅';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = orig;
+        copyBtn.classList.remove('copied');
+      }, 1500);
+    }).catch(() => {
+      showToast('复制失败', 'error');
+    });
+  });
+  col.appendChild(copyBtn);
   div.appendChild(avatar);
-  div.appendChild(bubble);
+  div.appendChild(col);
   return div;
 }
 
