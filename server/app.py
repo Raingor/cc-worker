@@ -18,6 +18,7 @@ from analysis.email_sender import send_reminder_email
 from analysis.email_checker import check_and_analyze
 from usage_tracker import get_stats, record_usage
 from conversation_store import list_conversations, get_conversation, upsert_conversation, delete_conversation, pop_last_message
+from memory_store import store_messages as memory_store_messages, search_memories, count_memories
 
 load_dotenv()
 
@@ -214,6 +215,11 @@ def stats():
     if not data["provider"]:
         data["provider"] = _extract_provider()
         data["model"] = AI_MODEL
+    # Include memory count
+    try:
+        data["memory_count"] = count_memories()
+    except Exception:
+        data["memory_count"] = 0
     return jsonify(data)
 
 
@@ -234,6 +240,12 @@ def conversations():
     if "id" not in body:
         return jsonify({"error": {"message": "conversation id required"}}), 400
     result = upsert_conversation(token, body)
+    # Index messages into long-term memory
+    if body.get("messages") and os.getenv("MEMORY_ENABLED", "true").lower() not in ("false", "0"):
+        try:
+            memory_store_messages(body["id"], body["messages"])
+        except Exception:
+            pass
     return jsonify(result), 200
 
 
@@ -311,7 +323,35 @@ def chat_completions():
         return jsonify({"error": {"message": "Invalid JSON body"}}), 400
 
     messages = [{"role": "system", "content": build_system_prompt()}]
-    messages.extend(_client_messages(body))
+    client_msgs = _client_messages(body)
+
+    # --- Memory injection: retrieve relevant past conversations ---
+    memory_enabled = os.getenv("MEMORY_ENABLED", "true").lower() not in ("false", "0")
+    memory_context = None
+    if memory_enabled and client_msgs:
+        try:
+            user_msgs = [m["content"] for m in client_msgs if m["role"] == "user"]
+            if user_msgs:
+                last_query = user_msgs[-1][:150]  # first 150 chars as search key
+                results = search_memories(last_query, limit=int(os.getenv("MEMORY_SEARCH_LIMIT", "8")))
+                if results:
+                    lines = []
+                    for r in results:
+                        date = r["created_at"][:10] if r.get("created_at") else "过去"
+                        preview = r["content"][:200].replace("\n", " ")
+                        icon = "👤" if r["role"] == "user" else "🤖"
+                        lines.append(f"- {icon} [{date}] {preview}")
+                    memory_context = (
+                        "[📚 过往记忆]\n"
+                        "以下是你在之前的对话中讨论过的相关内容，请参考：\n\n"
+                        + "\n".join(lines[:8])
+                    )
+        except Exception as exc:
+            print(f"[memory] inject error: {exc}")
+
+    if memory_context:
+        messages.append({"role": "system", "content": memory_context})
+    messages.extend(client_msgs)
     if len(messages) < 2:
         return jsonify({"error": {"message": "messages required"}}), 400
 
