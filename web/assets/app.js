@@ -378,9 +378,9 @@ function buildEmailAnalysisContent(data) {
 }
 
 async function handleEmailCheck(conv) {
-  // Show checking status via renderMessages
+  // Show checking status
   conv.messages.push({ role: 'assistant', content: '📧 正在检查 Sylvia 的最新邮件…' });
-  renderMessages(false);
+  renderMessages(true);
 
   try {
     const resp = await fetch(apiUrl('/v1/email/check'), {
@@ -399,11 +399,11 @@ async function handleEmailCheck(conv) {
       content = '❌ ' + (data.error || '检查邮件失败，请稍后重试。');
     }
     conv.messages.push({ role: 'assistant', content });
-    renderMessages(false);
+    renderMessages(true);
   } catch (err) {
     conv.messages.pop();
     conv.messages.push({ role: 'assistant', content: '❌ 检查邮件时出错: ' + err.message });
-    renderMessages(false);
+    renderMessages(true);
   }
 
   syncConversation(conv.id);
