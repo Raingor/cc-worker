@@ -17,48 +17,82 @@
 
 <!-- ===== Settings ===== -->
 <div id="settings-screen">
+  <div class="settings-bg-ornament"></div>
   <div class="settings-card">
     <div class="settings-brand">
-      <div class="brand-mark"></div>
-      <h1>CC 工作助手</h1>
-      <p class="settings-intro">连接后端服务</p>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-title">连接配置</div>
-      <div class="form-group">
-        <label>API 地址</label>
-        <input type="url" id="api-base" placeholder="https://api.sz-hrhb.com">
+      <div class="brand-emblem">
+        <span class="brand-initials">CC</span>
       </div>
-      <div class="form-group">
-        <label>访问令牌</label>
-        <div class="password-wrap">
-          <input type="password" id="app-token" autocomplete="off" placeholder="由管理员提供">
-          <button class="toggle-vis" type="button" data-toggle-token>👁</button>
+      <h1 class="brand-title">工作助手</h1>
+      <p class="brand-sub">谭斯雅的专属生产计划助理</p>
+    </div>
+
+    <div class="settings-body">
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="section-icon">🔌</span>
+          <span class="section-label">连接配置</span>
+        </div>
+        <div class="field-group">
+          <div class="field">
+            <label for="api-base">API 地址</label>
+            <div class="input-wrap-field">
+              <input type="url" id="api-base" placeholder="https://api.sz-hrhb.com">
+            </div>
+          </div>
+          <div class="field">
+            <label for="app-token">访问令牌</label>
+            <div class="input-wrap-field token-wrap">
+              <input type="password" id="app-token" autocomplete="off" placeholder="由管理员提供">
+              <button class="token-toggle" type="button" data-toggle-token title="显示/隐藏令牌">👁</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-header">
+          <span class="section-icon">⏰</span>
+          <span class="section-label">每日提醒</span>
+        </div>
+        <div class="field-group">
+          <div class="toggle-field">
+            <div class="toggle-info">
+              <span class="toggle-title">启用提醒</span>
+              <span class="toggle-desc">工作日定时推送当日任务</span>
+            </div>
+            <label class="tg-track">
+              <input type="checkbox" id="reminder-enabled" checked>
+              <span class="tg-knob"></span>
+            </label>
+          </div>
+          <div class="field" id="reminder-time-group">
+            <label for="reminder-time">提醒时间</label>
+            <div class="input-wrap-field">
+              <input type="time" id="reminder-time" value="09:00">
+            </div>
+          </div>
+          <div class="toggle-field">
+            <div class="toggle-info">
+              <span class="toggle-title">浏览器通知</span>
+              <span class="toggle-desc">到达时间时弹出桌面提醒</span>
+            </div>
+            <label class="tg-track">
+              <input type="checkbox" id="reminder-browser" checked>
+              <span class="tg-knob"></span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
-    <div class="settings-divider"></div>
-    <div class="settings-section">
-      <div class="settings-section-title">每日提醒</div>
-      <div class="form-group">
-        <label class="toggle-row">
-          <span class="toggle-track"><input type="checkbox" id="reminder-enabled" checked><span class="toggle-knob"></span></span>
-          <span class="toggle-label">启用</span>
-        </label>
-      </div>
-      <div class="form-group" id="reminder-time-group">
-        <label>提醒时间</label>
-        <input type="time" id="reminder-time" value="09:00">
-      </div>
-      <div class="form-group">
-        <label class="toggle-row">
-          <span class="toggle-track"><input type="checkbox" id="reminder-browser" checked><span class="toggle-knob"></span></span>
-          <span class="toggle-label">浏览器通知</span>
-        </label>
-      </div>
+
+    <div class="settings-footer">
+      <button class="enter-btn" id="save-settings-btn" type="button">
+        <span>进入工作台</span>
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M11 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div id="settings-status" class="settings-status"></div>
     </div>
-    <button class="btn btn-primary" id="save-settings-btn" type="button">进入工作台</button>
-    <div id="settings-status" class="settings-status"></div>
   </div>
 </div>
 
