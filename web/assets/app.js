@@ -84,7 +84,7 @@ async function fetchConversations() {
       }
     }
   } catch (e) {
-    /* ignore network errors */
+    showToast('无法连接到服务器，请检查 API 地址', 'error');
   }
 }
 
@@ -103,7 +103,7 @@ async function syncConversation(convId) {
       }),
     });
   } catch (e) {
-    /* ignore */
+    // silent — sync is non-critical
   }
 }
 
@@ -115,7 +115,7 @@ async function deleteConversationFromServer(convId) {
       headers: apiHeaders(),
     });
   } catch (e) {
-    /* ignore */
+    showToast('删除失败，请稍后重试', 'error');
   }
 }
 
@@ -167,7 +167,7 @@ async function startChat() {
   state.activeId = null;
   await fetchConversations();
   renderConversationList();
-  renderMessages();
+  renderMessages(true);
   renderStarters();
   if (state.conversations.length === 0) newConversation();
   document.getElementById('chat-input').focus();
@@ -196,7 +196,7 @@ async function newConversation() {
   state.activeId = conv.id;
   await syncConversation(conv.id);
   renderConversationList();
-  renderMessages();
+  renderMessages(true);
   renderStarters();
   updateChatTitle();
   if (window.innerWidth < 1024) toggleSidebar();
@@ -205,6 +205,15 @@ async function newConversation() {
 
 async function switchConversation(id) {
   state.activeId = id;
+  // Show loading state
+  const msgList = document.getElementById('message-list');
+  const emptyEl = document.getElementById('empty-state');
+  emptyEl.style.display = 'none';
+  msgList.querySelectorAll('.message').forEach(m => m.remove());
+  const loadEl = document.createElement('div');
+  loadEl.className = 'conv-loading';
+  loadEl.textContent = '加载中…';
+  msgList.appendChild(loadEl);
   // Fetch full conversation with messages
   if (state.settings) {
     try {
@@ -216,10 +225,12 @@ async function switchConversation(id) {
           state.conversations[idx].messages = detail.messages || [];
         }
       }
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      showToast('加载对话失败', 'error');
+    }
   }
   renderConversationList();
-  renderMessages();
+  renderMessages(true);
   renderStarters();
   updateChatTitle();
   if (window.innerWidth < 1024) {
@@ -237,7 +248,7 @@ async function deleteConversation(id, e) {
     state.activeId = state.conversations.length ? state.conversations[0].id : null;
   }
   renderConversationList();
-  renderMessages();
+  renderMessages(true);
   renderStarters();
   updateChatTitle();
 }
@@ -258,14 +269,20 @@ function autoTitle(conv) {
   }
 }
 
+let convSearchQuery = '';
+
 function renderConversationList() {
   const el = document.getElementById('conversation-list');
-  if (state.conversations.length === 0) {
+  const filtered = convSearchQuery
+    ? state.conversations.filter(c => c.title.toLowerCase().includes(convSearchQuery.toLowerCase()))
+    : state.conversations;
+  if (filtered.length === 0) {
+    const emptyMsg = convSearchQuery ? '无匹配对话' : '暂无对话';
     el.innerHTML =
-      '<div style="text-align:center;padding:24px;color:var(--text-secondary);font-size:13px;">暂无对话</div>';
+      '<div style="text-align:center;padding:24px;color:var(--text-dim);font-size:13px;">' + emptyMsg + '</div>';
     return;
   }
-  el.innerHTML = state.conversations
+  el.innerHTML = filtered
     .map(
       (c) =>
         `<div class="conv-item${c.id === state.activeId ? ' active' : ''}" data-id="${escapeAttr(c.id)}">
@@ -282,20 +299,25 @@ function renderConversationList() {
   });
 }
 
-function renderMessages() {
+function renderMessages(force) {
   const el = document.getElementById('message-list');
   const conv = getActiveConv();
   const emptyEl = document.getElementById('empty-state');
-  el.querySelectorAll('.message').forEach((m) => m.remove());
+  if (force) {
+    el.querySelectorAll('.message').forEach((m) => m.remove());
+  }
   if (!conv || conv.messages.length === 0) {
     emptyEl.style.display = 'flex';
     return;
   }
   emptyEl.style.display = 'none';
-  conv.messages.forEach((msg) => {
+  // Incremental append — only render new messages
+  const renderedCount = el.querySelectorAll('.message').length;
+  const newMessages = conv.messages.slice(renderedCount);
+  for (const msg of newMessages) {
     el.insertBefore(createMessageElement(msg.role, msg.content), emptyEl);
-  });
-  scrollToBottom();
+  }
+  if (newMessages.length > 0) scrollToBottom();
 }
 
 function renderStarters() {
@@ -337,14 +359,28 @@ function createMessageElement(role, content) {
   return div;
 }
 
-async function handleEmailCheck(conv, msgList) {
-  // Show checking status
-  const statusMsg = { role: 'assistant', content: '📧 正在检查 Sylvia 的最新邮件…' };
-  conv.messages.push(statusMsg);
-  const statusEl = createMessageElement('assistant', '📧 正在检查 Sylvia 的最新邮件…');
-  statusEl.classList.add('typing');
-  msgList.appendChild(statusEl);
-  scrollToBottom();
+function buildEmailAnalysisContent(data) {
+  let content = `## 📧 邮件分析结果\n\n**来自**: ${data.sender}\n**主题**: ${data.subject}\n**附件**: ${data.attachments_count} 个\n\n`;
+  for (const r of data.results) {
+    if (r.analysis) {
+      content += r.analysis.summary + '\n\n';
+      for (const t of (r.analysis.tables || [])) {
+        content += '### ' + t.title + '\n\n';
+        if (t.headers && t.rows && t.rows.length > 0) {
+          content += buildMarkdownTable(t.headers, t.rows) + '\n\n';
+        }
+      }
+    } else if (r.error) {
+      content += '❌ ' + r.filename + ': ' + r.error + '\n\n';
+    }
+  }
+  return content;
+}
+
+async function handleEmailCheck(conv) {
+  // Show checking status via renderMessages
+  conv.messages.push({ role: 'assistant', content: '📧 正在检查 Sylvia 的最新邮件…' });
+  renderMessages(false);
 
   try {
     const resp = await fetch(apiUrl('/v1/email/check'), {
@@ -355,46 +391,21 @@ async function handleEmailCheck(conv, msgList) {
 
     // Remove status message
     conv.messages.pop();
-    statusEl.remove();
 
+    let content;
     if (data.success) {
-      // Show what we found
-      let content = `## 📧 邮件分析结果\n\n**来自**: ${data.sender}\n**主题**: ${data.subject}\n**附件**: ${data.attachments_count} 个\n\n`;
-      for (const r of data.results) {
-        if (r.analysis) {
-          content += r.analysis.summary + '\n\n';
-          for (const t of (r.analysis.tables || [])) {
-            content += '### ' + t.title + '\n\n';
-            if (t.headers && t.rows) {
-              content += '| ' + t.headers.join(' | ') + ' |\n';
-              content += '| ' + t.headers.map(() => '---').join(' | ') + ' |\n';
-              for (const row of t.rows) {
-                content += '| ' + t.headers.map(h => String(row[h] ?? '')).join(' | ') + ' |\n';
-              }
-              content += '\n';
-            }
-          }
-        } else if (r.error) {
-          content += `❌ ${r.filename}: ${r.error}\n\n`;
-        }
-      }
-      const msg = { role: 'assistant', content };
-      conv.messages.push(msg);
-      msgList.appendChild(createMessageElement('assistant', content));
+      content = buildEmailAnalysisContent(data);
     } else {
-      const msg = { role: 'assistant', content: '❌ ' + (data.error || '检查邮件失败，请稍后重试。') };
-      conv.messages.push(msg);
-      msgList.appendChild(createMessageElement('assistant', msg.content));
+      content = '❌ ' + (data.error || '检查邮件失败，请稍后重试。');
     }
+    conv.messages.push({ role: 'assistant', content });
+    renderMessages(false);
   } catch (err) {
     conv.messages.pop();
-    statusEl.remove();
-    const msg = { role: 'assistant', content: '❌ 检查邮件时出错: ' + err.message };
-    conv.messages.push(msg);
-    msgList.appendChild(createMessageElement('assistant', msg.content));
+    conv.messages.push({ role: 'assistant', content: '❌ 检查邮件时出错: ' + err.message });
+    renderMessages(false);
   }
 
-  scrollToBottom();
   syncConversation(conv.id);
   state.isStreaming = false;
   autoTitle(conv);
@@ -435,7 +446,7 @@ async function sendMessage() {
   const isEmailRequest = emailKeywords.some(kw => text.toLowerCase().includes(kw.toLowerCase()));
 
   if (isEmailRequest) {
-    await handleEmailCheck(conv, msgList);
+    await handleEmailCheck(conv);
     return;
   }
 
@@ -556,6 +567,32 @@ function escapeAttr(s) {
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ===== Utilities ===== */
+
+function buildMarkdownTable(headers, rows) {
+  const lines = [];
+  lines.push('| ' + headers.join(' | ') + ' |');
+  lines.push('| ' + headers.map(() => '---').join(' | ') + ' |');
+  for (const r of rows) {
+    lines.push('| ' + headers.map(h => String(r[h] ?? '')).join(' | ') + ' |');
+  }
+  return lines.join('\n');
+}
+
+function showToast(msg, type) {
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.className = 'toast ' + (type || 'error');
+  toast.style.display = 'block';
+  clearTimeout(toast._hide);
+  toast._hide = setTimeout(() => { toast.style.display = 'none'; }, 4000);
 }
 
 /* ===== Daily Reminders ===== */
@@ -718,14 +755,8 @@ function renderAnalysisMessage(analysis) {
     for (const t of analysis.tables) {
       lines.push('### ' + t.title);
       lines.push('');
-      // Build markdown table
       if (t.headers && t.rows && t.rows.length > 0) {
-        lines.push('| ' + t.headers.join(' | ') + ' |');
-        lines.push('| ' + t.headers.map(() => '---').join(' | ') + ' |');
-        for (const r of t.rows) {
-          const vals = t.headers.map(h => String(r[h] ?? ''));
-          lines.push('| ' + vals.join(' | ') + ' |');
-        }
+        lines.push(buildMarkdownTable(t.headers, t.rows));
         lines.push('');
       }
     }
@@ -895,6 +926,13 @@ function bindUi() {
   document.getElementById('close-sidebar-btn').addEventListener('click', toggleSidebar);
   document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);
   document.getElementById('new-conv-btn').addEventListener('click', newConversation);
+  const convSearch = document.getElementById('conv-search');
+  if (convSearch) {
+    convSearch.addEventListener('input', () => {
+      convSearchQuery = convSearch.value.trim();
+      renderConversationList();
+    });
+  }
   document.getElementById('send-btn').addEventListener('click', sendMessage);
   document.querySelector('[data-toggle-token]').addEventListener('click', () => {
     const el = document.getElementById('app-token');

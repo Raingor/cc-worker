@@ -30,6 +30,7 @@
   --shadow-lg: 0 12px 40px rgba(0,0,0,.06);
 }
 
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 html,body{height:100%;overflow:hidden}
 body{
   font-family:var(--font-sans);
@@ -154,6 +155,14 @@ body{
 .sidebar-actions .btn{width:100%;justify-content:center}
 
 .conversation-list{flex:1;overflow-y:auto;padding:4px 8px}
+.conv-search-wrap{padding:4px 12px 6px;flex-shrink:0}
+.conv-search{
+  width:100%;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:12px;background:var(--surface-alt);color:var(--text);outline:none;
+  font-family:var(--font-sans);transition:border-color .2s,background .2s
+}
+.conv-search::placeholder{color:var(--text-muted)}
+.conv-search:focus{border-color:var(--gold);background:var(--surface)}
 .conv-item{
   padding:10px 14px;border-radius:var(--radius-sm);cursor:pointer;
   display:flex;align-items:center;gap:8px;
@@ -405,6 +414,23 @@ body{
   color:var(--text-dim);font-size:15px;font-weight:500;
   box-shadow:var(--shadow-lg)
 }
+
+/* === Toast === */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100;
+  padding:10px 20px;border-radius:var(--radius);font-size:13px;font-weight:500;
+  display:none;text-align:center;max-width:90vw;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);animation:toast-in .25s ease;pointer-events:none
+}
+.toast.error{background:var(--red-bg);color:var(--red);border:1px solid #F5D6D4}
+.toast.success{background:var(--green-bg);color:var(--green);border:1px solid #D5E8DA}
+.toast.info{background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold-light)}
+@keyframes toast-in{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* === Conv Loading === */
+.conv-loading{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* ===== Responsive ===== */
 @media(min-width:768px){

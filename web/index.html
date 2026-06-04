@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:;">
 <title>CC 工作助手</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -72,6 +73,9 @@
     </div>
     <div class="sidebar-actions">
       <button class="btn btn-primary btn-sm" id="new-conv-btn" type="button">＋ 新对话</button>
+    </div>
+    <div class="conv-search-wrap">
+      <input type="text" id="conv-search" class="conv-search" placeholder="搜索对话…" autocomplete="off">
     </div>
     <div class="conversation-list" id="conversation-list"></div>
     <div class="sidebar-footer">
