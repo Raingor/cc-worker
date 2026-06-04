@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import email
 import imaplib
-import os
 import tempfile
 from pathlib import Path
 from email.header import decode_header
@@ -41,6 +40,7 @@ def check_and_analyze(
 
     Returns dict with analysis results or error.
     """
+    mail = None
     try:
         mail = imaplib.IMAP4_SSL(imap_host, imap_port)
         mail.login(email_user, email_password)
@@ -49,20 +49,15 @@ def check_and_analyze(
         return {"success": False, "error": f"IMAP 连接失败: {e}"}
 
     try:
-        # Search for emails from the sender
         status, msg_ids = mail.search(None, "UNSEEN", f'FROM "{sender_filter}"')
         if status != "OK" or not msg_ids[0]:
-            # Fallback: search ALL (not just unseen)
             status, msg_ids = mail.search(None, "ALL", f'FROM "{sender_filter}"')
             if status != "OK" or not msg_ids[0]:
-                mail.logout()
                 return {"success": False, "error": f"未找到来自 {sender_filter} 的邮件"}
 
-        # Get the latest email
         latest_id = msg_ids[0].split()[-1]
         status, msg_data = mail.fetch(latest_id, "(RFC822)")
         if status != "OK":
-            mail.logout()
             return {"success": False, "error": "读取邮件失败"}
 
         raw_email = msg_data[0][1]
@@ -71,7 +66,6 @@ def check_and_analyze(
         subject = _decode(msg.get("Subject", ""))
         sender = _decode(msg.get("From", ""))
 
-        # Find Excel attachments
         attachments = []
         if msg.is_multipart():
             for part in msg.walk():
@@ -88,10 +82,8 @@ def check_and_analyze(
                     })
 
         if not attachments:
-            mail.logout()
             return {"success": False, "error": f"邮件「{subject}」中没有找到 Excel 附件"}
 
-        # Download and analyze each attachment
         results = []
         for att in attachments:
             tmp = tempfile.NamedTemporaryFile(suffix=Path(att["filename"]).suffix, delete=False)
@@ -105,7 +97,6 @@ def check_and_analyze(
             finally:
                 Path(tmp.name).unlink(missing_ok=True)
 
-        mail.logout()
         return {
             "success": True,
             "sender": sender,
@@ -115,5 +106,11 @@ def check_and_analyze(
         }
 
     except Exception as e:
-        mail.logout()
         return {"success": False, "error": f"处理失败: {e}"}
+
+    finally:
+        if mail is not None:
+            try:
+                mail.logout()
+            except Exception:
+                pass

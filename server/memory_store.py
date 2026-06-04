@@ -14,9 +14,10 @@ from pathlib import Path
 DATA_DIR = Path(__file__).resolve().parent / "data"
 DB_PATH = DATA_DIR / "memories.db"
 
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def _conn() -> sqlite3.Connection:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
@@ -42,6 +43,8 @@ def _init_db():
         )
         conn.commit()
 
+_init_db()
+
 
 def store_messages(conv_id: str, messages: list[dict]) -> int:
     """Store new messages from a conversation into long-term memory.
@@ -49,7 +52,6 @@ def store_messages(conv_id: str, messages: list[dict]) -> int:
     Tracks already-indexed count per conversation (by conv_id) so repeated
     syncs only index delta. Returns number of new messages stored.
     """
-    _init_db()
     with _conn() as conn:
         row = conn.execute(
             "SELECT COUNT(*) AS c FROM memories WHERE conv_id = ?",
@@ -79,7 +81,6 @@ def search_memories(query: str, limit: int = 10) -> list[dict]:
     Uses LIKE for CJK-friendly matching (no FTS5 CJK issues).
     Returns list of {id, role, content, conv_id, created_at}, newest first.
     """
-    _init_db()
     with _conn() as conn:
         like_q = f"%{query}%"
         rows = conn.execute(
@@ -95,14 +96,12 @@ def search_memories(query: str, limit: int = 10) -> list[dict]:
 
 def count_memories() -> int:
     """Return total number of stored memory entries."""
-    _init_db()
     with _conn() as conn:
         return conn.execute("SELECT COUNT(*) AS c FROM memories").fetchone()["c"]
 
 
 def clear_memories() -> int:
     """Delete all memories. Returns count deleted."""
-    _init_db()
     with _conn() as conn:
         count = conn.execute("SELECT COUNT(*) AS c FROM memories").fetchone()["c"]
         conn.execute("DELETE FROM memories")

@@ -4,16 +4,9 @@ const STORAGE_KEY = 'cc-web-settings';
 const DEFAULT_API_BASE = (window.CC_CONFIG && window.CC_CONFIG.apiBase) || 'https://api.sz-hrhb.com';
 const DEFAULT_APP_TOKEN = (window.CC_CONFIG && window.CC_CONFIG.appToken) || '';
 
-let meta = { conversation_starters: [] };
+let meta = { conversation_starters: [], day_reminders: {} };
 let state = { settings: null, conversations: [], activeId: null, isStreaming: false };
 
-const DAY_REMINDERS = {
-  1: '**周一提醒**：今天要更新 CFC/厦门/墨西哥出运资料，准备好了吗？',
-  2: '**周二提醒**：今天要做 Gap Crasher 缺料检查，还要发墨西哥下周出运装箱单。',
-  3: '**周三提醒**：今天要更新 Order Pattern 并下单，还要发厦门当周出运装箱单。',
-  4: '**周四提醒**：今天工作最多——处理墨西哥和厦门新订单、分析越南波动、分析厦门预测趋势、删除上周 SAP PIR。',
-  5: '**周五提醒**：今天要完成当周 PIR 上传 SAP，还要检查报关资料。',
-};
 const WEEKDAY_CN = ['日', '一', '二', '三', '四', '五', '六'];
 
 async function loadMeta() {
@@ -624,7 +617,8 @@ function getTodayStr() {
 }
 
 function getDayReminder(jsDay) {
-  return DAY_REMINDERS[jsDay] || null;
+  const entry = (meta.day_reminders || {})[String(jsDay)];
+  return entry ? entry.short : null;
 }
 
 function checkReminder() {

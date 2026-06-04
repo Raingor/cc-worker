@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "appPackage" / "declarativeAgent.json"
 SERVER_PROMPT = ROOT / "server" / "prompts" / "cc_instructions.txt"
 WEB_META = ROOT / "web" / "assets" / "cc-meta.json"
+REMINDERS_SRC = ROOT / "server" / "prompts" / "day_reminders.json"
 
 
 def main() -> None:
@@ -21,10 +22,18 @@ def main() -> None:
     SERVER_PROMPT.parent.mkdir(parents=True, exist_ok=True)
     SERVER_PROMPT.write_text(instructions, encoding="utf-8")
 
+    reminders = {}
+    try:
+        if REMINDERS_SRC.is_file():
+            reminders = json.loads(REMINDERS_SRC.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+
     meta = {
         "name": data.get("name", {}),
         "description": data.get("description", {}),
         "conversation_starters": data.get("conversation_starters", []),
+        "day_reminders": reminders,
     }
     WEB_META.parent.mkdir(parents=True, exist_ok=True)
     WEB_META.write_text(

@@ -2,31 +2,25 @@
 
 from __future__ import annotations
 
+import json
 import smtplib
 import ssl
 from datetime import datetime
+from pathlib import Path
 from email.mime.text import MIMEText
 
-DAY_REMINDERS = {
-    1: ("周一：出运资料更新",
-        "今天要更新 CFC / 厦门 / 墨西哥的出运资料（Shipping Documentation），"
-        "确保三个工厂的出运信息保持一致和最新。"),
-    2: ("周二：缺料检查 & 出运预告",
-        "1. Gap Crasher 缺料检查 — 按 P1→P2→P3 优先级排序\n"
-        "2. 墨西哥下周出运装箱单 — 发给仓库 / 生产计划 / 船务 / 客户"),
-    3: ("周三：下单 & 厦门出运",
-        "1. 更新 Order Pattern & 下单 — 确认金额，通过 Gap Crasher 操作\n"
-        "2. 厦门当周出运装箱单 — 发给仓库 / 生产计划 / 船务"),
-    4: ("周四：订单处理 & 数据分析（最忙的一天）",
-        "上午：墨西哥订单处理（下达到 MF）+ 越南四方盖波动分析\n"
-        "下午：厦门订单处理 + 厦门未来趋势分析\n"
-        "SAP：删除上周上传的 PIR"),
-    5: ("周五：PIR 上传 & 报关检查",
-        "1. 完成当周 PIR 并上传 SAP\n"
-        "2. 检查厦门出运报关资料"),
-}
+REMINDERS_PATH = Path(__file__).resolve().parents[1] / "prompts" / "day_reminders.json"
 
 WEEKDAY_CN = ["日", "一", "二", "三", "四", "五", "六"]
+
+
+def _load_reminders() -> dict:
+    try:
+        if REMINDERS_PATH.is_file():
+            return json.loads(REMINDERS_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
 
 
 def build_reminder_body() -> tuple[str, str]:
@@ -35,13 +29,15 @@ def build_reminder_body() -> tuple[str, str]:
     js_day = (now.weekday() + 1) % 7
     date_str = f"{now.year}年{now.month}月{now.day}日 星期{WEEKDAY_CN[js_day]}"
 
-    entry = DAY_REMINDERS.get(js_day)
+    reminders = _load_reminders()
+    entry = reminders.get(str(js_day))
     if not entry:
         subject = f"CC 工作助手 — {date_str}（休息日）"
         body = f"今天是 {date_str}，周末没有固定工作安排。好好休息！"
         return subject, body
 
-    title, tasks = entry
+    title = entry["title"]
+    tasks = entry["tasks"]
     subject = f"CC 工作助手 — {date_str} · {title}"
 
     month_week = (now.day - 1) // 7 + 1
@@ -86,7 +82,6 @@ def send_reminder_email(
     if cc_email:
         msg["Cc"] = cc_email
 
-    # Recipients for actual sending: To + Cc
     recipients = [to_email]
     if cc_email:
         recipients.append(cc_email)
