@@ -337,6 +337,73 @@ function createMessageElement(role, content) {
   return div;
 }
 
+async function handleEmailCheck(conv, msgList) {
+  // Show checking status
+  const statusMsg = { role: 'assistant', content: '📧 正在检查 Sylvia 的最新邮件…' };
+  conv.messages.push(statusMsg);
+  const statusEl = createMessageElement('assistant', '📧 正在检查 Sylvia 的最新邮件…');
+  statusEl.classList.add('typing');
+  msgList.appendChild(statusEl);
+  scrollToBottom();
+
+  try {
+    const resp = await fetch(apiUrl('/v1/email/check'), {
+      method: 'POST',
+      headers: apiHeaders(),
+    });
+    const data = await resp.json();
+
+    // Remove status message
+    conv.messages.pop();
+    statusEl.remove();
+
+    if (data.success) {
+      // Show what we found
+      let content = `## 📧 邮件分析结果\n\n**来自**: ${data.sender}\n**主题**: ${data.subject}\n**附件**: ${data.attachments_count} 个\n\n`;
+      for (const r of data.results) {
+        if (r.analysis) {
+          content += r.analysis.summary + '\n\n';
+          for (const t of (r.analysis.tables || [])) {
+            content += '### ' + t.title + '\n\n';
+            if (t.headers && t.rows) {
+              content += '| ' + t.headers.join(' | ') + ' |\n';
+              content += '| ' + t.headers.map(() => '---').join(' | ') + ' |\n';
+              for (const row of t.rows) {
+                content += '| ' + t.headers.map(h => String(row[h] ?? '')).join(' | ') + ' |\n';
+              }
+              content += '\n';
+            }
+          }
+        } else if (r.error) {
+          content += `❌ ${r.filename}: ${r.error}\n\n`;
+        }
+      }
+      const msg = { role: 'assistant', content };
+      conv.messages.push(msg);
+      msgList.appendChild(createMessageElement('assistant', content));
+    } else {
+      const msg = { role: 'assistant', content: '❌ ' + (data.error || '检查邮件失败，请稍后重试。') };
+      conv.messages.push(msg);
+      msgList.appendChild(createMessageElement('assistant', msg.content));
+    }
+  } catch (err) {
+    conv.messages.pop();
+    statusEl.remove();
+    const msg = { role: 'assistant', content: '❌ 检查邮件时出错: ' + err.message };
+    conv.messages.push(msg);
+    msgList.appendChild(createMessageElement('assistant', msg.content));
+  }
+
+  scrollToBottom();
+  syncConversation(conv.id);
+  state.isStreaming = false;
+  autoTitle(conv);
+  renderConversationList();
+  updateChatTitle();
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('chat-input').focus();
+}
+
 async function sendMessage() {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
@@ -362,6 +429,15 @@ async function sendMessage() {
   const msgList = document.getElementById('message-list');
   msgList.appendChild(createMessageElement('user', text));
   scrollToBottom();
+
+  // Check if this is an email analysis request
+  const emailKeywords = ['检查邮件', '查看邮件', '邮件分析', 'check email', 'sylvia', '分析邮件'];
+  const isEmailRequest = emailKeywords.some(kw => text.toLowerCase().includes(kw.toLowerCase()));
+
+  if (isEmailRequest) {
+    await handleEmailCheck(conv, msgList);
+    return;
+  }
 
   const assistantMsg = { role: 'assistant', content: '' };
   conv.messages.push(assistantMsg);

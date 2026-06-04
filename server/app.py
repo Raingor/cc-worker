@@ -15,6 +15,7 @@ from flask_cors import CORS
 
 from analysis.analyzer import analyze as analyze_excel
 from analysis.email_sender import send_reminder_email
+from analysis.email_checker import check_and_analyze
 from usage_tracker import get_stats, record_usage
 from conversation_store import list_conversations, get_conversation, upsert_conversation, delete_conversation, pop_last_message
 
@@ -38,6 +39,10 @@ SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 REMINDER_TO = os.getenv("REMINDER_TO", "")
 REMINDER_CC = os.getenv("REMINDER_CC", "")
+
+# IMAP config (for email analysis)
+IMAP_HOST = os.getenv("IMAP_HOST", "imap.qq.com")
+IMAP_PORT = int(os.getenv("IMAP_PORT", "993"))
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "cc_instructions.txt"
 
@@ -270,6 +275,25 @@ def conversation_pop(conv_id):
     token = auth[7:].strip()
     ok = pop_last_message(token, conv_id)
     return jsonify({"deleted": ok})
+
+
+@APP.route("/v1/email/check", methods=["POST", "OPTIONS"])
+def email_check():
+    """Check IMAP for latest email from sylvia, download Excel, analyze."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    if not SMTP_USER or not SMTP_PASSWORD:
+        return jsonify({"error": {"message": "Email (SMTP_USER) not configured"}}), 503
+
+    result = check_and_analyze(
+        imap_host=IMAP_HOST,
+        imap_port=IMAP_PORT,
+        email_user=SMTP_USER,
+        email_password=SMTP_PASSWORD,
+    )
+    return jsonify(result), (200 if result.get("success") else 404)
 
 
 @APP.route("/v1/chat/completions", methods=["POST", "OPTIONS"])

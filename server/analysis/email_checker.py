@@ -1,0 +1,113 @@
+"""Email checker — IMAP → download Excel → analyze."""
+
+from __future__ import annotations
+
+import email
+import imaplib
+import os
+import tempfile
+from pathlib import Path
+from email.header import decode_header
+
+from .analyzer import analyze as analyze_excel
+
+SENDER_FILTER = "sylvia.tan@assaabloy.com"
+
+
+def _decode(s: str | None) -> str:
+    if not s:
+        return ""
+    parts = decode_header(s)
+    result = []
+    for part, charset in parts:
+        if isinstance(part, bytes):
+            try:
+                result.append(part.decode(charset or "utf-8", errors="ignore"))
+            except (LookupError, UnicodeDecodeError):
+                result.append(part.decode("utf-8", errors="ignore"))
+        else:
+            result.append(str(part))
+    return "".join(result)
+
+
+def check_and_analyze(
+    imap_host: str,
+    imap_port: int,
+    email_user: str,
+    email_password: str,
+    sender_filter: str = SENDER_FILTER,
+) -> dict:
+    """Connect to IMAP, find latest email from sender, download Excel, analyze.
+
+    Returns dict with analysis results or error.
+    """
+    try:
+        mail = imaplib.IMAP4_SSL(imap_host, imap_port)
+        mail.login(email_user, email_password)
+        mail.select("INBOX")
+    except Exception as e:
+        return {"success": False, "error": f"IMAP 连接失败: {e}"}
+
+    try:
+        # Search for emails from the sender
+        status, msg_ids = mail.search(None, "UNSEEN", f'FROM "{sender_filter}"')
+        if status != "OK" or not msg_ids[0]:
+            # Fallback: search ALL (not just unseen)
+            status, msg_ids = mail.search(None, "ALL", f'FROM "{sender_filter}"')
+            if status != "OK" or not msg_ids[0]:
+                mail.logout()
+                return {"success": False, "error": f"未找到来自 {sender_filter} 的邮件"}
+
+        # Get the latest email
+        latest_id = msg_ids[0].split()[-1]
+        status, msg_data = mail.fetch(latest_id, "(RFC822)")
+        if status != "OK":
+            mail.logout()
+            return {"success": False, "error": "读取邮件失败"}
+
+        raw_email = msg_data[0][1]
+        msg = email.message_from_bytes(raw_email)
+
+        subject = _decode(msg.get("Subject", ""))
+        sender = _decode(msg.get("From", ""))
+
+        # Find Excel attachments
+        attachments = []
+        if msg.is_multipart():
+            for part in msg.walk():
+                if part.get_content_maintype() == "multipart":
+                    continue
+                filename = _decode(part.get_filename())
+                if filename and filename.lower().endswith((".xlsx", ".xls", ".csv")):
+                    attachments.append({"filename": filename, "data": part.get_payload(decode=True)})
+
+        if not attachments:
+            mail.logout()
+            return {"success": False, "error": f"邮件「{subject}」中没有找到 Excel 附件"}
+
+        # Download and analyze each attachment
+        results = []
+        for att in attachments:
+            tmp = tempfile.NamedTemporaryFile(suffix=Path(att["filename"]).suffix, delete=False)
+            try:
+                tmp.write(att["data"])
+                tmp.close()
+                analysis = analyze_excel(tmp.name)
+                results.append({"filename": att["filename"], "analysis": analysis})
+            except Exception as e:
+                results.append({"filename": att["filename"], "error": str(e)})
+            finally:
+                Path(tmp.name).unlink(missing_ok=True)
+
+        mail.logout()
+        return {
+            "success": True,
+            "sender": sender,
+            "subject": subject,
+            "attachments_count": len(attachments),
+            "results": results,
+        }
+
+    except Exception as e:
+        mail.logout()
+        return {"success": False, "error": f"处理失败: {e}"}
