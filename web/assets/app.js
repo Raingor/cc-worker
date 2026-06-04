@@ -660,9 +660,79 @@ function setupFileUpload() {
   });
 }
 
+/* ===== Usage Stats ===== */
+
+let statsCache = null;
+
+function formatNumber(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+async function fetchStats() {
+  if (!state.settings) return;
+  const apiUrl = state.settings.apiBase.replace(/\/+$/, '') + '/v1/stats';
+  try {
+    const resp = await fetch(apiUrl, {
+      headers: { Authorization: 'Bearer ' + state.settings.appToken },
+    });
+    if (!resp.ok) return;
+    statsCache = await resp.json();
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+function renderStatsPanel() {
+  const body = document.getElementById('stats-body');
+  if (!statsCache) {
+    body.innerHTML = '<div class="stat-loading">暂无数据，发送一条消息后查看</div>';
+    return;
+  }
+  const s = statsCache;
+  body.innerHTML =
+    '<div class="stat-section"><div class="stat-label">Provider</div><div class="stat-value">' +
+    (s.provider || '-') +
+    '</div></div>' +
+    '<div class="stat-section"><div class="stat-label">Model</div><div class="stat-value">' +
+    (s.model || '-') +
+    '</div></div>' +
+    '<div class="stat-section"><div class="stat-label">总请求数</div><div class="stat-value">' +
+    s.request_count +
+    '</div></div>' +
+    '<div class="stat-divider"></div>' +
+    '<div class="stat-group-title">📈 累计</div>' +
+    row('输入 Token', formatNumber(s.total.prompt)) +
+    row('输出 Token', formatNumber(s.total.completion)) +
+    row('缓存 Token', formatNumber(s.total.cached || 0)) +
+    row('总 Token', formatNumber(s.total.total)) +
+    '<div class="stat-divider"></div>' +
+    '<div class="stat-group-title">📅 今日</div>' +
+    row('输入 Token', formatNumber(s.today.prompt)) +
+    row('输出 Token', formatNumber(s.today.completion)) +
+    row('缓存 Token', formatNumber(s.today.cached || 0)) +
+    row('总 Token', formatNumber(s.today.total));
+}
+
+function row(label, val) {
+  return '<div class="stat-row"><span>' + label + '</span><span class="stat-num">' + val + '</span></div>';
+}
+
+function toggleStats() {
+  const panel = document.getElementById('stats-panel');
+  const visible = panel.style.display !== 'none';
+  panel.style.display = visible ? 'none' : 'flex';
+  if (!visible) {
+    fetchStats().then(renderStatsPanel);
+  }
+}
+
 function bindUi() {
   document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
   document.getElementById('settings-btn').addEventListener('click', showSettings);
+  document.getElementById('stats-btn').addEventListener('click', toggleStats);
+  document.getElementById('stats-close').addEventListener('click', toggleStats);
   document.getElementById('menu-btn').addEventListener('click', toggleSidebar);
   document.getElementById('close-sidebar-btn').addEventListener('click', toggleSidebar);
   document.getElementById('sidebar-overlay').addEventListener('click', toggleSidebar);

@@ -355,6 +355,38 @@ body {
 .analysis-block th { background: var(--bg); font-weight: 600; }
 .analysis-block td:last-child { white-space: normal; }
 
+/* ===== Usage Stats Panel ===== */
+.stats-panel {
+  position: absolute; top: var(--header-height); right: 0; z-index: 15;
+  width: 280px; max-height: calc(100% - var(--header-height) - 80px);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 0 0 0 12px; box-shadow: -2px 4px 12px rgba(0,0,0,0.1);
+  flex-direction: column; overflow: hidden;
+}
+.stats-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  font-size: 14px; font-weight: 600;
+}
+.stats-close {
+  background: none; border: none; color: var(--text-secondary); cursor: pointer;
+  font-size: 16px; width: 28px; height: 28px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+.stats-close:hover { background: var(--hover); }
+.stats-body { padding: 12px 14px; overflow-y: auto; font-size: 13px; flex: 1; }
+.stat-loading { color: var(--text-secondary); text-align: center; padding: 20px 0; font-size: 13px; }
+.stat-section { display: flex; justify-content: space-between; padding: 4px 0; }
+.stat-label { color: var(--text-secondary); }
+.stat-value { font-weight: 600; color: var(--text); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+.stat-group-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
+.stat-row { display: flex; justify-content: space-between; padding: 3px 0; }
+.stat-row .stat-num { font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (prefers-color-scheme: dark) {
+  .stats-panel { box-shadow: -2px 4px 12px rgba(0,0,0,0.4); }
+}
+
 /* Toggle row (checkbox + label inline) */
 .toggle-row {
   display: flex; align-items: center; gap: 10px; cursor: pointer;
@@ -378,6 +410,6 @@ body {
   }
   .sidebar-overlay { display: none !important; }
   #chat-screen { flex-direction: row; }
-  .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
   .menu-btn { display: none; }
 }

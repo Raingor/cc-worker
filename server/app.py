@@ -15,6 +15,7 @@ from flask_cors import CORS
 
 from analysis.analyzer import analyze as analyze_excel
 from analysis.email_sender import send_reminder_email
+from usage_tracker import get_stats, record_usage
 
 load_dotenv()
 
@@ -162,6 +163,51 @@ def reminder_email():
     return jsonify(result), status
 
 
+def _extract_provider() -> str:
+    """Extract a readable provider name from AI_API_BASE."""
+    base = AI_API_BASE.lower()
+    if "opencode" in base:
+        return "opencode.ai"
+    if "openai" in base:
+        return "OpenAI"
+    if "deepseek" in base:
+        return "DeepSeek"
+    return base.replace("https://", "").split("/")[0]
+
+
+def _parse_usage(body: dict, provider: str) -> dict | None:
+    """Extract token usage from an upstream API response body."""
+    usage = body.get("usage") if isinstance(body, dict) else None
+    if not usage:
+        return None
+    return {
+        "prompt_tokens": usage.get("prompt_tokens", 0) or usage.get("input_tokens", 0),
+        "completion_tokens": usage.get("completion_tokens", 0) or usage.get("output_tokens", 0) or usage.get("generated_tokens", 0),
+        "cached_tokens": (
+            usage.get("prompt_tokens_details", {}).get("cached_tokens", 0)
+            or usage.get("prompt_cache_hit_tokens", 0)
+            or 0
+        ),
+        "provider": provider,
+        "model": body.get("model", AI_MODEL),
+    }
+
+
+@APP.route("/v1/stats", methods=["GET", "OPTIONS"])
+def stats():
+    """Return token usage statistics."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+
+    data = get_stats()
+    if not data["provider"]:
+        data["provider"] = _extract_provider()
+        data["model"] = AI_MODEL
+    return jsonify(data)
+
+
 @APP.route("/v1/chat/completions", methods=["POST", "OPTIONS"])
 def chat_completions():
     if request.method == "OPTIONS":
@@ -181,10 +227,14 @@ def chat_completions():
     if len(messages) < 2:
         return jsonify({"error": {"message": "messages required"}}), 400
 
+    stream = bool(body.get("stream", False))
+    model = body.get("model") or AI_MODEL
+    provider = _extract_provider()
+
     payload = {
-        "model": body.get("model") or AI_MODEL,
+        "model": model,
         "messages": messages,
-        "stream": bool(body.get("stream", False)),
+        "stream": stream,
     }
     if "temperature" in body:
         payload["temperature"] = body["temperature"]
@@ -197,8 +247,9 @@ def chat_completions():
         "Content-Type": "application/json",
     }
 
-    if payload["stream"]:
+    if stream:
         def generate():
+            last_usage = None
             with requests.post(
                 upstream_url,
                 headers=headers,
@@ -213,8 +264,20 @@ def chat_completions():
                 for line in resp.iter_lines(decode_unicode=True):
                     if line:
                         yield line + "\n"
+                        if line.startswith("data: "):
+                            try:
+                                chunk = json.loads(line[6:])
+                                if chunk.get("usage"):
+                                    last_usage = chunk["usage"]
+                            except (json.JSONDecodeError, IndexError):
+                                pass
                     else:
                         yield "\n"
+            # Record usage from last chunk
+            if last_usage:
+                parsed = _parse_usage({"usage": last_usage, "model": model}, provider)
+                if parsed:
+                    record_usage(**parsed)
 
         return Response(
             generate(),
@@ -224,6 +287,13 @@ def chat_completions():
         )
 
     resp = requests.post(upstream_url, headers=headers, json=payload, timeout=600)
+    try:
+        resp_data = resp.json()
+        parsed = _parse_usage(resp_data, provider) if resp.ok else None
+        if parsed:
+            record_usage(**parsed)
+    except Exception:
+        pass
     return Response(resp.content, status=resp.status_code, mimetype=resp.headers.get("Content-Type", "application/json"))
 
 

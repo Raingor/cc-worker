@@ -69,7 +69,18 @@
       <button class="menu-btn" id="menu-btn" type="button">☰</button>
       <div class="title" id="chat-title">CC 工作助手</div>
       <div class="header-actions">
+        <button id="stats-btn" type="button" title="用量统计">📊</button>
         <button id="settings-btn" type="button" title="设置">⚙</button>
+      </div>
+    </div>
+
+    <div class="stats-panel" id="stats-panel" style="display:none">
+      <div class="stats-header">
+        <span>📊 用量统计</span>
+        <button class="stats-close" id="stats-close" type="button">✕</button>
+      </div>
+      <div class="stats-body" id="stats-body">
+        <div class="stat-loading">加载中…</div>
       </div>
     </div>
 
