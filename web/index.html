@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CC 工作助手</title>
+<link rel="stylesheet" href="assets/style.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="config.example.js"></script>
+<script src="config.js"></script>
+</head>
+<body>
+
+<div id="settings-screen">
+  <h1>CC 工作助手</h1>
+  <p class="settings-intro">连接 api.sz-hrhb.com 后端。AI 密钥仅保存在服务器，此处只需访问令牌。</p>
+  <div class="form-group">
+    <label>API 地址</label>
+    <input type="url" id="api-base" placeholder="https://api.sz-hrhb.com">
+    <div class="hint">CC Worker API 根地址（不含路径）</div>
+  </div>
+  <div class="form-group">
+    <label>访问令牌 (APP Token)</label>
+    <div class="password-wrap">
+      <input type="password" id="app-token" autocomplete="off">
+      <button class="toggle-vis" type="button" data-toggle-token>显示</button>
+    </div>
+    <div class="hint">由管理员提供，用于 Bearer 鉴权</div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:20px;">
+    <button class="btn btn-primary" id="save-settings-btn" type="button">保存并开始</button>
+  </div>
+  <div id="settings-status" class="settings-status"></div>
+</div>
+
+<div id="chat-screen">
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2>对话</h2>
+      <button class="close-btn" id="close-sidebar-btn" type="button">✕</button>
+    </div>
+    <div class="sidebar-actions">
+      <button class="btn btn-primary btn-sm" id="new-conv-btn" type="button">＋ 新对话</button>
+    </div>
+    <div class="conversation-list" id="conversation-list"></div>
+  </aside>
+
+  <div class="chat-main">
+    <div class="chat-header">
+      <button class="menu-btn" id="menu-btn" type="button">☰</button>
+      <div class="title" id="chat-title">CC 工作助手</div>
+      <div class="header-actions">
+        <button id="settings-btn" type="button" title="设置">⚙</button>
+      </div>
+    </div>
+
+    <div class="message-list" id="message-list">
+      <div class="empty-state" id="empty-state">
+        <div class="icon">🤖</div>
+        <p>我是 CC 工作助手，帮你处理订单管理、生产计划、出运协调等工作。</p>
+        <div class="starters" id="starters"></div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea id="chat-input" rows="1" placeholder="输入消息…"></textarea>
+        <button class="send-btn" id="send-btn" type="button" disabled>↑</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

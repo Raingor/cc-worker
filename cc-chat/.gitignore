@@ -1,6 +1,0 @@
-# Sensitive config (if proxy.php is used with your real API key)
-proxy.php
-
-# OS files
-.DS_Store
-Thumbs.db

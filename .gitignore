@@ -1,13 +1,22 @@
 # Teams Toolkit
 build/
 node_modules/
+server/.venv/
+server/__pycache__/
+server/uwsgi.pid
+server/uwsgi.log
 .env.local
 *.zip
 
 # Secrets
 env/.env.local
+server/.env
+web/config.js
 *.pem
 clientSecrets
+
+# Temp / local
+.tmp-*
 
 # OS
 .DS_Store

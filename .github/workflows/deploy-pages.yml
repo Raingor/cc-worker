@@ -1,0 +1,57 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'appPackage/declarativeAgent.json'
+      - 'scripts/sync-instructions.py'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync instructions to web assets
+        run: python3 scripts/sync-instructions.py
+
+      - name: Generate config.js
+        run: |
+          API_BASE="${{ secrets.CC_API_BASE }}"
+          APP_TOKEN="${{ secrets.CC_APP_TOKEN }}"
+          if [ -z "$API_BASE" ]; then API_BASE="https://api.sz-hrhb.com"; fi
+          cat > web/config.js <<EOF
+          window.CC_CONFIG = {
+            apiBase: "${API_BASE}",
+            appToken: "${APP_TOKEN}"
+          };
+          EOF
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
