@@ -352,13 +352,13 @@ function createMessageElement(role, content) {
   col.appendChild(bubble);
   const copyBtn = document.createElement('button');
   copyBtn.className = 'copy-btn';
-  copyBtn.textContent = '📋';
-  copyBtn.title = '复制';
+  copyBtn.textContent = '复制';
+  copyBtn.title = '复制此消息';
   copyBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     navigator.clipboard.writeText(content).then(() => {
       const orig = copyBtn.textContent;
-      copyBtn.textContent = '✅';
+      copyBtn.textContent = '已复制';
       copyBtn.classList.add('copied');
       setTimeout(() => {
         copyBtn.textContent = orig;
