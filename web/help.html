@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CC 工作助手 — 使用教程</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f0f2f5; --surface: #fff; --text: #1a1a2e; --text2: #666;
+    --primary: #2563eb; --primary-light: #dbeafe; --border: #e5e7eb;
+    --radius: 12px; --max-w: 760px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111827; --surface: #1f2937; --text: #f3f4f6; --text2: #9ca3af;
+      --primary: #60a5fa; --primary-light: #1e3a5f; --border: #374151;
+    }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.8; font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: var(--max-w); margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; color: var(--primary); }
+  .subtitle { color: var(--text2); font-size: 14px; margin-bottom: 32px; }
+  h2 {
+    font-size: 18px; font-weight: 600; margin: 32px 0 12px; padding-bottom: 6px;
+    border-bottom: 2px solid var(--primary); display: inline-block;
+  }
+  h3 { font-size: 15px; font-weight: 600; margin: 20px 0 8px; color: var(--primary); }
+  p, li { color: var(--text); margin-bottom: 8px; }
+  ul, ol { padding-left: 20px; margin: 8px 0 16px; }
+  li { margin-bottom: 4px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px; margin: 16px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .card-title { font-weight: 600; margin-bottom: 8px; font-size: 14px; color: var(--primary); }
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px;
+  }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+  th { background: var(--bg); font-weight: 600; white-space: nowrap; }
+  code {
+    background: var(--bg); padding: 2px 8px; border-radius: 4px;
+    font-size: 13px; font-family: "SF Mono", "Fira Code", monospace;
+  }
+  .tag {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 12px; font-weight: 600; margin-right: 4px;
+  }
+  .tag-blue { background: var(--primary-light); color: var(--primary); }
+  .tag-green { background: #dcfce7; color: #166534; }
+  @media (prefers-color-scheme: dark) { .tag-green { background: #064e3b; color: #6ee7b7; } }
+  .step { display: flex; gap: 12px; margin: 12px 0; align-items: flex-start; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--primary);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+  }
+  .step-body { flex: 1; }
+  .faq { border-bottom: 1px solid var(--border); padding: 12px 0; }
+  .faq-q { font-weight: 600; cursor: pointer; }
+  .faq-a { margin-top: 6px; color: var(--text2); font-size: 14px; display: none; }
+  .faq.a .faq-a { display: block; }
+  .note {
+    background: var(--primary-light); border-radius: 8px; padding: 12px 16px;
+    margin: 12px 0; font-size: 14px;
+  }
+  @media (max-width: 600px) {
+    .container { padding: 20px 16px 60px; }
+    h1 { font-size: 22px; }
+    th, td { font-size: 13px; padding: 6px 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🤖 CC 工作助手</h1>
+<p class="subtitle">使用教程 — 帮你高效处理订单管理、生产计划、出运协调</p>
+
+<!-- ===== Quick Start ===== -->
+<h2>一、快速开始</h2>
+<p>浏览器访问 <a href="https://raingor.github.io/cc-worker/" target="_blank"><strong>https://raingor.github.io/cc-worker/</strong></a></p>
+
+<div class="card">
+<div class="card-title">📋 首次设置</div>
+<p>打开页面后，在设置界面填入以下信息，点击「保存并开始」：</p>
+<table>
+  <tr><th>项目</th><th>填写内容</th></tr>
+  <tr><td>API 地址</td><td><code>https://api.sz-hrhb.com</code></td></tr>
+  <tr><td>访问令牌</td><td>联系管理员获取</td></tr>
+</table>
+</div>
+
+<!-- ===== Chat ===== -->
+<h2>二、聊天功能</h2>
+<div class="card">
+<p>在底部输入框打字，按 <code>Enter</code> 发送（<code>Shift+Enter</code> 换行）。</p>
+<p>AI 助手会自动识别当前日期，提醒你今天要完成的工作，并用表格/列表清晰呈现数据。</p>
+</div>
+
+<h3>💬 对话启动器</h3>
+<p>新对话时，点击快捷按钮快速开始：</p>
+<table>
+  <tr><th>按钮</th><th>功能</th></tr>
+  <tr><td>今日工作安排</td><td>列出今天需完成的全部任务</td></tr>
+  <tr><td>Gap Crasher 缺料检查</td><td>准备缺料检查清单</td></tr>
+  <tr><td>新订单下达生产</td><td>起草下达生产通知邮件</td></tr>
+  <tr><td>出运装箱单通知</td><td>起草装箱单通知邮件</td></tr>
+  <tr><td>越南四方盖波动分析</td><td>分析订单波动</td></tr>
+  <tr><td>厦门未来趋势分析</td><td>分析三个月趋势</td></tr>
+  <tr><td>LE 数据分析</td><td>长期预测数据分析</td></tr>
+  <tr><td>生产计划会议准备</td><td>准备会议异常清单</td></tr>
+</table>
+
+<h3>💬 多对话管理</h3>
+<ul>
+  <li>点击左上角 <strong>☰</strong> 打开会话列表</li>
+  <li><strong>「＋ 新对话」</strong> 开启新会话</li>
+  <li>点击会话标题切换，✕ 删除不需要的对话</li>
+  <li>所有对话自动保存在浏览器中</li>
+</ul>
+
+<!-- ===== Excel Upload ===== -->
+<h2>三、Excel 数据分析 <span class="tag tag-green">常用功能</span></h2>
+
+<h3>3.1 上传文件</h3>
+<p>有两种方式：</p>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body"><strong>点击 📎 按钮</strong> — 选择 <code>.xlsx</code> / <code>.xls</code> / <code>.csv</code> 文件，自动分析</div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body"><strong>拖拽上传</strong> — 把 Excel 文件拖到聊天区域，看到提示后松手</div>
+</div>
+
+<div class="note">📌 支持 .xlsx / .xls / .csv，最大 20MB</div>
+
+<h3>3.2 分析结果包含</h3>
+<table>
+  <tr><th>分析项</th><th>说明</th></tr>
+  <tr><td>📊 汇总统计</td><td>总 SKU 数、总数量、总金额、日期范围</td></tr>
+  <tr><td>📉 版本对比</td><td>多个版本间的 SKU/数量/金额变化</td></tr>
+  <tr><td>📈 SKU 波动</td><td>各料号的数量变化和波动幅度</td></tr>
+  <tr><td>🏷️ COO 分类</td><td>按产地分类统计</td></tr>
+  <tr><td>📅 Monthly Demand</td><td>月需求分类统计</td></tr>
+</table>
+
+<h3>3.3 支持的格式</h3>
+<ul>
+  <li><strong>SQ&RQ 分析文件</strong>（推荐）— 含多个版本表 + Monthly Demand 表</li>
+  <li><strong>通用 Excel</strong> — 自动读取所有工作表，显示列统计和前 8 行预览</li>
+</ul>
+
+<!-- ===== Daily Reminders ===== -->
+<h2>四、每日工作提醒</h2>
+
+<h3>4.1 浏览器通知</h3>
+<p>点击右上角 <strong>⚙ 设置</strong> → <strong>每日工作提醒</strong> 区域：</p>
+<ul>
+  <li>✅ 启用/关闭提醒</li>
+  <li>设置提醒时间（默认 09:00）</li>
+  <li>✅ 开启浏览器通知</li>
+</ul>
+<div class="note">⚠️ 首次使用，浏览器会询问是否允许通知，请点击「允许」。</div>
+
+<h3>4.2 每日提醒内容</h3>
+<table>
+  <tr><th>日</th><th>提醒内容</th></tr>
+  <tr><td>周一</td><td>更新 CFC/厦门/墨西哥出运资料</td></tr>
+  <tr><td>周二</td><td>Gap Crasher 缺料检查 + 墨西哥下周出运装箱单</td></tr>
+  <tr><td>周三</td><td>更新 Order Pattern 并下单 + 厦门当周出运装箱单</td></tr>
+  <tr><td>周四</td><td>墨西哥&厦门新订单处理 + 越南波动分析 + 厦门预测分析 + 删除 SAP PIR</td></tr>
+  <tr><td>周五</td><td>完成当周 PIR 上传 SAP + 检查报关资料</td></tr>
+  <tr><td>每月第三周</td><td>额外提醒：本月 LE 数据分析需要完成</td></tr>
+</table>
+
+<h3>4.3 邮箱提醒</h3>
+<p>如需邮件提醒，联系管理员配置。默认发送到：</p>
+<ul>
+  <li><strong>收件人</strong>：sylvia.tan@assaabloy.com</li>
+  <li><strong>抄送</strong>：ro_ye@foxmail.com</li>
+</ul>
+
+<!-- ===== Usage Stats ===== -->
+<h2>五、用量统计</h2>
+<p>点击顶部 <strong>📊 按钮</strong> 查看：</p>
+<table>
+  <tr><th>信息</th><th>说明</th></tr>
+  <tr><td>Provider</td><td>当前 AI 服务商</td></tr>
+  <tr><td>Model</td><td>当前 AI 模型</td></tr>
+  <tr><td>📈 累计</td><td>从开始到现在的 Token 用量</td></tr>
+  <tr><td>📅 今日</td><td>今天的 Token 用量</td></tr>
+</table>
+
+<!-- ===== FAQ ===== -->
+<h2>六、常见问题</h2>
+
+<div class="faq" onclick="this.classList.toggle('a')">
+  <div class="faq-q">❓ 页面打不开怎么办？</div>
+  <div class="faq-a">确认网络正常。如持续无法访问，联系管理员。</div>
+</div>
+
+<div class="faq" onclick="this.classList.toggle('a')">
+  <div class="faq-q">❓ 上传文件后没有反应？</div>
+  <div class="faq-a">检查文件格式（仅支持 .xlsx / .xls / .csv），文件不能超过 20MB，并确认 API 地址和访问令牌填写正确。</div>
+</div>
+
+<div class="faq" onclick="this.classList.toggle('a')">
+  <div class="faq-q">❓ 浏览器通知没弹出？</div>
+  <div class="faq-a">确认设置中已开启「浏览器通知」，并在浏览器地址栏左侧 🔒 处检查该网站的通知权限是否被屏蔽。</div>
+</div>
+
+<div class="faq" onclick="this.classList.toggle('a')">
+  <div class="faq-q">❓ AI 回答不准确？</div>
+  <div class="faq-a">AI 的知识截止于训练数据时间，无法直接访问你的 SharePoint/邮件数据。具体的订单数据需要你上传 Excel 文件进行分析。</div>
+</div>
+
+<div class="faq" onclick="this.classList.toggle('a')">
+  <div class="faq-q">❓ 如何切换 AI 模型？</div>
+  <div class="faq-a">联系管理员在服务器配置中修改模型即可。</div>
+</div>
+
+<div class="faq" onclick="this.classList.toggle('a')">
+  <div class="faq-q">❓ 如何联系支持？</div>
+  <div class="faq-a">如有问题或需要调整配置，请联系 IT 管理员。</div>
+</div>
+
+<br>
+<hr style="border:none;border-top:1px solid var(--border);margin:32px 0 16px;">
+<p style="text-align:center;color:var(--text2);font-size:13px;">CC 工作助手 v2.0 — 2026-06-04</p>
+
+<script>
+// Auto-open FAQ anchor from URL hash
+document.querySelectorAll('.faq').forEach(el => {
+  const q = el.querySelector('.faq-q');
+  if (q && window.location.hash && q.textContent.includes(decodeURIComponent(window.location.hash.slice(1)))) {
+    el.classList.add('a');
+  }
+});
+</script>
+
+</div>
+</body>
+</html>
