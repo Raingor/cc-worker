@@ -170,14 +170,17 @@
   </div>
 </div>
 
-<!-- ===== Dashboard Modal ===== -->
-<div class="modal-overlay" id="dash-overlay"></div>
-<div class="dash-modal" id="dash-panel">
-  <div class="dash-modal-header">
-    <span>📋 今日任务</span>
-    <button class="modal-close" id="dash-close" type="button">✕</button>
-  </div>
-  <div class="dash-modal-body" id="dash-body">
+<!-- ===== Dashboard Screen ===== -->
+<div id="dashboard-screen">
+  <header class="chat-header">
+    <button class="icon-btn" id="dash-back-btn" type="button" title="返回">◀</button>
+    <div class="title">📋 工作面板</div>
+    <div class="header-actions">
+      <button class="icon-btn" id="stats-btn2" type="button" title="用量统计">📊</button>
+      <button class="icon-btn" id="settings-btn2" type="button" title="设置">⚙</button>
+    </div>
+  </header>
+  <div class="dash-scroll" id="dash-body">
     <div class="dash-loading">加载中…</div>
   </div>
 </div>

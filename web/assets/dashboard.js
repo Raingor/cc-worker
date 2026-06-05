@@ -3,13 +3,13 @@
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
 let dashState = {
-  viewDate: new Date(),       // current month being viewed
-  selectedDate: null,         // "2026-06-05" highlighted
-  data: null,                 // loaded checklist data
+  viewDate: new Date(),
+  selectedDate: null,
+  data: null,
   loading: false,
   saving: false,
   summarizing: false,
-  historyDates: [],           // dates with data this month
+  historyDates: [],
 };
 
 function dashUrl(path) {
@@ -27,17 +27,17 @@ function dashDateStr(d) {
     String(d.getDate()).padStart(2, '0');
 }
 
-function toggleDashboard() {
-  const panel = document.getElementById('dash-panel');
-  const overlay = document.getElementById('dash-overlay');
-  const visible = panel.style.display !== 'none';
-  panel.style.display = visible ? 'none' : 'block';
-  overlay.style.display = visible ? 'none' : 'block';
-  if (!visible) {
-    dashState.viewDate = new Date();
-    dashState.selectedDate = dashDateStr(new Date());
-    loadDashboard();
-  }
+function showDashboard() {
+  document.getElementById('chat-screen').classList.remove('active');
+  document.getElementById('dashboard-screen').classList.add('active');
+  dashState.viewDate = new Date();
+  dashState.selectedDate = dashDateStr(new Date());
+  loadDashboard();
+}
+
+function hideDashboard() {
+  document.getElementById('dashboard-screen').classList.remove('active');
+  document.getElementById('chat-screen').classList.add('active');
 }
 
 async function loadDashboard() {
@@ -88,7 +88,6 @@ function renderDashboard() {
   const checklistEl = document.createElement('div');
   checklistEl.className = 'dash-checklist';
 
-  // Title
   const titleEl = document.createElement('div');
   titleEl.className = 'dash-date-title';
   const weekday = WEEKDAY_LABELS[d.getDay()];
@@ -184,7 +183,6 @@ function renderSection(label, items) {
     row.appendChild(cb);
     row.appendChild(labelEl);
 
-    // Note toggle
     const noteToggle = document.createElement('button');
     noteToggle.className = 'dash-note-toggle';
     noteToggle.type = 'button';
@@ -193,7 +191,6 @@ function renderSection(label, items) {
     noteToggle.addEventListener('click', () => toggleNote(row, item.id));
     row.appendChild(noteToggle);
 
-    // Note input (hidden)
     const noteInput = document.createElement('textarea');
     noteInput.className = 'dash-note-input';
     noteInput.placeholder = '备注（选填）…';
@@ -229,7 +226,6 @@ function renderCalendar(d) {
   const cal = document.createElement('div');
   cal.className = 'dash-calendar';
 
-  // Month navigation
   const nav = document.createElement('div');
   nav.className = 'dash-cal-nav';
   const prevBtn = document.createElement('button');
@@ -251,7 +247,6 @@ function renderCalendar(d) {
   nav.appendChild(nextBtn);
   cal.appendChild(nav);
 
-  // Weekday headers
   const headerRow = document.createElement('div');
   headerRow.className = 'dash-cal-row dash-cal-header';
   for (const wd of WEEKDAY_LABELS) {
@@ -262,14 +257,13 @@ function renderCalendar(d) {
   }
   cal.appendChild(headerRow);
 
-  // Day cells
   const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
   const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  const startOffset = firstDay.getDay(); // 0=Sun
+  const startOffset = firstDay.getDay();
 
   let dayCells = [];
   for (let i = 0; i < startOffset; i++) {
-    dayCells.push(null); // empty cells
+    dayCells.push(null);
   }
   for (let day = 1; day <= lastDay.getDate(); day++) {
     dayCells.push(day);
@@ -312,7 +306,6 @@ function renderCalendar(d) {
 
     week.appendChild(cell);
   }
-  // Fill remaining cells
   const remaining = 7 - (dayCells.length % 7);
   if (remaining < 7) {
     for (let i = 0; i < remaining; i++) {
@@ -362,7 +355,6 @@ async function saveChecklist() {
       body: JSON.stringify({ date: dashState.selectedDate, items }),
     });
     if (resp.ok) {
-      // Refresh to update progress bar
       const chkResp = await fetch(dashUrl('/v1/checklist?date=' + dashState.selectedDate), { headers: dashHeaders() });
       if (chkResp.ok) {
         const fresh = await chkResp.json();
@@ -399,7 +391,6 @@ async function onSummarize() {
     const data = await resp.json();
     dashState.data.summary = data.summary;
 
-    // Also add to history set
     if (!dashState.historyDates.includes(dashState.selectedDate)) {
       dashState.historyDates.push(dashState.selectedDate);
     }
@@ -422,10 +413,18 @@ function escapeHtml(s) {
 /* ===== Bind dashboard UI ===== */
 document.addEventListener('DOMContentLoaded', () => {
   const dashBtn = document.getElementById('dash-btn');
-  const dashClose = document.getElementById('dash-close');
-  const dashOverlay = document.getElementById('dash-overlay');
+  const dashBackBtn = document.getElementById('dash-back-btn');
+  const statsBtn2 = document.getElementById('stats-btn2');
+  const settingsBtn2 = document.getElementById('settings-btn2');
 
-  if (dashBtn) dashBtn.addEventListener('click', toggleDashboard);
-  if (dashClose) dashClose.addEventListener('click', toggleDashboard);
-  if (dashOverlay) dashOverlay.addEventListener('click', toggleDashboard);
+  if (dashBtn) dashBtn.addEventListener('click', showDashboard);
+  if (dashBackBtn) dashBackBtn.addEventListener('click', hideDashboard);
+  if (statsBtn2) statsBtn2.addEventListener('click', () => {
+    hideDashboard();
+    setTimeout(toggleStats, 100);
+  });
+  if (settingsBtn2) settingsBtn2.addEventListener('click', () => {
+    hideDashboard();
+    setTimeout(showSettings, 100);
+  });
 });

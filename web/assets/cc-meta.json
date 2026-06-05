@@ -41,5 +41,306 @@
       "text": "帮我准备今天 09:30 生产计划会议需要提出的订单/生产/出货异常"
     }
   ],
-  "day_reminders": {}
+  "day_reminders": {
+    "1": {
+      "short": "**周一提醒**：今天要更新 CFC/厦门/墨西哥出运资料，准备好了吗？",
+      "title": "周一：出运资料更新",
+      "tasks": "今天工作安排：\n\n📦 出运资料更新（Shipping Documentation）\n• 检查CFC、厦门、墨西哥三个工厂的出运状态\n• 确保各工厂出运信息一致、最新\n• 整理异常项并跟进\n\n⏰ 日常穿插\n• 收到装箱单后更新CFC MF\n• 优先处理客户邮件/Teams消息",
+      "afternoon_approval": "【下午核准事项 — 出运资料确认】\n\n✅ CFC出运资料 — 版本已锁定，确认可发运\n✅ 厦门出运资料 — 装箱单/PI数据一致性核对\n✅ 墨西哥出运资料 — 文件齐全无遗漏\n✅ 异常项已记录并通知相关方\n\n⏰ 明日预告\n• 明天（周二）要做 Gap Crasher 缺料检查 + 墨西哥出运装箱单",
+      "checklist": [
+        {
+          "id": "mon-1",
+          "label": "检查 CFC 出运状态",
+          "period": "morning"
+        },
+        {
+          "id": "mon-2",
+          "label": "检查厦门出运状态",
+          "period": "morning"
+        },
+        {
+          "id": "mon-3",
+          "label": "检查墨西哥出运状态",
+          "period": "morning"
+        },
+        {
+          "id": "mon-4",
+          "label": "整理三厂出运异常项并跟进",
+          "period": "morning"
+        },
+        {
+          "id": "mon-5",
+          "label": "收到装箱单后更新 CFC MF",
+          "period": "morning"
+        },
+        {
+          "id": "mon-6",
+          "label": "优先处理客户邮件/Teams 消息",
+          "period": "morning"
+        },
+        {
+          "id": "mon-7",
+          "label": "CFC 出运资料版本锁定确认",
+          "period": "afternoon"
+        },
+        {
+          "id": "mon-8",
+          "label": "厦门装箱单/PI 数据一致性核对",
+          "period": "afternoon"
+        },
+        {
+          "id": "mon-9",
+          "label": "确认墨西哥出运文件齐全",
+          "period": "afternoon"
+        },
+        {
+          "id": "mon-10",
+          "label": "异常项记录并通知相关方",
+          "period": "afternoon"
+        }
+      ]
+    },
+    "2": {
+      "short": "**周二提醒**：今天要做 Gap Crasher 缺料检查，还有墨西哥下周出运装箱单。",
+      "title": "周二：缺料检查 & 出运预告",
+      "tasks": "今天工作安排：\n\n🔍 Gap Crasher 缺料检查\n• 按P1→P2→P3优先级排序\n• P1缺料—立即通知采购跟进\n• P2/P3物料状态—检查是否有新增缺料\n• 记录缺料清单并更新追踪表\n\n📦 墨西哥下周出运装箱单\n• 整理装箱单资料\n• 发送给：仓库 / 生产计划 / 船务 / 客户\n• 跟进客户确认回执\n\n⏰ 日常穿插\n• 收到装箱单后更新CFC MF\n• 优先处理客户邮件/Teams消息",
+      "afternoon_approval": "【下午核准事项 — 缺料 & 出运确认】\n\n✅ P1缺料清单—已通知采购并确认跟进\n✅ P2/P3物料状态—无新增异常\n✅ 墨西哥装箱单—已发送全部相关方\n✅ 客户确认回执状态—已追踪\n✅ 缺料追踪表已更新\n\n⏰ 明日预告\n• 明天（周三）要更新 Order Pattern 并下单 + 厦门出运装箱单",
+      "checklist": [
+        {
+          "id": "tue-1",
+          "label": "Gap Crasher 缺料检查 — 按 P1→P2→P3 排序",
+          "period": "morning"
+        },
+        {
+          "id": "tue-2",
+          "label": "P1 缺料通知采购跟进",
+          "period": "morning"
+        },
+        {
+          "id": "tue-3",
+          "label": "检查 P2/P3 物料状态（新增缺料）",
+          "period": "morning"
+        },
+        {
+          "id": "tue-4",
+          "label": "记录缺料清单并更新追踪表",
+          "period": "morning"
+        },
+        {
+          "id": "tue-5",
+          "label": "整理墨西哥下周出运装箱单",
+          "period": "morning"
+        },
+        {
+          "id": "tue-6",
+          "label": "发送装箱单给仓库/生产计划/船务/客户",
+          "period": "morning"
+        },
+        {
+          "id": "tue-7",
+          "label": "跟进客户确认回执",
+          "period": "afternoon"
+        },
+        {
+          "id": "tue-8",
+          "label": "P2/P3 物料状态无新增异常确认",
+          "period": "afternoon"
+        },
+        {
+          "id": "tue-9",
+          "label": "墨西哥装箱单已发送全部相关方确认",
+          "period": "afternoon"
+        },
+        {
+          "id": "tue-10",
+          "label": "缺料追踪表更新确认",
+          "period": "afternoon"
+        }
+      ]
+    },
+    "3": {
+      "short": "**周三提醒**：今天要更新 Order Pattern 并下单，还要发厦门出运装箱单。",
+      "title": "周三：下单 & 厦门出运",
+      "tasks": "今天工作安排：\n\n💰 Order Pattern & 下单\n• 确认订单金额是否与预算一致\n• 通过 Gap Crasher 操作下订单\n• 完成后核查订单状态\n\n📦 厦门当周出运装箱单\n• 整理装箱单资料\n• 发送给：仓库 / 生产计划 / 船务\n• 确认仓库装柜时间\n\n⏰ 日常穿插\n• 收到装箱单后更新CFC MF\n• 优先处理客户邮件/Teams消息",
+      "afternoon_approval": "【下午核准事项 — 订单 & 出运确认】\n\n✅ 订单金额—已核对一致\n✅ Gap Crasher 下单操作—已完成\n✅ 厦门装箱单—已发送相关方\n✅ 仓库装柜时间—已确认\n\n⏰ 明日预告\n• 明天（周四）最忙—墨西哥订单+越南波动+厦门趋势+PIR删除",
+      "checklist": [
+        {
+          "id": "wed-1",
+          "label": "确认订单金额是否与预算一致",
+          "period": "morning"
+        },
+        {
+          "id": "wed-2",
+          "label": "通过 Gap Crasher 操作下订单",
+          "period": "morning"
+        },
+        {
+          "id": "wed-3",
+          "label": "核查订单状态",
+          "period": "morning"
+        },
+        {
+          "id": "wed-4",
+          "label": "整理厦门当周出运装箱单",
+          "period": "morning"
+        },
+        {
+          "id": "wed-5",
+          "label": "发送装箱单给仓库/生产计划/船务",
+          "period": "morning"
+        },
+        {
+          "id": "wed-6",
+          "label": "确认仓库装柜时间",
+          "period": "morning"
+        },
+        {
+          "id": "wed-7",
+          "label": "订单金额核对确认",
+          "period": "afternoon"
+        },
+        {
+          "id": "wed-8",
+          "label": "Gap Crasher 下单操作确认",
+          "period": "afternoon"
+        },
+        {
+          "id": "wed-9",
+          "label": "厦门装箱单已发送确认",
+          "period": "afternoon"
+        },
+        {
+          "id": "wed-10",
+          "label": "仓库装柜时间已确认",
+          "period": "afternoon"
+        }
+      ]
+    },
+    "4": {
+      "short": "**周四提醒**：今天工作最多——处理墨西哥和厦门新订单、分析越南波动、分析厦门预测趋势、删除上周 SAP PIR。",
+      "title": "周四：订单处理 & 数据分析（最忙的一天）",
+      "tasks": "今天工作安排：\n\n🇲🇽 上午：墨西哥订单处理\n• 将订单下达到 MF\n• 越南四方盖波动分析—记录分析结果\n\n🇨🇳 下午：厦门订单处理\n• 厦门新订单处理\n• 厦门未来趋势分析—检查是否有异常\n\n📋 SAP操作\n• 删除上周上传的PIR\n\n⏰ 日常穿插\n• 收到装箱单后更新CFC MF\n• 优先处理客户邮件/Teams消息",
+      "afternoon_approval": "【下午核准事项 — 订单 & 数据确认】\n\n✅ 墨西哥订单—已全部下达到MF\n✅ 越南四方盖波动分析—结果已记录\n✅ 厦门新订单—已处理完成\n✅ 厦门未来趋势—无异常\n✅ 上周PIR—已成功删除\n\n⏰ 明日预告\n• 明天（周五）要完成 PIR 上传 SAP + 检查报关资料",
+      "checklist": [
+        {
+          "id": "thu-1",
+          "label": "墨西哥订单下达到 MF",
+          "period": "morning"
+        },
+        {
+          "id": "thu-2",
+          "label": "越南四方盖波动分析 — 记录结果",
+          "period": "morning"
+        },
+        {
+          "id": "thu-3",
+          "label": "厦门新订单处理",
+          "period": "morning"
+        },
+        {
+          "id": "thu-4",
+          "label": "厦门未来趋势分析 — 检查异常",
+          "period": "morning"
+        },
+        {
+          "id": "thu-5",
+          "label": "SAP — 删除上周上传的 PIR",
+          "period": "morning"
+        },
+        {
+          "id": "thu-6",
+          "label": "收到装箱单后更新 CFC MF",
+          "period": "morning"
+        },
+        {
+          "id": "thu-7",
+          "label": "墨西哥订单全部下达到 MF 确认",
+          "period": "afternoon"
+        },
+        {
+          "id": "thu-8",
+          "label": "越南四方盖波动分析结果已记录确认",
+          "period": "afternoon"
+        },
+        {
+          "id": "thu-9",
+          "label": "厦门新订单处理完成确认",
+          "period": "afternoon"
+        },
+        {
+          "id": "thu-10",
+          "label": "厦门未来趋势无异常确认",
+          "period": "afternoon"
+        },
+        {
+          "id": "thu-11",
+          "label": "上周 PIR 已成功删除确认",
+          "period": "afternoon"
+        }
+      ]
+    },
+    "5": {
+      "short": "**周五提醒**：今天要完成 PIR 上传 SAP，还要检查报关资料。",
+      "title": "周五：PIR 上传 & 报关检查",
+      "tasks": "今天工作安排：\n\n🤝 09:30 生产计划会议\n• 会前准备好各客户的订单/生产/出运异常点\n• 会后跟进会议决议事项\n\n📄 PIR上传SAP\n• 下载Planourch\n• 完成CFC PIR上传至SAP（本周最重要任务）\n• 上传后验证数据正确\n\n✅ 检查报关资料\n• 确认厦门出运的报关文件齐全、信息准确\n• 是否有报关异常需跟进\n\n⏰ 日常穿插\n• 收到装箱单后更新CFC MF\n• 优先处理客户邮件/Teams消息",
+      "afternoon_approval": "【下午核准事项 — PIR & 报关确认】\n\n✅ 生产计划会议—已完成，决议已跟进\n✅ PIR上传SAP—是否已成功上传？\n✅ 上传后数据验证—是否正确？\n✅ 厦门报关文件—齐全、信息准确\n✅ 本周异常项—已全部记录并反馈\n\n📚 下周工作预览\n• 周一：出运资料更新（CFC/厦门/墨西哥）\n• 祝周末愉快！",
+      "checklist": [
+        {
+          "id": "fri-1",
+          "label": "09:30 生产计划会议 — 准备好异常点",
+          "period": "morning"
+        },
+        {
+          "id": "fri-2",
+          "label": "生产计划会议 — 会后跟进决议事项",
+          "period": "morning"
+        },
+        {
+          "id": "fri-3",
+          "label": "PIR 上传 SAP — 下载 Planourch",
+          "period": "morning"
+        },
+        {
+          "id": "fri-4",
+          "label": "完成 CFC PIR 上传至 SAP",
+          "period": "morning"
+        },
+        {
+          "id": "fri-5",
+          "label": "上传后验证数据正确",
+          "period": "morning"
+        },
+        {
+          "id": "fri-6",
+          "label": "检查报关资料 — 厦门文件齐全信息准确",
+          "period": "morning"
+        },
+        {
+          "id": "fri-7",
+          "label": "报关异常跟进检查",
+          "period": "morning"
+        },
+        {
+          "id": "fri-8",
+          "label": "收到装箱单后更新 CFC MF",
+          "period": "morning"
+        },
+        {
+          "id": "fri-9",
+          "label": "生产计划会议决议跟进确认",
+          "period": "afternoon"
+        },
+        {
+          "id": "fri-10",
+          "label": "PIR 验证确认",
+          "period": "afternoon"
+        },
+        {
+          "id": "fri-11",
+          "label": "本周异常项记录反馈",
+          "period": "afternoon"
+        }
+      ]
+    }
+  }
 }
