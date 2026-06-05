@@ -14,6 +14,7 @@ rsync -avz --delete \
   --exclude '.env' \
   --exclude 'venv/' \
   --exclude '__pycache__/' \
+  --exclude 'data/' \
   --exclude 'uwsgi.pid' \
   --exclude 'uwsgi.log' \
   "$ROOT/server/" "$REMOTE_HOST:$REMOTE_DIR/"

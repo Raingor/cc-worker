@@ -175,6 +175,10 @@ def reminder_email():
         return jsonify({"error": {"message": "No recipient (set REMINDER_TO in .env or pass `to`)"}}), 400
 
     cc_email = body.get("cc") or REMINDER_CC or None
+    mode = body.get("mode", "morning")
+    if mode not in ("morning", "afternoon"):
+        return jsonify({"error": {"message": "mode must be 'morning' or 'afternoon'"}}), 400
+
     result = send_reminder_email(
         to_email=to_email,
         cc_email=cc_email,
@@ -182,6 +186,7 @@ def reminder_email():
         smtp_port=SMTP_PORT,
         smtp_user=SMTP_USER,
         smtp_password=SMTP_PASSWORD,
+        mode=mode,
     )
     status = 200 if result["success"] else 500
     return jsonify(result), status

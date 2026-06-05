@@ -12,6 +12,7 @@ from email.mime.text import MIMEText
 REMINDERS_PATH = Path(__file__).resolve().parents[1] / "prompts" / "day_reminders.json"
 
 WEEKDAY_CN = ["日", "一", "二", "三", "四", "五", "六"]
+MODE_CN = {"morning": "上午提醒", "afternoon": "下午核准"}
 
 
 def _load_reminders() -> dict:
@@ -23,8 +24,12 @@ def _load_reminders() -> dict:
     return {}
 
 
-def build_reminder_body() -> tuple[str, str]:
-    """Build email subject and body for today's reminder."""
+def build_reminder_body(mode: str = "morning") -> tuple[str, str]:
+    """Build email subject and body for today's reminder.
+
+    mode='morning': send the day's tasks (daily planning).
+    mode='afternoon': send the day's approval items.
+    """
     now = datetime.now()
     js_day = (now.weekday() + 1) % 7
     date_str = f"{now.year}年{now.month}月{now.day}日 星期{WEEKDAY_CN[js_day]}"
@@ -37,16 +42,33 @@ def build_reminder_body() -> tuple[str, str]:
         return subject, body
 
     title = entry["title"]
-    tasks = entry["tasks"]
-    subject = f"CC 工作助手 — {date_str} · {title}"
+    mode_label = MODE_CN.get(mode, "提醒")
+    subject = f"CC 工作助手 — {date_str} · {title} · {mode_label}"
 
-    month_week = (now.day - 1) // 7 + 1
-    le_reminder = ""
-    if month_week == 3:
-        le_reminder = "\n📌 **本月第三周提醒**：本月 LE 数据分析需要完成。"
+    if mode == "afternoon":
+        content = entry.get("afternoon_approval", "")
+        if not content:
+            content = "今天没有待核准事项。"
+        body = f"""\
+⏰ CC 工作助手 · 下午核准提醒
+{'=' * 40}
 
-    body = f"""\
-⏰ CC 工作助手每日提醒
+日期：{date_str}
+
+{content}
+
+---
+此邮件由 CC Worker API 自动发送
+"""
+    else:
+        tasks = entry["tasks"]
+        month_week = (now.day - 1) // 7 + 1
+        le_reminder = ""
+        if month_week == 3:
+            le_reminder = "\n📌 **本月第三周提醒**：本月 LE 数据分析需要完成。"
+
+        body = f"""\
+⏰ CC 工作助手 · 早晨任务提醒
 {'=' * 40}
 
 日期：{date_str}
@@ -71,9 +93,10 @@ def send_reminder_email(
     smtp_password: str,
     cc_email: str | None = None,
     use_ssl: bool = True,
+    mode: str = "morning",
 ) -> dict:
-    """Send a daily reminder email. Returns dict with status."""
-    subject, body = build_reminder_body()
+    """Send a daily reminder email (morning tasks or afternoon approval)."""
+    subject, body = build_reminder_body(mode=mode)
 
     msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = subject
@@ -98,6 +121,6 @@ def send_reminder_email(
                 server.login(smtp_user, smtp_password)
                 server.send_message(msg, to_addrs=recipients)
 
-        return {"success": True, "to": to_email, "subject": subject}
+        return {"success": True, "to": to_email, "subject": subject, "mode": mode}
     except Exception as e:
-        return {"success": False, "error": str(e), "to": to_email}
+        return {"success": False, "error": str(e), "to": to_email, "mode": mode}
