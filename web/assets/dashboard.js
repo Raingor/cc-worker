@@ -1,4 +1,4 @@
-/* CC 工作助手 — Dashboard (Calendar + Checklist + AI Summary) */
+/* CC 工作助手 — OA Work Panel */
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -10,21 +10,18 @@ let dashState = {
   saving: false,
   summarizing: false,
   historyDates: [],
+  activeTab: 'tasks',
 };
 
 function dashUrl(path) {
   if (!state.settings) return '';
   return state.settings.apiBase.replace(/\/+$/, '') + path;
 }
-
 function dashHeaders() {
   return { Authorization: 'Bearer ' + (state.settings?.appToken || '') };
 }
-
 function dashDateStr(d) {
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
 function showDashboard() {
@@ -32,6 +29,7 @@ function showDashboard() {
   document.getElementById('dashboard-screen').classList.add('active');
   dashState.viewDate = new Date();
   dashState.selectedDate = dashDateStr(new Date());
+  dashState.activeTab = 'tasks';
   loadDashboard();
 }
 
@@ -44,25 +42,21 @@ async function loadDashboard() {
   const body = document.getElementById('dash-body');
   body.innerHTML = '<div class="dash-loading">加载中…</div>';
   dashState.loading = true;
-
   try {
     const [checklistResp, historyResp] = await Promise.all([
       fetch(dashUrl('/v1/checklist?date=' + dashState.selectedDate), { headers: dashHeaders() }),
       fetch(dashUrl('/v1/checklist/history?year=' + dashState.viewDate.getFullYear() + '&month=' + (dashState.viewDate.getMonth() + 1)), { headers: dashHeaders() }),
     ]);
-
     if (!checklistResp.ok) {
       const errData = await checklistResp.json().catch(() => ({}));
       body.innerHTML = '<div class="dash-error">加载失败：' + (errData.error?.message || checklistResp.statusText) + '</div>';
       return;
     }
-
     dashState.data = await checklistResp.json();
     if (historyResp.ok) {
       const h = await historyResp.json();
       dashState.historyDates = h.dates || [];
     }
-
     renderDashboard();
   } catch (e) {
     body.innerHTML = '<div class="dash-error">网络错误：' + e.message + '</div>';
@@ -75,124 +69,173 @@ function renderDashboard() {
   const body = document.getElementById('dash-body');
   const data = dashState.data;
   if (!data) return;
-
-  const dt = dashState.selectedDate.split('-');
-  const d = new Date(+dt[0], +dt[1] - 1, +dt[2]);
-
   body.innerHTML = '';
-
-  // === Calendar ===
-  body.appendChild(renderCalendar(d));
-
-  // === Checklist ===
-  const checklistEl = document.createElement('div');
-  checklistEl.className = 'dash-checklist';
-
-  const titleEl = document.createElement('div');
-  titleEl.className = 'dash-date-title';
-  const weekday = WEEKDAY_LABELS[d.getDay()];
-  titleEl.innerHTML = '<span class="dash-date-num">' + dt[1] + '/' + dt[2] + '</span> <span class="dash-date-weekday">星期' + weekday + '</span>' +
-    (data.is_today ? ' <span class="dash-today-badge">今天</span>' : '');
-  checklistEl.appendChild(titleEl);
-
-  if (data.title) {
-    const subt = document.createElement('div');
-    subt.className = 'dash-subtitle';
-    subt.textContent = data.title;
-    checklistEl.appendChild(subt);
-  }
-
-  if (!data.items || data.items.length === 0) {
-    const emptyMsg = document.createElement('div');
-    emptyMsg.className = 'dash-empty-msg';
-    emptyMsg.textContent = '该日期没有工作任务安排。';
-    checklistEl.appendChild(emptyMsg);
-    body.appendChild(checklistEl);
-    return;
-  }
-
-  // Progress bar
-  const prog = data.progress || { checked: 0, total: 0 };
-  const pct = prog.total > 0 ? Math.round(prog.checked / prog.total * 100) : 0;
-  const progressEl = document.createElement('div');
-  progressEl.className = 'dash-progress';
-  progressEl.innerHTML =
-    '<div class="dash-progress-bar"><div class="dash-progress-fill" style="width:' + pct + '%"></div></div>' +
-    '<div class="dash-progress-text">' + prog.checked + '/' + prog.total + ' (' + pct + '%)</div>';
-  checklistEl.appendChild(progressEl);
-
-  // Morning section
-  const morningItems = data.items.filter(i => i.period === 'morning');
-  if (morningItems.length > 0) {
-    checklistEl.appendChild(renderSection('上午', morningItems));
-  }
-
-  // Afternoon section
-  const afternoonItems = data.items.filter(i => i.period === 'afternoon');
-  if (afternoonItems.length > 0) {
-    checklistEl.appendChild(renderSection('下午（核准）', afternoonItems));
-  }
-
-  // Summarize button
-  const summaryBtn = document.createElement('button');
-  summaryBtn.className = 'dash-summarize-btn';
-  summaryBtn.type = 'button';
-  summaryBtn.textContent = '🤖 总结今天任务完成';
-  summaryBtn.addEventListener('click', onSummarize);
-  if (dashState.summarizing) {
-    summaryBtn.disabled = true;
-    summaryBtn.textContent = '⏳ AI 正在总结…';
-  }
-  checklistEl.appendChild(summaryBtn);
-
-  // Summary display
-  if (data.summary) {
-    const summaryEl = document.createElement('div');
-    summaryEl.className = 'dash-summary';
-    summaryEl.innerHTML = '<div class="dash-summary-title">📋 AI 工作总结</div><div class="dash-summary-body">' + escapeHtml(data.summary).replace(/\n/g, '<br>') + '</div>';
-    checklistEl.appendChild(summaryEl);
-  }
-
-  body.appendChild(checklistEl);
+  body.appendChild(renderGreeting(data));
+  body.appendChild(renderTabs());
+  body.appendChild(renderTabContent(data));
 }
 
-function renderSection(label, items) {
-  const section = document.createElement('div');
-  section.className = 'dash-section';
+/* ── Greeting Card ── */
+function renderGreeting(data) {
+  const el = document.createElement('div');
+  el.className = 'oa-greeting';
+  const dt = dashState.selectedDate.split('-');
+  const d = new Date(+dt[0], +dt[1] - 1, +dt[2]);
+  const weekday = WEEKDAY_LABELS[d.getDay()];
+  const prog = data.progress || { checked: 0, total: 0 };
+  const pct = prog.total > 0 ? Math.round(prog.checked / prog.total * 100) : 0;
 
+  const circumference = 2 * Math.PI * 22;
+  const offset = circumference - (pct / 100) * circumference;
+
+  el.innerHTML =
+    '<div class="oa-greeting-row">' +
+    '  <div class="oa-greeting-icon">📋</div>' +
+    '  <div class="oa-greeting-text">' +
+    '    <div class="oa-greeting-date">' + dt[0] + '年' + (+dt[1]) + '月' + (+dt[2]) + '日 · 星期' + weekday + (data.is_today ? ' · 今天' : '') + '</div>' +
+    '    <div class="oa-greeting-title">' + escapeHtml(data.title || '工作面板') + '</div>' +
+    '  </div>' +
+    '  <div class="oa-greeting-progress">' +
+    '    <svg width="52" height="52" viewBox="0 0 52 52">' +
+    '      <circle class="oa-greeting-progress-bg" cx="26" cy="26" r="22"/>' +
+    '      <circle class="oa-greeting-progress-fill" cx="26" cy="26" r="22" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '"/>' +
+    '    </svg>' +
+    '    <span class="oa-greeting-progress-text">' + pct + '%</span>' +
+    '  </div>' +
+    '</div>';
+  return el;
+}
+
+/* ── Tabs ── */
+function renderTabs() {
+  const tabs = [
+    { id: 'tasks', label: '今日任务' },
+    { id: 'calendar', label: '工作日历' },
+    { id: 'history', label: '每日总结' },
+  ];
+  const el = document.createElement('div');
+  el.className = 'oa-tabs';
+  for (const t of tabs) {
+    const btn = document.createElement('button');
+    btn.className = 'oa-tab' + (dashState.activeTab === t.id ? ' active' : '');
+    btn.textContent = t.label;
+    btn.addEventListener('click', () => switchTab(t.id));
+    el.appendChild(btn);
+  }
+  return el;
+}
+
+function switchTab(id) {
+  if (dashState.activeTab === id) return;
+  dashState.activeTab = id;
+  renderDashboard();
+}
+
+/* ── Tab Content Router ── */
+function renderTabContent(data) {
+  const wrap = document.createElement('div');
+  if (dashState.activeTab === 'tasks') {
+    wrap.appendChild(renderTasksTab(data));
+  } else if (dashState.activeTab === 'calendar') {
+    wrap.appendChild(renderCalendarTab());
+  } else if (dashState.activeTab === 'history') {
+    wrap.appendChild(renderHistoryTab());
+  }
+  return wrap;
+}
+
+/* ══════ Tasks Tab ══════ */
+function renderTasksTab(data) {
+  const el = document.createElement('div');
+
+  if (!data.items || data.items.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'oa-empty-message';
+    empty.textContent = '该日期没有工作任务安排。';
+    el.appendChild(empty);
+    return el;
+  }
+
+  // Compact progress bar
+  const prog = data.progress || { checked: 0, total: 0 };
+  const pct = prog.total > 0 ? Math.round(prog.checked / prog.total * 100) : 0;
+  const pbar = document.createElement('div');
+  pbar.className = 'oa-progress-compact';
+  pbar.innerHTML =
+    '<div class="oa-progress-compact-bar"><div class="oa-progress-compact-fill" style="width:' + pct + '%"></div></div>' +
+    '<div class="oa-progress-compact-text">' + prog.checked + '/' + prog.total + '</div>';
+  el.appendChild(pbar);
+
+  // Morning
+  const morning = data.items.filter(i => i.period === 'morning');
+  if (morning.length > 0) {
+    el.appendChild(renderSection('上午 · 重点工作', morning, 'morning'));
+  }
+
+  // Afternoon
+  const afternoon = data.items.filter(i => i.period === 'afternoon');
+  if (afternoon.length > 0) {
+    el.appendChild(renderSection('下午 · 核准事项', afternoon, 'afternoon'));
+  }
+
+  // Summarize
+  const sumWrap = document.createElement('div');
+  sumWrap.className = 'oa-summarize';
+  const sumBtn = document.createElement('button');
+  sumBtn.className = 'oa-summarize-btn' + (dashState.summarizing ? ' loading' : '');
+  sumBtn.type = 'button';
+  sumBtn.textContent = dashState.summarizing ? '⏳ AI 正在总结…' : '🤖 总结今天任务完成';
+  sumBtn.disabled = dashState.summarizing;
+  sumBtn.addEventListener('click', onSummarize);
+  sumWrap.appendChild(sumBtn);
+  el.appendChild(sumWrap);
+
+  // Summary
+  if (data.summary) {
+    const card = document.createElement('div');
+    card.className = 'oa-summary-card';
+    card.innerHTML =
+      '<div class="oa-summary-card-header"><span class="oa-summary-card-icon">🤖</span><span class="oa-summary-card-title">AI 工作总结</span></div>' +
+      '<div class="oa-summary-card-body">' + formatSummary(data.summary) + '</div>';
+    el.appendChild(card);
+  }
+
+  return el;
+}
+
+function renderSection(label, items, period) {
+  const section = document.createElement('div');
+  section.className = 'oa-section';
   const header = document.createElement('div');
-  header.className = 'dash-section-header';
-  header.textContent = '☐ ' + label;
+  header.className = 'oa-section-header';
+  header.innerHTML = '<span class="oa-section-dot ' + period + '"></span><span class="oa-section-label">' + label + '</span>';
   section.appendChild(header);
 
+  const list = document.createElement('div');
   for (const item of items) {
     const row = document.createElement('div');
-    row.className = 'dash-item' + (item.checked ? ' done' : '');
+    row.className = 'oa-task' + (item.checked ? ' done' : '');
 
+    const cbWrap = document.createElement('div');
+    cbWrap.className = 'oa-cb-wrap';
     const cb = document.createElement('input');
     cb.type = 'checkbox';
-    cb.className = 'dash-cb';
+    cb.className = 'oa-cb';
     cb.checked = item.checked;
     cb.addEventListener('change', () => onCheckChange(item.id, cb.checked));
+    cbWrap.appendChild(cb);
+    row.appendChild(cbWrap);
 
-    const labelEl = document.createElement('span');
-    labelEl.className = 'dash-item-label';
+    const body = document.createElement('div');
+    body.className = 'oa-task-body';
+    const labelEl = document.createElement('div');
+    labelEl.className = 'oa-task-label';
     labelEl.textContent = item.label;
     if (item.checked) labelEl.style.textDecoration = 'line-through';
-
-    row.appendChild(cb);
-    row.appendChild(labelEl);
-
-    const noteToggle = document.createElement('button');
-    noteToggle.className = 'dash-note-toggle';
-    noteToggle.type = 'button';
-    noteToggle.textContent = '📝';
-    noteToggle.title = '添加备注';
-    noteToggle.addEventListener('click', () => toggleNote(row, item.id));
-    row.appendChild(noteToggle);
+    body.appendChild(labelEl);
 
     const noteInput = document.createElement('textarea');
-    noteInput.className = 'dash-note-input';
+    noteInput.className = 'oa-task-note';
     noteInput.placeholder = '备注（选填）…';
     noteInput.value = item.note || '';
     noteInput.addEventListener('blur', () => {
@@ -201,153 +244,154 @@ function renderSection(label, items) {
         saveChecklist();
       }
     });
-    noteInput.style.display = 'none';
-    noteInput.dataset.itemId = item.id;
-    if (item.note) {
-      noteInput.style.display = 'block';
-    }
-    row.appendChild(noteInput);
+    noteInput.style.display = item.note ? 'block' : 'none';
+    body.appendChild(noteInput);
+    row.appendChild(body);
 
-    section.appendChild(row);
+    const noteBtn = document.createElement('button');
+    noteBtn.className = 'oa-note-btn' + (item.note ? ' active' : '');
+    noteBtn.type = 'button';
+    noteBtn.textContent = '📝';
+    noteBtn.title = item.note ? '编辑备注' : '添加备注';
+    noteBtn.addEventListener('click', () => {
+      const ni = row.querySelector('.oa-task-note');
+      if (ni) {
+        ni.style.display = ni.style.display === 'none' ? 'block' : 'none';
+        if (ni.style.display === 'block') ni.focus();
+      }
+    });
+    row.appendChild(noteBtn);
+
+    list.appendChild(row);
   }
-
+  section.appendChild(list);
   return section;
 }
 
-function toggleNote(row, itemId) {
-  const noteInput = row.querySelector('.dash-note-input');
-  if (noteInput) {
-    noteInput.style.display = noteInput.style.display === 'none' ? 'block' : 'none';
-    if (noteInput.style.display === 'block') noteInput.focus();
-  }
-}
-
-function renderCalendar(d) {
+/* ══════ Calendar Tab ══════ */
+function renderCalendarTab() {
+  const d = new Date(dashState.viewDate);
   const cal = document.createElement('div');
-  cal.className = 'dash-calendar';
+  cal.className = 'oa-cal';
 
   const nav = document.createElement('div');
-  nav.className = 'dash-cal-nav';
-  const prevBtn = document.createElement('button');
-  prevBtn.className = 'dash-cal-nav-btn';
-  prevBtn.textContent = '◀';
-  prevBtn.addEventListener('click', () => changeMonth(-1));
-
-  const monthLabel = document.createElement('span');
-  monthLabel.className = 'dash-cal-month';
-  monthLabel.textContent = d.getFullYear() + '年' + (d.getMonth() + 1) + '月';
-
-  const nextBtn = document.createElement('button');
-  nextBtn.className = 'dash-cal-nav-btn';
-  nextBtn.textContent = '▶';
-  nextBtn.addEventListener('click', () => changeMonth(1));
-
-  nav.appendChild(prevBtn);
-  nav.appendChild(monthLabel);
-  nav.appendChild(nextBtn);
+  nav.className = 'oa-cal-nav';
+  const prev = document.createElement('button');
+  prev.className = 'oa-cal-nav-btn'; prev.textContent = '◀';
+  prev.addEventListener('click', () => { dashState.viewDate.setMonth(dashState.viewDate.getMonth() - 1); renderDashboard(); });
+  const month = document.createElement('span');
+  month.className = 'oa-cal-month';
+  month.textContent = d.getFullYear() + '年' + (d.getMonth() + 1) + '月';
+  const next = document.createElement('button');
+  next.className = 'oa-cal-nav-btn'; next.textContent = '▶';
+  next.addEventListener('click', () => { dashState.viewDate.setMonth(dashState.viewDate.getMonth() + 1); renderDashboard(); });
+  nav.appendChild(prev); nav.appendChild(month); nav.appendChild(next);
   cal.appendChild(nav);
 
-  const headerRow = document.createElement('div');
-  headerRow.className = 'dash-cal-row dash-cal-header';
+  const grid = document.createElement('div');
+  grid.className = 'oa-cal-grid';
+
+  // Weekday headers
   for (const wd of WEEKDAY_LABELS) {
-    const cell = document.createElement('span');
-    cell.className = 'dash-cal-cell dash-cal-wd';
+    const cell = document.createElement('div');
+    cell.className = 'oa-cal-cell oa-cal-wd';
     cell.textContent = wd;
-    headerRow.appendChild(cell);
+    grid.appendChild(cell);
   }
-  cal.appendChild(headerRow);
 
   const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
   const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  const startOffset = firstDay.getDay();
-
-  let dayCells = [];
-  for (let i = 0; i < startOffset; i++) {
-    dayCells.push(null);
-  }
-  for (let day = 1; day <= lastDay.getDate(); day++) {
-    dayCells.push(day);
-  }
-
   const today = dashDateStr(new Date());
   const selected = dashState.selectedDate;
   const historySet = new Set(dashState.historyDates);
 
-  let week = document.createElement('div');
-  week.className = 'dash-cal-row';
-
-  for (let i = 0; i < dayCells.length; i++) {
-    if (i > 0 && i % 7 === 0) {
-      cal.appendChild(week);
-      week = document.createElement('div');
-      week.className = 'dash-cal-row';
-    }
-
-    const cell = document.createElement('span');
-    cell.className = 'dash-cal-cell';
-
-    if (dayCells[i] === null) {
-      cell.classList.add('dash-cal-empty');
-    } else {
-      const day = dayCells[i];
-      const dateStr = d.getFullYear() + '-' +
-        String(d.getMonth() + 1).padStart(2, '0') + '-' +
-        String(day).padStart(2, '0');
-
-      cell.textContent = String(day);
-      cell.dataset.date = dateStr;
-      cell.classList.add('dash-cal-day');
-      cell.addEventListener('click', () => onDateSelect(dateStr));
-
-      if (dateStr === today) cell.classList.add('dash-cal-today');
-      if (dateStr === selected) cell.classList.add('dash-cal-selected');
-      if (historySet.has(dateStr)) cell.classList.add('dash-cal-has-data');
-    }
-
-    week.appendChild(cell);
+  for (let i = 0; i < firstDay.getDay(); i++) {
+    const empty = document.createElement('div');
+    empty.className = 'oa-cal-cell oa-cal-empty';
+    grid.appendChild(empty);
   }
-  const remaining = 7 - (dayCells.length % 7);
-  if (remaining < 7) {
-    for (let i = 0; i < remaining; i++) {
-      const cell = document.createElement('span');
-      cell.className = 'dash-cal-cell dash-cal-empty';
-      week.appendChild(cell);
-    }
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    const cell = document.createElement('div');
+    cell.className = 'oa-cal-cell oa-cal-day';
+    if (dateStr === today) cell.classList.add('oa-cal-today');
+    if (dateStr === selected) cell.classList.add('oa-cal-selected');
+    if (historySet.has(dateStr)) cell.classList.add('oa-cal-has-data');
+    cell.textContent = String(day);
+    cell.addEventListener('click', () => {
+      dashState.selectedDate = dateStr;
+      dashState.activeTab = 'tasks';
+      loadDashboard();
+    });
+    grid.appendChild(cell);
   }
-  cal.appendChild(week);
-
+  cal.appendChild(grid);
   return cal;
 }
 
-function changeMonth(delta) {
-  dashState.viewDate = new Date(dashState.viewDate.getFullYear(), dashState.viewDate.getMonth() + delta, 1);
-  loadDashboard();
+/* ══════ History Tab ══════ */
+async function renderHistoryTab() {
+  const el = document.createElement('div');
+  el.className = 'oa-history';
+
+  if (dashState.historyDates.length === 0) {
+    el.innerHTML = '<div class="oa-history-empty">暂无每日总结记录<br>完成今日任务后，点击"总结今天任务完成"生成</div>';
+    return el;
+  }
+
+  // Load summaries for all dates with data
+  const summaries = [];
+  for (const date of dashState.historyDates) {
+    try {
+      const resp = await fetch(dashUrl('/v1/checklist?date=' + date), { headers: dashHeaders() });
+      if (resp.ok) {
+        const d = await resp.json();
+        if (d.summary) {
+          summaries.push({ date, title: d.title, summary: d.summary });
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (summaries.length === 0) {
+    el.innerHTML = '<div class="oa-history-empty">暂无每日总结</div>';
+    return el;
+  }
+
+  summaries.sort((a, b) => b.date.localeCompare(a.date));
+  for (const s of summaries) {
+    const dt = s.date.split('-');
+    const d = new Date(+dt[0], +dt[1] - 1, +dt[2]);
+    const wd = WEEKDAY_LABELS[d.getDay()];
+    const item = document.createElement('div');
+    item.className = 'oa-history-item';
+    item.innerHTML =
+      '<div class="oa-history-date">📅 ' + s.date + ' · 星期' + wd + '</div>' +
+      '<div class="oa-history-title">' + escapeHtml(s.title || '') + '</div>' +
+      '<div class="oa-history-preview">' + escapeHtml(s.summary).slice(0, 200) + '…</div>';
+    item.addEventListener('click', () => {
+      dashState.selectedDate = s.date;
+      dashState.activeTab = 'tasks';
+      loadDashboard();
+    });
+    el.appendChild(item);
+  }
+  return el;
 }
 
-function onDateSelect(dateStr) {
-  if (dashState.selectedDate === dateStr) return;
-  dashState.selectedDate = dateStr;
-  loadDashboard();
-}
-
-async function onCheckChange(itemId, checked) {
+/* ── Actions ── */
+function onCheckChange(itemId, checked) {
   if (!dashState.data || !dashState.data.items) return;
   const item = dashState.data.items.find(i => i.id === itemId);
   if (!item) return;
   item.checked = checked;
-  await saveChecklist();
+  saveChecklist();
 }
 
 async function saveChecklist() {
   if (!dashState.data || dashState.saving) return;
   dashState.saving = true;
-
-  const items = dashState.data.items.map(i => ({
-    id: i.id,
-    checked: i.checked,
-    note: i.note || '',
-  }));
-
+  const items = dashState.data.items.map(i => ({ id: i.id, checked: i.checked, note: i.note || '' }));
   try {
     const resp = await fetch(dashUrl('/v1/checklist'), {
       method: 'POST',
@@ -374,27 +418,22 @@ async function onSummarize() {
   if (!dashState.selectedDate) return;
   dashState.summarizing = true;
   renderDashboard();
-
   try {
     const resp = await fetch(dashUrl('/v1/checklist/summarize'), {
       method: 'POST',
       headers: { ...dashHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ date: dashState.selectedDate }),
     });
-
     if (!resp.ok) {
       const errData = await resp.json().catch(() => ({}));
       showToast(errData.error?.message || 'AI 总结失败', 'error');
       return;
     }
-
     const data = await resp.json();
     dashState.data.summary = data.summary;
-
     if (!dashState.historyDates.includes(dashState.selectedDate)) {
       dashState.historyDates.push(dashState.selectedDate);
     }
-
     showToast('总结完成 ✓', 'success');
   } catch (e) {
     showToast('AI 总结出错：' + e.message, 'error');
@@ -404,27 +443,23 @@ async function onSummarize() {
   }
 }
 
+function formatSummary(text) {
+  if (!text) return '';
+  return escapeHtml(text)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
 function escapeHtml(s) {
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
 }
 
-/* ===== Bind dashboard UI ===== */
+/* ── Bind ── */
 document.addEventListener('DOMContentLoaded', () => {
-  const dashBtn = document.getElementById('dash-btn');
-  const dashBackBtn = document.getElementById('dash-back-btn');
-  const statsBtn2 = document.getElementById('stats-btn2');
-  const settingsBtn2 = document.getElementById('settings-btn2');
-
-  if (dashBtn) dashBtn.addEventListener('click', showDashboard);
-  if (dashBackBtn) dashBackBtn.addEventListener('click', hideDashboard);
-  if (statsBtn2) statsBtn2.addEventListener('click', () => {
-    hideDashboard();
-    setTimeout(toggleStats, 100);
-  });
-  if (settingsBtn2) settingsBtn2.addEventListener('click', () => {
-    hideDashboard();
-    setTimeout(showSettings, 100);
-  });
+  document.getElementById('dash-btn')?.addEventListener('click', showDashboard);
+  document.getElementById('dash-back-btn')?.addEventListener('click', hideDashboard);
+  document.getElementById('stats-btn2')?.addEventListener('click', () => { hideDashboard(); setTimeout(toggleStats, 100); });
+  document.getElementById('settings-btn2')?.addEventListener('click', () => { hideDashboard(); setTimeout(showSettings, 100); });
 });
