@@ -19,6 +19,7 @@ from analysis.email_checker import check_and_analyze
 from usage_tracker import get_stats, record_usage
 from conversation_store import list_conversations, get_conversation, upsert_conversation, delete_conversation, pop_last_message
 from memory_store import store_messages as memory_store_messages, search_memories, count_memories
+import checklist_store
 
 load_dotenv()
 
@@ -442,6 +443,124 @@ def chat_completions():
     except Exception:
         pass
     return Response(resp.content, status=resp.status_code, mimetype=resp.headers.get("Content-Type", "application/json"))
+
+
+@APP.route("/v1/checklist", methods=["GET", "POST", "OPTIONS"])
+def checklist_route():
+    """GET: get checklist for a date. POST: save checked items."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:].strip()
+
+    if request.method == "GET":
+        date = request.args.get("date", "")
+        if not date:
+            return jsonify({"error": {"message": "date query param required (YYYY-MM-DD)"}}), 400
+        try:
+            data = checklist_store.get_or_create(token, date)
+            return jsonify(data)
+        except Exception as e:
+            return jsonify({"error": {"message": str(e)}}), 500
+
+    # POST: save items
+    body = request.get_json(silent=True) or {}
+    date = body.get("date", "")
+    items = body.get("items", [])
+    if not date or not items:
+        return jsonify({"error": {"message": "date and items required"}}), 400
+    try:
+        result = checklist_store.save_items(token, date, items)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": {"message": str(e)}}), 500
+
+
+@APP.route("/v1/checklist/summarize", methods=["POST", "OPTIONS"])
+def checklist_summarize():
+    """Generate AI summary for today's checklist and save it."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    if not AI_API_KEY:
+        return jsonify({"error": {"message": "AI API not configured"}}), 503
+
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:].strip()
+    body = request.get_json(silent=True) or {}
+    date = body.get("date", "")
+    if not date:
+        return jsonify({"error": {"message": "date required"}}), 400
+
+    ctx = checklist_store.get_summary_context(token, date)
+    if ctx is None:
+        return jsonify({"error": {"message": "No template for this date"}}), 400
+
+    lines = [f"日期：{date}"]
+    lines.append(f"主题：{ctx['title']}")
+    lines.append("")
+    if ctx["done"]:
+        lines.append("【已完成】")
+        lines.extend(ctx["done"])
+        lines.append("")
+    if ctx["undone"]:
+        lines.append("【未完成】")
+        lines.extend(ctx["undone"])
+        lines.append("")
+
+    prompt_text = "\n".join(lines)
+    user_content = f"{prompt_text}\n\n请根据以上内容，给今天的工作做一个总结，包含已完成事项、未完成事项以及整体评价。"
+
+    upstream_url = f"{AI_API_BASE}/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {AI_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": AI_MODEL,
+        "messages": [
+            {"role": "system", "content": "你是一个工作助手，擅长总结日常工作。请用简洁、专业的语言总结。"},
+            {"role": "user", "content": user_content},
+        ],
+        "temperature": 0.3,
+        "max_tokens": 1024,
+    }
+
+    try:
+        resp = requests.post(upstream_url, headers=headers, json=payload, timeout=120)
+        if not resp.ok:
+            return jsonify({"error": {"message": f"AI API error: {resp.status_code}"}}), 502
+        resp_data = resp.json()
+        summary = resp_data["choices"][0]["message"]["content"]
+
+        checklist_store.save_summary(token, date, summary)
+        return jsonify({"date": date, "summary": summary})
+    except Exception as e:
+        return jsonify({"error": {"message": str(e)}}), 500
+
+
+@APP.route("/v1/checklist/history", methods=["GET", "OPTIONS"])
+def checklist_history():
+    """Return list of dates in a month that have checklist data."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:].strip()
+
+    year = request.args.get("year", type=int)
+    month = request.args.get("month", type=int)
+    if not year or not month:
+        return jsonify({"error": {"message": "year and month required"}}), 400
+    try:
+        dates = checklist_store.get_history_dates(token, year, month)
+        return jsonify({"year": year, "month": month, "dates": dates})
+    except Exception as e:
+        return jsonify({"error": {"message": str(e)}}), 500
 
 
 if __name__ == "__main__":
