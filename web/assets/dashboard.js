@@ -212,6 +212,7 @@ function renderSection(label, items, period) {
   section.appendChild(header);
 
   const list = document.createElement('div');
+  list.className = 'oa-task-grid';
   for (const item of items) {
     const row = document.createElement('div');
     row.className = 'oa-task' + (item.checked ? ' done' : '');
@@ -358,6 +359,10 @@ async function renderHistoryTab() {
     return el;
   }
 
+  const grid = document.createElement('div');
+  grid.className = 'oa-history-grid';
+  el.appendChild(grid);
+
   summaries.sort((a, b) => b.date.localeCompare(a.date));
   for (const s of summaries) {
     const dt = s.date.split('-');
@@ -374,7 +379,7 @@ async function renderHistoryTab() {
       dashState.activeTab = 'tasks';
       loadDashboard();
     });
-    el.appendChild(item);
+    grid.appendChild(item);
   }
   return el;
 }
