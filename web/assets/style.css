@@ -569,7 +569,10 @@ body{
 .oa-tab-content{display:none}.oa-tab-content.active{display:block}
 
 /* ── Task Grid ── */
-.oa-task-grid{display:grid;grid-template-columns:1fr;gap:8px}
+.oa-task-grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:640px){.oa-task-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px){.oa-task-grid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1400px){.oa-task-grid{grid-template-columns:repeat(4,1fr)}}
 
 /* Section header above grid */
 .oa-section-header{display:flex;align-items:center;gap:8px;padding:0 2px;margin-bottom:10px;margin-top:4px}
@@ -652,9 +655,13 @@ body{
 .oa-empty-message{text-align:center;padding:60px 0;color:var(--oa-text-dim);font-size:13px}
 
 /* ── Responsive: 2-column grid at 900px+ ── */
+/* History grid — same responsive as task grid */
+.oa-history-grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:640px){.oa-history-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px){.oa-history-grid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1400px){.oa-history-grid{grid-template-columns:repeat(4,1fr)}}
+
 @media(min-width:900px){
-  .oa-task-grid{grid-template-columns:1fr 1fr}
-  .oa-history-grid{grid-template-columns:1fr 1fr}
   .dash-scroll{padding:20px 32px 40px}
 }
 
@@ -680,3 +687,9 @@ body{
   .chat-main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
   .menu-btn{display:none}
 }
+.hdr-btn{
+  background:none;border:none;height:32px;padding:0 12px;border-radius:6px;
+  font-size:12px;font-weight:500;cursor:pointer;
+  color:var(--text-dim);font-family:var(--font-sans);transition:all .15s
+}
+.hdr-btn:hover{background:var(--gold-bg);color:var(--gold)}
