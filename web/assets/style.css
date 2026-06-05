@@ -539,8 +539,8 @@ body{
 #dashboard-screen{display:none;height:100%;flex-direction:column;overflow:hidden;background:var(--oa-bg)}
 #dashboard-screen.active{display:flex}
 #dashboard-screen .chat-header{background:var(--oa-surface);border-bottom:1px solid var(--oa-border)}
-.oa-header-btn{background:none;border:none;height:32px;padding:0 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;color:var(--oa-text-secondary);font-family:var(--font-sans);transition:all .15s}
-.oa-header-btn:hover{background:var(--oa-primary-light);color:var(--oa-primary)}
+.oa-header-btn{background:var(--oa-primary-light);border:1px solid rgba(45,106,106,.2);height:34px;padding:0 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--oa-primary);font-family:var(--font-sans);transition:all .2s;letter-spacing:.3px}
+.oa-header-btn:hover{background:var(--oa-primary);color:#fff;border-color:var(--oa-primary);box-shadow:0 2px 8px rgba(45,106,106,.2)}
 
 .dash-scroll{flex:1;overflow-y:auto;padding:20px 24px 40px}.dash-scroll > *{animation:dash-fade .35s ease both}@keyframes dash-fade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .dash-loading{text-align:center;padding:80px 0;color:var(--oa-text-dim);font-size:13px}
@@ -688,8 +688,8 @@ body{
   .menu-btn{display:none}
 }
 .hdr-btn{
-  background:none;border:none;height:32px;padding:0 12px;border-radius:6px;
-  font-size:12px;font-weight:500;cursor:pointer;
-  color:var(--text-dim);font-family:var(--font-sans);transition:all .15s
+  background:var(--gold-bg);border:1px solid var(--gold-light);height:34px;padding:0 14px;border-radius:8px;
+  font-size:12px;font-weight:600;cursor:pointer;
+  color:var(--gold);font-family:var(--font-sans);transition:all .2s;letter-spacing:.3px
 }
-.hdr-btn:hover{background:var(--gold-bg);color:var(--gold)}
+.hdr-btn:hover{background:var(--gold);color:#fff;border-color:var(--gold);box-shadow:0 2px 8px rgba(184,134,11,.2)}
