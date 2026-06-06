@@ -92,5 +92,9 @@ cc-worker/
 
 ## 版本历史
 
+详见 [CHANGELOG.md](CHANGELOG.md)
+
+- v3.0.0 — 全面 UI 优化：暗色模式、流式重试、键盘快捷键、可访问性
+- v2.5.0 — OA 工作面板、任务日历、AI 工作总结、Webflow 设计系统
 - v2.0.0 — Web 版（GitHub Pages + Flask API），移除 cc-chat
 - v1.0.0 — M365 声明式代理初始版
