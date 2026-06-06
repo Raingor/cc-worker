@@ -2,14 +2,15 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self' https://api.sz-hrhb.com http://127.0.0.1:5001">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.sz-hrhb.com http://127.0.0.1:5001">
 <title>CC 工作助手</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 <script src="config.example.js"></script>
 <script src="config.js"></script>
 </head>
@@ -87,6 +88,7 @@
     </div>
 
     <div class="settings-footer">
+      <button class="test-conn-btn" id="test-conn-btn" type="button">测试连接</button>
       <button class="enter-btn" id="save-settings-btn" type="button">
         <span>进入工作台</span>
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M11 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -103,7 +105,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <h2>对话</h2>
-      <button class="oa-close-btn" id="close-sidebar-btn" type="button">✕ 关闭</button>
+      <button class="oa-close-btn" id="close-sidebar-btn" type="button" aria-label="关闭侧栏">✕ 关闭</button>
     </div>
     <div class="sidebar-actions">
       <button class="btn btn-primary btn-sm" id="new-conv-btn" type="button">＋ 新对话</button>
@@ -111,7 +113,7 @@
     <div class="conv-search-wrap">
       <input type="text" id="conv-search" class="conv-search" placeholder="搜索对话…" autocomplete="off">
     </div>
-    <div class="conversation-list" id="conversation-list"></div>
+    <div class="conversation-list" id="conversation-list" role="listbox" aria-label="对话列表"></div>
     <div class="sidebar-footer">
       <a href="help.html" target="_blank" class="help-link">📖 使用教程</a>
     </div>
@@ -119,7 +121,7 @@
 
   <div class="chat-main">
     <header class="chat-header">
-      <button class="oa-menu-btn" id="menu-btn" type="button">☰</button>
+      <button class="oa-menu-btn" id="menu-btn" type="button" aria-label="打开侧栏">☰</button>
       <div class="title" id="chat-title">CC 工作助手</div>
       <div class="header-actions">
         <button class="hdr-btn" id="dash-btn" type="button">任务</button>
@@ -133,19 +135,24 @@
     <div class="stats-modal" id="stats-panel">
       <div class="stats-modal-header">
         <span>用量统计</span>
-        <button class="modal-close" id="stats-close" type="button">✕</button>
+        <button class="modal-close" id="stats-close" type="button" aria-label="关闭统计面板">✕</button>
       </div>
       <div class="stats-modal-body" id="stats-body">
         <div class="stat-loading">加载中…</div>
       </div>
     </div>
 
-    <div class="message-list" id="message-list">
+    <div class="message-list" id="message-list" role="log" aria-live="polite">
       <div class="empty-state" id="empty-state">
         <div class="empty-icon"><span>✦</span></div>
         <p class="empty-title">CC 工作助手</p>
         <p class="empty-desc">生产计划 · 订单协调 · 数据分析</p>
-        <div class="starters" id="starters"></div>
+        <div class="feature-tips">
+          <div class="feature-tip"><span class="feature-tip-icon">💬</span><span>输入问题或点击下方快捷开始</span></div>
+          <div class="feature-tip"><span class="feature-tip-icon">📎</span><span>上传 Excel 文件自动分析数据</span></div>
+          <div class="feature-tip"><span class="feature-tip-icon">📋</span><span>点击「任务」查看今日工作面板</span></div>
+        </div>
+        <div class="starters" id="starters" role="group" aria-label="快捷提问"></div>
       </div>
     </div>
 
@@ -153,8 +160,8 @@
       <div class="input-wrap">
         <textarea id="chat-input" rows="1" placeholder="输入消息…" autocomplete="off"></textarea>
         <div class="input-actions">
-          <button class="tool-btn" id="upload-btn" type="button" title="上传 Excel">📎</button>
-          <button class="send-btn" id="send-btn" type="button" disabled>
+          <button class="tool-btn" id="upload-btn" type="button" title="上传 Excel（.xlsx / .xls / .csv）" aria-label="上传 Excel 文件">📎</button>
+          <button class="send-btn" id="send-btn" type="button" disabled aria-label="发送消息">
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M2 10l16-8-8 16-2-6-6-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
           </button>
         </div>

@@ -25,17 +25,30 @@ function dashDateStr(d) {
 }
 
 function showDashboard() {
-  document.getElementById('chat-screen').classList.remove('active');
-  document.getElementById('dashboard-screen').classList.add('active');
+  const chatEl = document.getElementById('chat-screen');
+  const dashEl = document.getElementById('dashboard-screen');
+  chatEl.classList.remove('slide-in');
+  dashEl.classList.remove('slide-in');
+  chatEl.classList.add('slide-out');
+  setTimeout(() => {
+    chatEl.classList.remove('active', 'slide-out');
+    dashEl.classList.add('active', 'slide-in');
+  }, 180);
   dashState.viewDate = new Date();
   dashState.selectedDate = dashDateStr(new Date());
   dashState.activeTab = 'tasks';
-  loadDashboard();
+  /* Load dashboard after transition */
+  setTimeout(loadDashboard, 200);
 }
 
 function hideDashboard() {
-  document.getElementById('dashboard-screen').classList.remove('active');
-  document.getElementById('chat-screen').classList.add('active');
+  const chatEl = document.getElementById('chat-screen');
+  const dashEl = document.getElementById('dashboard-screen');
+  dashEl.classList.remove('slide-in');
+  chatEl.classList.remove('slide-in');
+  dashEl.classList.remove('active');
+  chatEl.classList.add('active', 'slide-in');
+  setTimeout(() => chatEl.classList.remove('slide-in'), 250);
 }
 
 async function loadDashboard() {

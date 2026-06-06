@@ -9,6 +9,22 @@ let state = { settings: null, conversations: [], activeId: null, isStreaming: fa
 
 const WEEKDAY_CN = ['日', '一', '二', '三', '四', '五', '六'];
 
+/* Safe HTML rendering — DOMPurify if available, else escape */
+function sanitizeHtml(html) {
+  if (typeof DOMPurify !== 'undefined') return DOMPurify.sanitize(html, { ALLOWED_TAGS: ['p','br','strong','em','b','i','u','s','a','ul','ol','li','code','pre','blockquote','table','thead','tbody','tr','th','td','h1','h2','h3','h4','h5','h6','hr','span','div','img','sup','sub'], ALLOWED_ATTR: ['href','target','rel','src','alt','class'] });
+  return html;
+}
+function renderMarkdown(text) {
+  try {
+    let html = marked.parse(text, { breaks: true, gfm: true });
+    /* Wrap tables in scrollable container for mobile */
+    html = html.replace(/<table>/g, '<div class="table-wrap"><table>').replace(/<\/table>/g, '</table></div>');
+    return sanitizeHtml(html);
+  } catch (e) {
+    return escapeHtml(text);
+  }
+}
+
 async function loadMeta() {
   try {
     const res = await fetch('assets/cc-meta.json');
@@ -121,15 +137,16 @@ function showStatus(msg, type) {
 
 function showSettings() {
   document.getElementById('chat-screen').classList.remove('active');
+  document.getElementById('dashboard-screen').classList.remove('active');
   document.getElementById('settings-screen').classList.add('active');
   const s = state.settings || {};
   document.getElementById('api-base').value = s.apiBase || DEFAULT_API_BASE;
   document.getElementById('app-token').value = s.appToken || DEFAULT_APP_TOKEN;
-  // Reminder settings
   const r = s.reminder || {};
   document.getElementById('reminder-enabled').checked = r.enabled !== false;
   document.getElementById('reminder-time').value = r.time || '09:00';
   document.getElementById('reminder-browser').checked = r.browser !== false;
+  updateReminderFields();
 }
 
 function saveSettings() {
@@ -150,7 +167,58 @@ function saveSettings() {
   };
   saveState();
   showStatus('设置已保存', 'success');
-  setTimeout(() => startChat().then(fetchConversations), 500);
+  /* Smooth transition to chat */
+  const settingsEl = document.getElementById('settings-screen');
+  settingsEl.style.opacity = '0';
+  settingsEl.style.transition = 'opacity .25s ease';
+  setTimeout(() => {
+    settingsEl.style.opacity = '';
+    settingsEl.style.transition = '';
+    startChat().then(fetchConversations);
+  }, 300);
+}
+
+/* Disable reminder sub-fields when toggle is off */
+function updateReminderFields() {
+  const enabled = document.getElementById('reminder-enabled').checked;
+  const timeGroup = document.getElementById('reminder-time-group');
+  const browserToggle = document.getElementById('reminder-browser').closest('.toggle-field');
+  if (timeGroup) timeGroup.style.opacity = enabled ? '1' : '.4';
+  if (timeGroup) timeGroup.style.pointerEvents = enabled ? 'auto' : 'none';
+  if (browserToggle) browserToggle.style.opacity = enabled ? '1' : '.4';
+  if (browserToggle) browserToggle.style.pointerEvents = enabled ? 'auto' : 'none';
+}
+
+/* Test API connection */
+async function testConnection() {
+  const apiBase = document.getElementById('api-base').value.trim().replace(/\/+$/, '');
+  const appToken = document.getElementById('app-token').value.trim();
+  if (!apiBase || !appToken) {
+    showStatus('请先填写 API 地址和访问令牌', 'error');
+    return;
+  }
+  const btn = document.getElementById('test-conn-btn');
+  btn.disabled = true;
+  btn.textContent = '测试中…';
+  btn.classList.add('testing');
+  try {
+    const resp = await fetch(apiBase + '/v1/conversations', {
+      headers: { Authorization: 'Bearer ' + appToken },
+    });
+    if (resp.ok) {
+      showStatus('✅ 连接成功！API 地址和令牌均有效。', 'success');
+    } else if (resp.status === 401 || resp.status === 403) {
+      showStatus('❌ 令牌无效或已过期，请联系管理员。', 'error');
+    } else {
+      showStatus('⚠️ 服务器返回 ' + resp.status + '，请检查 API 地址。', 'error');
+    }
+  } catch (e) {
+    showStatus('❌ 无法连接到服务器：' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '测试连接';
+    btn.classList.remove('testing');
+  }
 }
 
 async function startChat() {
@@ -278,9 +346,9 @@ function renderConversationList() {
   el.innerHTML = filtered
     .map(
       (c) =>
-        `<div class="conv-item${c.id === state.activeId ? ' active' : ''}" data-id="${escapeAttr(c.id)}">
+        `<div class="conv-item${c.id === state.activeId ? ' active' : ''}" data-id="${escapeAttr(c.id)}" role="option" aria-selected="${c.id === state.activeId}">
       <span class="conv-title">${escapeHtml(c.title)}</span>
-      <button class="conv-del" type="button" data-del="${escapeAttr(c.id)}" title="删除">✕</button>
+      <button class="conv-del" type="button" data-del="${escapeAttr(c.id)}" title="删除" aria-label="删除对话 ${escapeAttr(c.title)}">✕</button>
     </div>`
     )
     .join('');
@@ -343,13 +411,28 @@ function createMessageElement(role, content) {
   if (role === 'user') {
     bubble.textContent = content;
   } else {
-    try {
-      bubble.innerHTML = marked.parse(content, { breaks: true, gfm: true });
-    } catch (e) {
-      bubble.textContent = content;
-    }
+    bubble.innerHTML = renderMarkdown(content);
   }
   col.appendChild(bubble);
+
+  /* Collapse long messages */
+  requestAnimationFrame(() => {
+    if (bubble.scrollHeight > 500) {
+      bubble.classList.add('collapsed');
+      const expandBtn = document.createElement('button');
+      expandBtn.className = 'msg-expand-btn';
+      expandBtn.textContent = '展开全部';
+      expandBtn.addEventListener('click', () => {
+        bubble.classList.remove('collapsed');
+        expandBtn.remove();
+      });
+      col.appendChild(expandBtn);
+    }
+  });
+
+  /* Action buttons row */
+  const actions = document.createElement('div');
+  actions.className = 'msg-col-actions';
   const copyBtn = document.createElement('button');
   copyBtn.className = 'copy-btn';
   copyBtn.textContent = '复制';
@@ -360,15 +443,40 @@ function createMessageElement(role, content) {
       const orig = copyBtn.textContent;
       copyBtn.textContent = '已复制';
       copyBtn.classList.add('copied');
-      setTimeout(() => {
-        copyBtn.textContent = orig;
-        copyBtn.classList.remove('copied');
-      }, 1500);
-    }).catch(() => {
-      showToast('复制失败', 'error');
-    });
+      setTimeout(() => { copyBtn.textContent = orig; copyBtn.classList.remove('copied'); }, 1500);
+    }).catch(() => showToast('复制失败', 'error'));
   });
-  col.appendChild(copyBtn);
+  actions.appendChild(copyBtn);
+  col.appendChild(actions);
+
+  /* Hover action menu */
+  const menu = document.createElement('div');
+  menu.className = 'msg-action-menu';
+  const menuCopy = document.createElement('button');
+  menuCopy.className = 'msg-action-btn';
+  menuCopy.textContent = '复制';
+  menuCopy.addEventListener('click', (e) => { e.stopPropagation(); navigator.clipboard.writeText(content).catch(() => {}); });
+  menu.appendChild(menuCopy);
+  if (role === 'assistant') {
+    const regenBtn = document.createElement('button');
+    regenBtn.className = 'msg-action-btn';
+    regenBtn.textContent = '重新生成';
+    regenBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const conv = getActiveConv();
+      if (!conv || state.isStreaming) return;
+      /* Find this message's index among all message elements */
+      const msgList = document.getElementById('message-list');
+      const allMsgs = Array.from(msgList.querySelectorAll('.message'));
+      const domIdx = allMsgs.indexOf(div);
+      if (domIdx >= 0 && domIdx < conv.messages.length) {
+        regenerateResponse(conv, conv.messages[domIdx], div);
+      }
+    });
+    menu.appendChild(regenBtn);
+  }
+  div.appendChild(menu);
+
   div.appendChild(avatar);
   div.appendChild(col);
   return div;
@@ -486,10 +594,21 @@ async function sendMessage() {
   scrollToBottom();
 
   state.isStreaming = true;
-  // Sync user message to server
   syncConversation(conv.id);
-  const chatApiUrl = apiUrl('/v1/chat/completions');
 
+  await streamAssistant(conv, assistantMsg, assistantEl);
+
+  state.isStreaming = false;
+  autoTitle(conv);
+  syncConversation(conv.id);
+  renderConversationList();
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('chat-input').focus();
+}
+
+/* Stream an assistant response — reusable for retry/regenerate */
+async function streamAssistant(conv, assistantMsg, assistantEl) {
+  const chatApiUrl = apiUrl('/v1/chat/completions');
   try {
     const apiMessages = conv.messages.slice(0, -1).map((m) => ({
       role: m.role,
@@ -507,12 +626,7 @@ async function sendMessage() {
 
     if (!response.ok) {
       let errMsg = '请求失败 (' + response.status + ')';
-      try {
-        const err = await response.json();
-        errMsg = err.error?.message || err.message || errMsg;
-      } catch (e) {
-        /* ignore */
-      }
+      try { const err = await response.json(); errMsg = err.error?.message || err.message || errMsg; } catch (_) {}
       throw new Error(errMsg);
     }
 
@@ -539,30 +653,50 @@ async function sendMessage() {
           if (delta) {
             fullContent += delta;
             assistantMsg.content = fullContent;
-            try {
-              bubble.innerHTML = marked.parse(fullContent, { breaks: true, gfm: true });
-            } catch (e) {
-              bubble.textContent = fullContent;
-            }
+            bubble.innerHTML = renderMarkdown(fullContent);
             scrollToBottom();
           }
-        } catch (e) {
-          /* skip */
-        }
+        } catch (_) { /* skip */ }
       }
     }
   } catch (err) {
     const bubble = assistantEl.querySelector('.bubble');
-    bubble.innerHTML =
-      '<div class="error-badge">⚠️ ' +
-      escapeHtml(err.message) +
-      '</div><p style="margin-top:8px;color:var(--text-secondary);font-size:13px;">请检查 API 地址与访问令牌，或联系管理员。</p>';
+    const partialContent = assistantMsg.content || '';
+    let errorHtml = partialContent ? renderMarkdown(partialContent) : '';
+    errorHtml += '<div class="error-badge">⚠️ ' + escapeHtml(err.message) +
+      '</div><p style="margin-top:8px;color:var(--text-secondary);font-size:13px;">请检查 API 地址与访问令牌，或点击重试。</p>';
+    bubble.innerHTML = errorHtml;
     assistantEl.classList.remove('typing');
-    conv.messages.pop();
-    // Sync rollback to server
+    /* Add retry button */
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'msg-retry-btn';
+    retryBtn.textContent = '↺ 重新生成';
+    retryBtn.addEventListener('click', () => {
+      retryBtn.remove();
+      regenerateResponse(conv, assistantMsg, assistantEl);
+    });
+    assistantEl.querySelector('.msg-col').appendChild(retryBtn);
     fetch(chatApiUrl.replace('/v1/chat/completions', '/v1/conversations/' + conv.id + '/pop'), { method: 'POST', headers: apiHeaders() }).catch(() => {});
   }
+}
 
+/* Regenerate a failed or existing assistant response */
+async function regenerateResponse(conv, oldAssistantMsg, oldAssistantEl) {
+  if (state.isStreaming) return;
+  /* Remove old assistant message from conv + DOM */
+  const idx = conv.messages.indexOf(oldAssistantMsg);
+  if (idx >= 0) conv.messages.splice(idx, 1);
+  oldAssistantEl.remove();
+  /* Create fresh assistant message */
+  const newAssistantMsg = { role: 'assistant', content: '' };
+  conv.messages.push(newAssistantMsg);
+  const newAssistantEl = createMessageElement('assistant', '');
+  newAssistantEl.classList.add('typing');
+  document.getElementById('message-list').appendChild(newAssistantEl);
+  scrollToBottom();
+  state.isStreaming = true;
+  document.getElementById('send-btn').disabled = true;
+  await streamAssistant(conv, newAssistantMsg, newAssistantEl);
   state.isStreaming = false;
   autoTitle(conv);
   syncConversation(conv.id);
@@ -737,46 +871,70 @@ async function handleFileUpload(file) {
   formData.append('file', file);
 
   try {
-    const resp = await fetch(
-      state.settings.apiBase.replace(/\/+$/, '') + '/v1/chat/upload',
-      {
-        method: 'POST',
-        headers: { Authorization: 'Bearer ' + state.settings.appToken },
-        body: formData,
-      }
-    );
+    /* Use XMLHttpRequest for upload progress tracking */
+    const data = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', state.settings.apiBase.replace(/\/+$/, '') + '/v1/chat/upload');
+      xhr.setRequestHeader('Authorization', 'Bearer ' + state.settings.appToken);
 
-    if (!resp.ok) {
-      let errMsg = '上传失败 (' + resp.status + ')';
-      try {
-        const err = await resp.json();
-        errMsg = err.error?.message || err.message || errMsg;
-      } catch (e) { /* ignore */ }
-      throw new Error(errMsg);
-    }
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          const statusEl = document.getElementById('upload-status');
+          const existingBar = statusEl.querySelector('.upload-progress-bar');
+          if (!existingBar && pct < 100) {
+            const bar = document.createElement('div');
+            bar.className = 'upload-progress-bar';
+            bar.innerHTML = '<div class="upload-progress-fill" style="width:' + pct + '%"></div>';
+            statusEl.appendChild(bar);
+          } else if (existingBar) {
+            existingBar.querySelector('.upload-progress-fill').style.width = pct + '%';
+          }
+          if (pct < 100) {
+            showUploadStatus('上传中 ' + pct + '% — ' + file.name, 'loading');
+          } else {
+            showUploadStatus('服务器分析中…', 'loading');
+          }
+        }
+      });
 
-    const data = await resp.json();
+      xhr.addEventListener('load', () => {
+        try {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            let errMsg = '上传失败 (' + xhr.status + ')';
+            try { const err = JSON.parse(xhr.responseText); errMsg = err.error?.message || err.message || errMsg; } catch (_) {}
+            reject(new Error(errMsg));
+          }
+        } catch (e) { reject(new Error('解析响应失败')); }
+      });
+      xhr.addEventListener('error', () => reject(new Error('网络错误')));
+      xhr.addEventListener('abort', () => reject(new Error('上传已取消')));
+      xhr.send(formData);
+    });
+
     hideUploadStatus();
     if (data.success && data.analysis) {
-      renderAnalysisMessage(data.analysis);
+      renderAnalysisMessage(data.analysis, file.name);
     } else {
       throw new Error(data.error?.message || '分析异常');
     }
   } catch (err) {
-    showUploadStatus(err.message, 'error');
-    setTimeout(hideUploadStatus, 5000);
+    showUploadStatus(err.message + ' — <button class="msg-retry-btn" onclick="handleFileUpload(window._lastUploadFile);this.parentElement.style.display=\'none\'">重试</button>', 'error');
+    window._lastUploadFile = file;
+    setTimeout(hideUploadStatus, 8000);
   }
 }
 
-function renderAnalysisMessage(analysis) {
+function renderAnalysisMessage(analysis, fileName) {
   const conv = getActiveConv();
   if (!conv) return;
 
-  // Build analysis content text
   let lines = [];
   lines.push('## 📊 数据分析结果');
   lines.push('');
-  lines.push(analysis.summary || '文件：' + analysis.filename);
+  lines.push(analysis.summary || '文件：' + (fileName || analysis.filename));
   lines.push('');
 
   // Tables
@@ -947,6 +1105,7 @@ function toggleStats() {
 
 function bindUi() {
   document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
+  document.getElementById('test-conn-btn').addEventListener('click', testConnection);
   document.getElementById('settings-btn').addEventListener('click', showSettings);
   document.getElementById('stats-btn').addEventListener('click', toggleStats);
   document.getElementById('stats-close').addEventListener('click', toggleStats);
@@ -962,6 +1121,8 @@ function bindUi() {
       renderConversationList();
     });
   }
+  /* Reminder toggle disable sub-fields */
+  document.getElementById('reminder-enabled').addEventListener('change', updateReminderFields);
   document.getElementById('send-btn').addEventListener('click', sendMessage);
   document.querySelector('[data-toggle-token]').addEventListener('click', () => {
     const el = document.getElementById('app-token');
@@ -973,6 +1134,38 @@ function bindUi() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
+    }
+  });
+
+  /* ===== Keyboard Shortcuts ===== */
+  document.addEventListener('keydown', (e) => {
+    const mod = e.metaKey || e.ctrlKey;
+    /* Escape — close sidebar / stats modal / settings */
+    if (e.key === 'Escape') {
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar.classList.contains('open')) { toggleSidebar(); return; }
+      const statsPanel = document.getElementById('stats-panel');
+      if (statsPanel.style.display !== 'none' && statsPanel.style.display !== '') { toggleStats(); return; }
+      if (document.getElementById('settings-screen').classList.contains('active') && state.settings) {
+        startChat(); return;
+      }
+    }
+    /* Ctrl/Cmd + N — new conversation */
+    if (mod && e.key === 'n') {
+      e.preventDefault();
+      if (state.settings) newConversation();
+    }
+    /* Ctrl/Cmd + K — focus search */
+    if (mod && e.key === 'k') {
+      e.preventDefault();
+      const sidebar = document.getElementById('sidebar');
+      if (!sidebar.classList.contains('open') && window.innerWidth < 1024) toggleSidebar();
+      document.getElementById('conv-search').focus();
+    }
+    /* Ctrl/Cmd + , — open settings */
+    if (mod && e.key === ',') {
+      e.preventDefault();
+      showSettings();
     }
   });
 }
@@ -991,6 +1184,40 @@ async function init() {
   }
   if (state.settings) await startChat();
   else showSettings();
+
+  /* ===== Visual Viewport API for mobile keyboard ===== */
+  if (window.visualViewport) {
+    const chatInput = document.getElementById('chat-input');
+    const inputArea = document.querySelector('.input-area');
+    window.visualViewport.addEventListener('resize', () => {
+      const vh = window.visualViewport.height;
+      const diff = window.innerHeight - vh;
+      if (diff > 60) {
+        /* Keyboard is open */
+        document.documentElement.style.setProperty('--keyboard-offset', diff + 'px');
+        inputArea.style.transform = 'translateY(-' + diff + 'px)';
+        inputArea.style.position = 'fixed';
+        inputArea.style.bottom = '0';
+        inputArea.style.left = '0';
+        inputArea.style.right = '0';
+        inputArea.style.zIndex = '100';
+      } else {
+        inputArea.style.transform = '';
+        inputArea.style.position = '';
+        inputArea.style.bottom = '';
+        inputArea.style.left = '';
+        inputArea.style.right = '';
+        inputArea.style.zIndex = '';
+        document.documentElement.style.removeProperty('--keyboard-offset');
+      }
+    });
+    window.visualViewport.addEventListener('scroll', () => {
+      /* Keep input visible on iOS when keyboard scrolls viewport */
+      if (document.activeElement === chatInput) {
+        chatInput.scrollIntoView({ block: 'center' });
+      }
+    });
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
