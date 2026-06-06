@@ -165,12 +165,6 @@ body{font-family:var(--font-sans);background:var(--canvas);color:var(--body);lin
 .starters button:hover{border-color:var(--ink);color:var(--ink)}
 
 .message{display:flex;gap:8px;max-width:80%;animation:msg-in .2s ease;position:relative}
-.msg-action-menu{position:absolute;top:4px;display:none;gap:2px;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:2px;box-shadow:0 2px 8px rgba(0,0,0,.08);z-index:5}
-.message:hover .msg-action-menu{display:flex}
-.message.user .msg-action-menu{left:0}
-.message.assistant .msg-action-menu{right:0}
-.msg-action-btn{background:none;border:none;cursor:pointer;font-size:11px;padding:3px 7px;border-radius:3px;color:var(--mute);font-family:var(--font-sans);transition:all .12s;white-space:nowrap}
-.msg-action-btn:hover{background:#f5f5f5;color:var(--ink)}
 .bubble.collapsed{max-height:400px;overflow:hidden;position:relative}
 .bubble.collapsed::after{content:'';position:absolute;bottom:0;left:0;right:0;height:48px;background:linear-gradient(transparent,var(--canvas));pointer-events:none}
 .msg-expand-btn{background:none;border:none;cursor:pointer;font-size:12px;color:var(--accent-blue);padding:2px 0;font-family:var(--font-sans);font-weight:500}
@@ -178,14 +172,14 @@ body{font-family:var(--font-sans);background:var(--canvas);color:var(--body);lin
 @keyframes msg-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .message.user{align-self:flex-end;flex-direction:row-reverse}
 .message.assistant{align-self:flex-start}
-.msg-col{display:flex;flex-direction:column;gap:3px;min-width:0}
+.msg-col{display:flex;flex-direction:column;gap:3px;min-width:0;position:relative}
 .message.user .msg-col{align-items:flex-end}
 .message.assistant .msg-col{align-items:flex-start}
 
-.copy-btn{background:none;border:none;cursor:pointer;font-size:11px;padding:2px 8px;border-radius:var(--radius-sm);color:var(--mute-soft);opacity:0;font-weight:500;transition:opacity .15s,color .15s;line-height:1.4;font-family:var(--font-sans)}
-.message:hover .copy-btn{opacity:1}
-.copy-btn:hover{color:var(--ink)}
-.copy-btn.copied{opacity:1;color:var(--ink);background:#f0f0f0}
+.msg-action-menu{display:none;gap:2px;margin-top:2px}
+.message:hover .msg-action-menu{display:flex}
+.msg-action-btn{background:none;border:none;cursor:pointer;font-size:11px;padding:3px 7px;border-radius:3px;color:var(--mute);font-family:var(--font-sans);transition:all .12s;white-space:nowrap}
+.msg-action-btn:hover{background:#f5f5f5;color:var(--ink)}
 
 .avatar{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500}
 .message.user .avatar{background:var(--ink);color:#fff}
@@ -373,9 +367,8 @@ body{font-family:var(--font-sans);background:var(--canvas);color:var(--body);lin
   /* Message bubble wider on small screen */
   .message{max-width:88%}
   /* Action menu always visible on touch (no hover) */
-  .msg-action-menu{display:flex;position:static;background:none;border:none;box-shadow:none;padding:0;gap:4px;margin-top:2px}
-  .msg-action-btn{font-size:12px;padding:4px 8px;background:#f5f5f5;border-radius:var(--radius-sm)}
-  .copy-btn{opacity:1}
+  .msg-action-menu{display:flex;gap:4px;margin-top:4px}
+  .msg-action-btn{font-size:12px;padding:5px 10px;background:#f5f5f5;border-radius:var(--radius-sm)}
   /* Calendar cells larger touch area */
   .oa-cal-day{padding:10px 0;font-size:13px}
   .oa-cal-wd{padding:5px 0}

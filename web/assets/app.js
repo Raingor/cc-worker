@@ -430,32 +430,19 @@ function createMessageElement(role, content) {
     }
   });
 
-  /* Action buttons row */
-  const actions = document.createElement('div');
-  actions.className = 'msg-col-actions';
-  const copyBtn = document.createElement('button');
-  copyBtn.className = 'copy-btn';
-  copyBtn.textContent = '复制';
-  copyBtn.title = '复制此消息';
-  copyBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(content).then(() => {
-      const orig = copyBtn.textContent;
-      copyBtn.textContent = '已复制';
-      copyBtn.classList.add('copied');
-      setTimeout(() => { copyBtn.textContent = orig; copyBtn.classList.remove('copied'); }, 1500);
-    }).catch(() => showToast('复制失败', 'error'));
-  });
-  actions.appendChild(copyBtn);
-  col.appendChild(actions);
-
-  /* Hover action menu */
+  /* Action buttons — copy + regenerate */
   const menu = document.createElement('div');
   menu.className = 'msg-action-menu';
   const menuCopy = document.createElement('button');
   menuCopy.className = 'msg-action-btn';
   menuCopy.textContent = '复制';
-  menuCopy.addEventListener('click', (e) => { e.stopPropagation(); navigator.clipboard.writeText(content).catch(() => {}); });
+  menuCopy.addEventListener('click', (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(content).then(() => {
+      menuCopy.textContent = '已复制';
+      setTimeout(() => { menuCopy.textContent = '复制'; }, 1500);
+    }).catch(() => showToast('复制失败', 'error'));
+  });
   menu.appendChild(menuCopy);
   if (role === 'assistant') {
     const regenBtn = document.createElement('button');
@@ -465,7 +452,6 @@ function createMessageElement(role, content) {
       e.stopPropagation();
       const conv = getActiveConv();
       if (!conv || state.isStreaming) return;
-      /* Find this message's index among all message elements */
       const msgList = document.getElementById('message-list');
       const allMsgs = Array.from(msgList.querySelectorAll('.message'));
       const domIdx = allMsgs.indexOf(div);
@@ -475,7 +461,7 @@ function createMessageElement(role, content) {
     });
     menu.appendChild(regenBtn);
   }
-  div.appendChild(menu);
+  col.appendChild(menu);
 
   div.appendChild(avatar);
   div.appendChild(col);
