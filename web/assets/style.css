@@ -366,6 +366,33 @@ body{font-family:var(--font-sans);background:var(--canvas);color:var(--body);lin
 }
 @media(max-width:767px){
   .input-wrap textarea{font-size:16px}
+  /* Larger touch targets */
+  .tool-btn,.send-btn{width:40px;height:40px}
+  .hdr-btn{padding:0 7px;font-size:11px;height:30px}
+  .chat-header{padding:0 8px}
+  /* Message bubble wider on small screen */
+  .message{max-width:88%}
+  /* Action menu always visible on touch (no hover) */
+  .msg-action-menu{display:flex;position:static;background:none;border:none;box-shadow:none;padding:0;gap:4px;margin-top:2px}
+  .msg-action-btn{font-size:12px;padding:4px 8px;background:#f5f5f5;border-radius:var(--radius-sm)}
+  .copy-btn{opacity:1}
+  /* Calendar cells larger touch area */
+  .oa-cal-day{padding:10px 0;font-size:13px}
+  .oa-cal-wd{padding:5px 0}
+  /* Starters easier to tap */
+  .starters button{padding:8px 14px;font-size:13px}
+  /* Sidebar overlay touch feedback */
+  .sidebar-overlay.active{background:rgba(0,0,0,.25)}
+  /* Input area safe area for iPhone notch */
+  .input-area{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+  /* Dashboard back button more prominent */
+  .oa-back-btn{height:36px;padding:0 14px;font-size:14px}
+  /* Tabs easier to tap */
+  .oa-tab{padding:10px 0;font-size:13px}
+  /* Task cards more compact on mobile */
+  .oa-task{min-height:auto;padding:16px 14px}
+  /* Settings card wider on mobile */
+  .settings-card{margin-top:4vh}
 }
 @media(min-width:1024px){
   .sidebar{position:static;left:0;box-shadow:none;border-right:1px solid var(--hairline)}
