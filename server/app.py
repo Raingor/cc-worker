@@ -160,6 +160,77 @@ def upload_file():
         Path(tmp.name).unlink(missing_ok=True)
 
 
+@APP.route("/v1/toolbox/pdf-to-excel", methods=["POST", "OPTIONS"])
+def pdf_to_excel():
+    """Upload a PDF, extract tables, return an Excel file."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized", "type": "invalid_request_error"}}), 401
+
+    if "file" not in request.files:
+        return jsonify({"error": {"message": "No file provided", "type": "invalid_request_error"}}), 400
+    f = request.files["file"]
+    if not f.filename:
+        return jsonify({"error": {"message": "Empty filename", "type": "invalid_request_error"}}), 400
+
+    ext = Path(f.filename).suffix.lower()
+    if ext != ".pdf":
+        return jsonify({"error": {"message": f"Unsupported file type: {ext}. Only .pdf accepted"}}), 400
+
+    tmp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+    try:
+        f.save(tmp_pdf.name)
+        tmp_pdf.close()
+
+        import pdfplumber
+        import pandas as pd
+        from io import BytesIO
+
+        all_tables = {}  # page_number -> list of dataframes
+        with pdfplumber.open(tmp_pdf.name) as pdf:
+            for i, page in enumerate(pdf.pages):
+                tables = page.extract_tables()
+                if tables:
+                    page_key = f"第{i+1}页"
+                    page_dfs = []
+                    for j, table in enumerate(tables):
+                        if table:
+                            headers = table[0] if len(table) > 1 else None
+                            data = table[1:] if len(table) > 1 else table
+                            df = pd.DataFrame(data, columns=headers)
+                            page_dfs.append(df)
+                    all_tables[page_key] = page_dfs
+
+        if not all_tables:
+            return jsonify({"error": {"message": "No tables found in the PDF"}}), 400
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            for page_key, dfs in all_tables.items():
+                if len(dfs) == 1:
+                    dfs[0].to_excel(writer, sheet_name=page_key[:31], index=False)
+                else:
+                    for j, df in enumerate(dfs):
+                        sheet = f"{page_key[:24]}-{j+1}"[:31]
+                        df.to_excel(writer, sheet_name=sheet, index=False)
+        output.seek(0)
+
+        return Response(
+            output.getvalue(),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f'attachment; filename="{Path(f.filename).stem}.xlsx"',
+            },
+        )
+    except ImportError:
+        return jsonify({"error": {"message": "pdfplumber not installed on server"}}), 503
+    except Exception as e:
+        return jsonify({"error": {"message": f"PDF processing failed: {e}"}}), 500
+    finally:
+        Path(tmp_pdf.name).unlink(missing_ok=True)
+
+
 @APP.route("/v1/reminder/email", methods=["POST", "OPTIONS"])
 def reminder_email():
     """Send a daily reminder email. Requires SMTP config in .env"""
