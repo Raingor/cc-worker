@@ -33,12 +33,30 @@ function getDefaultSettings() {
   return { apiBase: DEFAULT_API_BASE, appToken: DEFAULT_APP_TOKEN, reminderEnabled: true, reminderTime: '09:00', notifEnabled: true };
 }
 
-/* ── Panel Switching ── */
-function switchPanel(name) {
+/* ── Nav / Panel ── */
+function switchPanel(name, tab) {
+  document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.panel === name));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
-  if (name === 'dashboard') initDashboard();
-  if (name === 'toolbox') initToolbox();
+  document.querySelectorAll('.nav-sub').forEach(s => s.classList.remove('active'));
+  if (name === 'dashboard') {
+    if (tab) setDashTab(tab); else setDashTab('tasks');
+  }
+  if (name === 'toolbox') {
+    if (tab) setToolboxTab(tab); else setToolboxTab('pdf-to-excel');
+  }
+  const group = document.querySelector(`.nav-item[data-panel="${name}"]`)?.closest('.nav-group');
+  if (group) group.classList.add('open');
+}
+
+function setDashTab(tab) {
+  document.querySelectorAll('.nav-sub[data-tab]').forEach(s => s.classList.toggle('active', s.dataset.tab === tab));
+  initDashboard(tab);
+}
+
+function setToolboxTab(tab) {
+  document.querySelectorAll('.nav-sub[data-tool]').forEach(s => s.classList.toggle('active', s.dataset.tool === tab));
+  initToolbox(tab);
 }
 
 /* ── Reminder ── */
@@ -61,30 +79,37 @@ function startReminderTimer() {
 }
 
 /* ── Init ── */
-function initDashboard() {
+function initDashboard(tab) {
   if (typeof dashState === 'undefined' || typeof loadDashboard !== 'function') return;
   if (!state.settings) return;
   dashState.viewDate = new Date();
   dashState.selectedDate = dashDateStr(new Date());
-  dashState.activeTab = 'tasks';
+  dashState.activeTab = tab || 'tasks';
   loadDashboard();
 }
-function initToolbox() {
-  if (typeof renderToolbox === 'function') renderToolbox();
+function initToolbox(tab) {
+  if (typeof switchToolboxTab === 'function') switchToolboxTab(tab || 'pdf-to-excel');
 }
 
 function bindUi() {
-  document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => switchPanel(n.dataset.panel)));
-  document.querySelectorAll('#panel-dashboard .panel-tab').forEach(t => t.addEventListener('click', () => {
-    document.querySelectorAll('#panel-dashboard .panel-tab').forEach(x => x.classList.remove('active'));
-    t.classList.add('active');
-    if (typeof switchDashTab === 'function') switchDashTab(t.dataset.tab);
+  document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => {
+    const group = n.closest('.nav-group');
+    const isOpen = group?.classList.contains('open');
+    document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'));
+    if (!isOpen) {
+      switchPanel(n.dataset.panel);
+    } else {
+      // clicking same already-open item — just switch panel
+      switchPanel(n.dataset.panel);
+    }
   }));
-  document.querySelectorAll('#panel-toolbox .panel-tab').forEach(t => t.addEventListener('click', () => {
-    document.querySelectorAll('#panel-toolbox .panel-tab').forEach(x => x.classList.remove('active'));
-    t.classList.add('active');
-    if (typeof switchToolboxTab === 'function') switchToolboxTab(t.dataset.tool);
-  }));
+  document.querySelectorAll('.nav-sub').forEach(s => {
+    s.addEventListener('click', () => {
+      const panel = s.closest('.nav-group').querySelector('.nav-item').dataset.panel;
+      const tab = s.dataset.tab || s.dataset.tool;
+      switchPanel(panel, tab);
+    });
+  });
 }
 
 async function init() {
@@ -93,8 +118,10 @@ async function init() {
   loadState();
   if (!state.settings) { state.settings = getDefaultSettings(); saveState(); }
   startReminderTimer();
-  setTimeout(initDashboard, 100);
-  initToolbox();
+  // default: open toolbox
+  document.querySelector('.nav-group:has(.nav-item[data-panel="toolbox"])')?.classList.add('open');
+  document.querySelector('.nav-sub[data-tool="pdf-to-excel"]')?.classList.add('active');
+  initToolbox('pdf-to-excel');
 }
 
 document.addEventListener('DOMContentLoaded', init);

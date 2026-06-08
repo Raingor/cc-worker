@@ -19,22 +19,33 @@
   <aside class="nav-bar">
     <div class="nav-brand">CC</div>
     <nav class="nav-items">
-      <button class="nav-item" data-panel="dashboard">工作面板</button>
-      <button class="nav-item active" data-panel="toolbox">工具箱</button>
-
+      <div class="nav-group">
+        <button class="nav-item" data-panel="dashboard">
+          <span class="nav-item-label">工作面板</span>
+          <span class="nav-chevron">▾</span>
+        </button>
+        <div class="nav-dropdown">
+          <button class="nav-sub" data-tab="tasks">今日任务</button>
+          <button class="nav-sub" data-tab="calendar">工作日历</button>
+          <button class="nav-sub" data-tab="history">每日总结</button>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button class="nav-item active" data-panel="toolbox">
+          <span class="nav-item-label">工具箱</span>
+          <span class="nav-chevron">▾</span>
+        </button>
+        <div class="nav-dropdown">
+          <button class="nav-sub" data-tool="pdf-to-excel">PDF→Excel</button>
+          <button class="nav-sub" data-tool="pdf-merge">PDF合并</button>
+        </div>
+      </div>
     </nav>
   </aside>
   <main class="app-main">
 
     <!-- Panel: Dashboard -->
     <div class="panel" id="panel-dashboard">
-      <div class="panel-header">
-        <div class="panel-tabs">
-          <button class="panel-tab active" data-tab="tasks">今日任务</button>
-          <button class="panel-tab" data-tab="calendar">工作日历</button>
-          <button class="panel-tab" data-tab="history">每日总结</button>
-        </div>
-      </div>
       <div class="panel-body" id="dash-body">
         <div class="dash-loading">加载中…</div>
       </div>
@@ -42,12 +53,6 @@
 
     <!-- Panel: Toolbox -->
     <div class="panel active" id="panel-toolbox">
-      <div class="panel-header">
-        <div class="panel-tabs">
-          <button class="panel-tab active" data-tool="pdf-to-excel">PDF→Excel</button>
-          <button class="panel-tab" data-tool="pdf-merge">PDF合并</button>
-        </div>
-      </div>
       <div class="panel-body" id="toolbox-body">
         <div class="panel-empty">选择工具开始使用</div>
       </div>
