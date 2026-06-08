@@ -2,197 +2,109 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.sz-hrhb.com http://127.0.0.1:5001">
-<title>CC 工作助手</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob:; connect-src 'self' https://api.sz-hrhb.com http://127.0.0.1:5001">
+<title>CC 工作台</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
 <script src="config.example.js"></script>
 <script src="config.js"></script>
 </head>
 <body>
 
-<!-- ===== Settings ===== -->
-<div id="settings-screen">
-  <div class="settings-bg-ornament"></div>
-  <div class="settings-card">
-    <div class="settings-brand">
-      <div class="brand-emblem">
-        <span class="brand-initials">CC</span>
+<div id="app-screen" class="active">
+  <aside class="nav-bar">
+    <div class="nav-brand">CC</div>
+    <nav class="nav-items">
+      <button class="nav-item" data-panel="dashboard" title="工作面板">📋</button>
+      <button class="nav-item active" data-panel="toolbox" title="工具箱">🔧</button>
+      <button class="nav-item" data-panel="stats" title="用量统计">📊</button>
+      <button class="nav-item" data-panel="settings" title="设置">⚙️</button>
+    </nav>
+  </aside>
+  <main class="app-main">
+
+    <!-- Panel: Dashboard -->
+    <div class="panel" id="panel-dashboard">
+      <div class="panel-header">
+        <div class="panel-tabs">
+          <button class="panel-tab active" data-tab="tasks">今日任务</button>
+          <button class="panel-tab" data-tab="calendar">工作日历</button>
+          <button class="panel-tab" data-tab="history">每日总结</button>
+        </div>
       </div>
-      <h1 class="brand-title">工作助手</h1>
-      <p class="brand-sub">谭斯雅的专属生产计划助理</p>
+      <div class="panel-body" id="dash-body">
+        <div class="dash-loading">加载中…</div>
+      </div>
     </div>
 
-    <div class="settings-body">
-      <div class="settings-section">
-        <div class="section-header">
-          <span class="section-icon">🔌</span>
-          <span class="section-label">连接配置</span>
+    <!-- Panel: Toolbox -->
+    <div class="panel active" id="panel-toolbox">
+      <div class="panel-header">
+        <div class="panel-tabs">
+          <button class="panel-tab active" data-tool="pdf-to-excel">PDF→Excel</button>
+          <button class="panel-tab" data-tool="pdf-merge">PDF合并</button>
         </div>
-        <div class="field-group">
+      </div>
+      <div class="panel-body" id="toolbox-body">
+        <div class="panel-empty">选择工具开始使用</div>
+      </div>
+    </div>
+
+    <!-- Panel: Stats -->
+    <div class="panel" id="panel-stats">
+      <div class="panel-header"><h1>用量统计</h1></div>
+      <div class="panel-body" id="stats-body"><div class="dash-loading">加载中…</div></div>
+    </div>
+
+    <!-- Panel: Settings -->
+    <div class="panel" id="panel-settings">
+      <div class="panel-header"><h1>设置</h1></div>
+      <div class="panel-body">
+        <div class="settings-panel-form">
           <div class="field">
             <label for="api-base">API 地址</label>
-            <div class="input-wrap-field">
-              <input type="url" id="api-base" placeholder="https://api.sz-hrhb.com">
-            </div>
+            <input type="url" id="api-base" class="input-wrap-field input" placeholder="https://api.sz-hrhb.com">
           </div>
           <div class="field">
             <label for="app-token">访问令牌</label>
-            <div class="input-wrap-field token-wrap">
-              <input type="password" id="app-token" autocomplete="off" placeholder="由管理员提供">
-              <button class="token-toggle" type="button" data-toggle-token title="显示/隐藏令牌">👁</button>
+            <input type="password" id="app-token" class="input-wrap-field input" autocomplete="off">
+          </div>
+          <div class="field">
+            <div class="toggle-row">
+              <span class="field-label">启用提醒</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="reminder-enabled" checked>
+                <span class="toggle-slider"></span>
+              </label>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <div class="section-header">
-          <span class="section-icon">⏰</span>
-          <span class="section-label">每日提醒</span>
-        </div>
-        <div class="field-group">
-          <div class="toggle-field">
-            <div class="toggle-info">
-              <span class="toggle-title">启用提醒</span>
-              <span class="toggle-desc">工作日定时推送当日任务</span>
-            </div>
-            <label class="tg-track">
-              <input type="checkbox" id="reminder-enabled" checked>
-              <span class="tg-knob"></span>
-            </label>
-          </div>
-          <div class="field" id="reminder-time-group">
+          <div class="field">
             <label for="reminder-time">提醒时间</label>
-            <div class="input-wrap-field">
-              <input type="time" id="reminder-time" value="09:00">
+            <input type="time" id="reminder-time" value="09:00">
+          </div>
+          <div class="field">
+            <div class="toggle-row">
+              <span class="field-label">浏览器通知</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-enabled" checked>
+                <span class="toggle-slider"></span>
+              </label>
             </div>
           </div>
-          <div class="toggle-field">
-            <div class="toggle-info">
-              <span class="toggle-title">浏览器通知</span>
-              <span class="toggle-desc">到达时间时弹出桌面提醒</span>
-            </div>
-            <label class="tg-track">
-              <input type="checkbox" id="reminder-browser" checked>
-              <span class="tg-knob"></span>
-            </label>
-          </div>
+          <button class="oa-btn" id="save-settings-btn" style="width:100%;justify-content:center;margin-top:8px">保存设置</button>
         </div>
       </div>
     </div>
 
-    <div class="settings-footer">
-      <button class="test-conn-btn" id="test-conn-btn" type="button">测试连接</button>
-      <button class="enter-btn" id="save-settings-btn" type="button">
-        <span>进入工作台</span>
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M11 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <div id="settings-status" class="settings-status"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== Chat ===== -->
-<div id="chat-screen">
-  <div class="sidebar-overlay" id="sidebar-overlay"></div>
-
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <h2>对话</h2>
-      <button class="oa-close-btn" id="close-sidebar-btn" type="button" aria-label="关闭侧栏">✕ 关闭</button>
-    </div>
-    <div class="sidebar-actions">
-      <button class="btn btn-primary btn-sm" id="new-conv-btn" type="button">＋ 新对话</button>
-    </div>
-    <div class="conv-search-wrap">
-      <input type="text" id="conv-search" class="conv-search" placeholder="搜索对话…" autocomplete="off">
-    </div>
-    <div class="conversation-list" id="conversation-list" role="listbox" aria-label="对话列表"></div>
-    <div class="sidebar-footer">
-      <a href="help.html" target="_blank" class="help-link">📖 使用教程</a>
-    </div>
-  </aside>
-
-  <div class="chat-main">
-    <header class="chat-header">
-      <button class="oa-menu-btn" id="menu-btn" type="button" aria-label="打开侧栏">☰</button>
-      <div class="title" id="chat-title">CC 工作助手</div>
-      <div class="header-actions">
-        <button class="hdr-btn" id="dash-btn" type="button">任务</button>
-        <button class="hdr-btn" id="stats-btn" type="button">用量</button>
-        <button class="hdr-btn" id="settings-btn" type="button">设置</button>
-      </div>
-    </header>
-
-    <!-- Stats Modal -->
-    <div class="modal-overlay" id="stats-overlay"></div>
-    <div class="stats-modal" id="stats-panel">
-      <div class="stats-modal-header">
-        <span>用量统计</span>
-        <button class="modal-close" id="stats-close" type="button" aria-label="关闭统计面板">✕</button>
-      </div>
-      <div class="stats-modal-body" id="stats-body">
-        <div class="stat-loading">加载中…</div>
-      </div>
-    </div>
-
-    <div class="message-list" id="message-list" role="log" aria-live="polite">
-      <div class="empty-state" id="empty-state">
-        <div class="empty-icon"><span>✦</span></div>
-        <p class="empty-title">CC 工作助手</p>
-        <p class="empty-desc">生产计划 · 订单协调 · 数据分析</p>
-        <div class="feature-tips">
-          <div class="feature-tip"><span class="feature-tip-icon">💬</span><span>输入问题或点击下方快捷开始</span></div>
-          <div class="feature-tip"><span class="feature-tip-icon">📎</span><span>上传 Excel 文件自动分析数据</span></div>
-          <div class="feature-tip"><span class="feature-tip-icon">📋</span><span>点击「任务」查看今日工作面板</span></div>
-        </div>
-        <div class="starters" id="starters" role="group" aria-label="快捷提问"></div>
-      </div>
-    </div>
-
-    <div class="input-area">
-      <div class="input-wrap">
-        <textarea id="chat-input" rows="1" placeholder="输入消息…" autocomplete="off"></textarea>
-        <div class="input-actions">
-          <button class="tool-btn" id="upload-btn" type="button" title="上传 Excel（.xlsx / .xls / .csv）" aria-label="上传 Excel 文件">📎</button>
-          <button class="send-btn" id="send-btn" type="button" disabled aria-label="发送消息">
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M2 10l16-8-8 16-2-6-6-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-          </button>
-        </div>
-      </div>
-      <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
-      <div class="upload-status" id="upload-status"></div>
-    </div>
-    <div class="drop-overlay" id="drop-overlay">
-      <div class="drop-card">
-        <span>📄 松开以上传文件分析</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== Dashboard Screen ===== -->
-<div id="dashboard-screen">
-  <header class="chat-header">
-    <button class="oa-back-btn" id="dash-back-btn" type="button">◀ 返回</button>
-    <div class="title">📋 工作面板</div>
-    <div class="header-actions">
-      <button class="oa-header-btn" id="stats-btn2" type="button">用量</button>
-      <button class="oa-header-btn" id="settings-btn2" type="button">设置</button>
-    </div>
-  </header>
-  <div class="dash-scroll" id="dash-body">
-    <div class="dash-loading">加载中…</div>
-  </div>
+  </main>
 </div>
 
 <script src="assets/app.js"></script>
 <script src="assets/dashboard.js"></script>
+<script src="assets/toolbox.js"></script>
 </body>
 </html>

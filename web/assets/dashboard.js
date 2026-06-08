@@ -1,4 +1,4 @@
-/* CC 工作助手 — OA Work Panel */
+/* CC 工作台 — 工作面板 */
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -24,33 +24,6 @@ function dashDateStr(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
-function showDashboard() {
-  const chatEl = document.getElementById('chat-screen');
-  const dashEl = document.getElementById('dashboard-screen');
-  chatEl.classList.remove('slide-in');
-  dashEl.classList.remove('slide-in');
-  chatEl.classList.add('slide-out');
-  setTimeout(() => {
-    chatEl.classList.remove('active', 'slide-out');
-    dashEl.classList.add('active', 'slide-in');
-  }, 180);
-  dashState.viewDate = new Date();
-  dashState.selectedDate = dashDateStr(new Date());
-  dashState.activeTab = 'tasks';
-  /* Load dashboard after transition */
-  setTimeout(loadDashboard, 200);
-}
-
-function hideDashboard() {
-  const chatEl = document.getElementById('chat-screen');
-  const dashEl = document.getElementById('dashboard-screen');
-  dashEl.classList.remove('slide-in');
-  chatEl.classList.remove('slide-in');
-  dashEl.classList.remove('active');
-  chatEl.classList.add('active', 'slide-in');
-  setTimeout(() => chatEl.classList.remove('slide-in'), 250);
-}
-
 async function loadDashboard() {
   const body = document.getElementById('dash-body');
   body.innerHTML = '<div class="dash-loading">加载中…</div>';
@@ -62,7 +35,7 @@ async function loadDashboard() {
     ]);
     if (!checklistResp.ok) {
       const errData = await checklistResp.json().catch(() => ({}));
-      body.innerHTML = '<div class="dash-error">加载失败：' + (errData.error?.message || checklistResp.statusText) + '</div>';
+      body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">加载失败：' + (errData.error?.message || checklistResp.statusText) + '</div>';
       return;
     }
     dashState.data = await checklistResp.json();
@@ -72,7 +45,7 @@ async function loadDashboard() {
     }
     renderDashboard();
   } catch (e) {
-    body.innerHTML = '<div class="dash-error">网络错误：' + e.message + '</div>';
+    body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">网络错误：' + e.message + '</div>';
   } finally {
     dashState.loading = false;
   }
@@ -84,11 +57,33 @@ function renderDashboard() {
   if (!data) return;
   body.innerHTML = '';
   body.appendChild(renderGreeting(data));
-  body.appendChild(renderTabs());
-  body.appendChild(renderTabContent(data));
+  renderActiveTabInto(body, data);
 }
 
-/* ── Greeting Card ── */
+function renderActiveTabOnly() {
+  const body = document.getElementById('dash-body');
+  const data = dashState.data;
+  if (!data) return;
+  const greeting = body.querySelector('.oa-greeting');
+  body.innerHTML = '';
+  if (greeting) body.appendChild(greeting);
+  else body.appendChild(renderGreeting(data));
+  renderActiveTabInto(body, data);
+}
+
+function renderActiveTabInto(body, data) {
+  if (dashState.activeTab === 'tasks') body.appendChild(renderTasksTab(data));
+  else if (dashState.activeTab === 'calendar') body.appendChild(renderCalendarTab());
+  else if (dashState.activeTab === 'history') renderHistoryTabAsync(body);
+}
+
+function switchDashTab(id) {
+  if (dashState.activeTab === id) return;
+  dashState.activeTab = id;
+  renderActiveTabOnly();
+}
+
+/* ── Greeting ── */
 function renderGreeting(data) {
   const el = document.createElement('div');
   el.className = 'oa-greeting';
@@ -97,105 +92,37 @@ function renderGreeting(data) {
   const weekday = WEEKDAY_LABELS[d.getDay()];
   const prog = data.progress || { checked: 0, total: 0 };
   const pct = prog.total > 0 ? Math.round(prog.checked / prog.total * 100) : 0;
-
   const circumference = 2 * Math.PI * 22;
   const offset = circumference - (pct / 100) * circumference;
-
   el.innerHTML =
-    '<div class="oa-greeting-row">' +
-    '  <div class="oa-greeting-icon">📋</div>' +
-    '  <div class="oa-greeting-text">' +
-    '    <div class="oa-greeting-date">' + dt[0] + '年' + (+dt[1]) + '月' + (+dt[2]) + '日 · 星期' + weekday + (data.is_today ? ' · 今天' : '') + '</div>' +
-    '    <div class="oa-greeting-title">' + escapeHtml(data.title || '工作面板') + '</div>' +
-    '  </div>' +
-    '  <div class="oa-greeting-progress">' +
-    '    <svg width="52" height="52" viewBox="0 0 52 52">' +
-    '      <circle class="oa-greeting-progress-bg" cx="26" cy="26" r="22"/>' +
-    '      <circle class="oa-greeting-progress-fill" cx="26" cy="26" r="22" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '"/>' +
-    '    </svg>' +
-    '    <span class="oa-greeting-progress-text">' + pct + '%</span>' +
-    '  </div>' +
-    '</div>';
+    '<div class="oa-greeting-text">' +
+    '  <div class="oa-greeting-sub">' + dt[0] + '年' + (+dt[1]) + '月' + (+dt[2]) + '日 · 星期' + weekday + (data.is_today ? ' · 今天' : '') + '</div>' +
+    '  <div class="oa-greeting-title">' + escapeHtml(data.title || '工作面板') + '</div>' +
+    '</div>' +
+    '<svg class="oa-greeting-ring" viewBox="0 0 52 52">' +
+    '  <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="3"/>' +
+    '  <circle cx="26" cy="26" r="22" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" transform="rotate(-90 26 26)"/>' +
+    '  <text x="26" y="26" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="12" font-weight="600" font-family="Inter,sans-serif">' + pct + '%</text>' +
+    '</svg>';
   return el;
-}
-
-/* ── Tabs ── */
-function renderTabs() {
-  const tabs = [
-    { id: 'tasks', label: '今日任务' },
-    { id: 'calendar', label: '工作日历' },
-    { id: 'history', label: '每日总结' },
-  ];
-  const el = document.createElement('div');
-  el.className = 'oa-tabs';
-  for (const t of tabs) {
-    const btn = document.createElement('button');
-    btn.className = 'oa-tab' + (dashState.activeTab === t.id ? ' active' : '');
-    btn.textContent = t.label;
-    btn.addEventListener('click', () => switchTab(t.id));
-    el.appendChild(btn);
-  }
-  return el;
-}
-
-function switchTab(id) {
-  if (dashState.activeTab === id) return;
-  dashState.activeTab = id;
-  renderDashboard();
-}
-
-/* ── Tab Content Router ── */
-function renderTabContent(data) {
-  const wrap = document.createElement('div');
-  if (dashState.activeTab === 'tasks') {
-    wrap.appendChild(renderTasksTab(data));
-  } else if (dashState.activeTab === 'calendar') {
-    wrap.appendChild(renderCalendarTab());
-  } else if (dashState.activeTab === 'history') {
-    wrap.appendChild(renderHistoryTab());
-  }
-  return wrap;
 }
 
 /* ══════ Tasks Tab ══════ */
 function renderTasksTab(data) {
   const el = document.createElement('div');
-
   if (!data.items || data.items.length === 0) {
-    const empty = document.createElement('div');
-    empty.className = 'oa-empty-message';
-    empty.textContent = '该日期没有工作任务安排。';
-    el.appendChild(empty);
+    el.innerHTML = '<div class="panel-empty" style="padding:60px 0">该日期没有工作任务安排。</div>';
     return el;
   }
-
-  // Compact progress bar
-  const prog = data.progress || { checked: 0, total: 0 };
-  const pct = prog.total > 0 ? Math.round(prog.checked / prog.total * 100) : 0;
-  const pbar = document.createElement('div');
-  pbar.className = 'oa-progress-compact';
-  pbar.innerHTML =
-    '<div class="oa-progress-compact-bar"><div class="oa-progress-compact-fill" style="width:' + pct + '%"></div></div>' +
-    '<div class="oa-progress-compact-text">' + prog.checked + '/' + prog.total + '</div>';
-  el.appendChild(pbar);
-
-  // Morning
   const morning = data.items.filter(i => i.period === 'morning');
-  if (morning.length > 0) {
-    el.appendChild(renderSection('上午 · 重点工作', morning, 'morning'));
-  }
-
-  // Afternoon
+  if (morning.length > 0) el.appendChild(renderSection('上午 · 重点工作', morning, 'morning'));
   const afternoon = data.items.filter(i => i.period === 'afternoon');
-  if (afternoon.length > 0) {
-    el.appendChild(renderSection('下午 · 核准事项', afternoon, 'afternoon'));
-  }
+  if (afternoon.length > 0) el.appendChild(renderSection('下午 · 核准事项', afternoon, 'afternoon'));
 
-  // Summarize
   const sumWrap = document.createElement('div');
-  sumWrap.className = 'oa-summarize';
+  sumWrap.className = 'oa-summarize-wrap';
   const sumBtn = document.createElement('button');
-  sumBtn.className = 'oa-summarize-btn' + (dashState.summarizing ? ' loading' : '');
+  sumBtn.className = 'oa-btn';
   sumBtn.type = 'button';
   sumBtn.textContent = dashState.summarizing ? '⏳ AI 正在总结…' : '🤖 总结今天任务完成';
   sumBtn.disabled = dashState.summarizing;
@@ -203,33 +130,28 @@ function renderTasksTab(data) {
   sumWrap.appendChild(sumBtn);
   el.appendChild(sumWrap);
 
-  // Summary
   if (data.summary) {
     const card = document.createElement('div');
-    card.className = 'oa-summary-card';
-    card.innerHTML =
-      '<div class="oa-summary-card-header"><span class="oa-summary-card-icon">🤖</span><span class="oa-summary-card-title">AI 工作总结</span></div>' +
-      '<div class="oa-summary-card-body">' + formatSummary(data.summary) + '</div>';
+    card.className = 'oa-summary';
+    card.innerHTML = '<strong style="display:block;margin-bottom:6px">🤖 AI 工作总结</strong>' + formatSummary(data.summary);
     el.appendChild(card);
   }
-
   return el;
 }
 
 function renderSection(label, items, period) {
   const section = document.createElement('div');
-  section.className = 'oa-section';
+  section.className = 'oa-dash-section';
   const header = document.createElement('div');
   header.className = 'oa-section-header';
   header.innerHTML = '<span class="oa-section-dot ' + period + '"></span><span class="oa-section-label">' + label + '</span>';
   section.appendChild(header);
-
   const list = document.createElement('div');
   list.className = 'oa-task-grid';
   for (const item of items) {
     const row = document.createElement('div');
     row.className = 'oa-task' + (item.checked ? ' done' : '');
-
+    row.dataset.itemId = item.id;
     const cbWrap = document.createElement('div');
     cbWrap.className = 'oa-cb-wrap';
     const cb = document.createElement('input');
@@ -239,162 +161,111 @@ function renderSection(label, items, period) {
     cb.addEventListener('change', () => onCheckChange(item.id, cb.checked));
     cbWrap.appendChild(cb);
     row.appendChild(cbWrap);
-
     const body = document.createElement('div');
     body.className = 'oa-task-body';
     const labelEl = document.createElement('div');
     labelEl.className = 'oa-task-label';
     labelEl.textContent = item.label;
-    if (item.checked) labelEl.style.textDecoration = 'line-through';
     body.appendChild(labelEl);
-
     const noteInput = document.createElement('textarea');
     noteInput.className = 'oa-task-note';
-    noteInput.placeholder = '备注（选填）…';
+    noteInput.placeholder = '备注…';
     noteInput.value = item.note || '';
     noteInput.addEventListener('blur', () => {
-      if (noteInput.value !== (item.note || '')) {
-        item.note = noteInput.value;
-        saveChecklist();
-      }
+      if (noteInput.value !== (item.note || '')) { item.note = noteInput.value; saveChecklist(); }
     });
     noteInput.style.display = item.note ? 'block' : 'none';
     body.appendChild(noteInput);
     row.appendChild(body);
-
     const noteBtn = document.createElement('button');
-    noteBtn.className = 'oa-note-btn' + (item.note ? ' active' : '');
+    noteBtn.className = 'oa-note-btn';
     noteBtn.type = 'button';
     noteBtn.textContent = '📝';
     noteBtn.title = item.note ? '编辑备注' : '添加备注';
     noteBtn.addEventListener('click', () => {
       const ni = row.querySelector('.oa-task-note');
-      if (ni) {
-        ni.style.display = ni.style.display === 'none' ? 'block' : 'none';
-        if (ni.style.display === 'block') ni.focus();
-      }
+      if (ni) { ni.style.display = ni.style.display === 'none' ? 'block' : 'none'; if (ni.style.display === 'block') ni.focus(); }
     });
     row.appendChild(noteBtn);
-
     list.appendChild(row);
   }
   section.appendChild(list);
   return section;
 }
 
-/* ══════ Calendar Tab ══════ */
+/* ══════ Calendar ══════ */
 function renderCalendarTab() {
   const d = new Date(dashState.viewDate);
   const cal = document.createElement('div');
-  cal.className = 'oa-cal';
-
+  cal.className = 'oa-calendar';
   const nav = document.createElement('div');
-  nav.className = 'oa-cal-nav';
+  nav.className = 'oa-cal-month';
   const prev = document.createElement('button');
-  prev.className = 'oa-cal-nav-btn'; prev.textContent = '◀';
-  prev.addEventListener('click', () => { dashState.viewDate.setMonth(dashState.viewDate.getMonth() - 1); renderDashboard(); });
-  const month = document.createElement('span');
-  month.className = 'oa-cal-month';
+  prev.className = 'oa-cal-nav'; prev.textContent = '◀';
+  prev.addEventListener('click', () => { dashState.viewDate.setMonth(dashState.viewDate.getMonth() - 1); renderActiveTabOnly(); });
+  const month = document.createElement('h3');
   month.textContent = d.getFullYear() + '年' + (d.getMonth() + 1) + '月';
   const next = document.createElement('button');
-  next.className = 'oa-cal-nav-btn'; next.textContent = '▶';
-  next.addEventListener('click', () => { dashState.viewDate.setMonth(dashState.viewDate.getMonth() + 1); renderDashboard(); });
+  next.className = 'oa-cal-nav'; next.textContent = '▶';
+  next.addEventListener('click', () => { dashState.viewDate.setMonth(dashState.viewDate.getMonth() + 1); renderActiveTabOnly(); });
   nav.appendChild(prev); nav.appendChild(month); nav.appendChild(next);
   cal.appendChild(nav);
-
+  const wk = document.createElement('div');
+  wk.className = 'oa-cal-weekdays';
+  for (const wd of WEEKDAY_LABELS) { const c = document.createElement('div'); c.className = 'oa-cal-weekday'; c.textContent = wd; wk.appendChild(c); }
+  cal.appendChild(wk);
   const grid = document.createElement('div');
-  grid.className = 'oa-cal-grid';
-
-  // Weekday headers
-  for (const wd of WEEKDAY_LABELS) {
-    const cell = document.createElement('div');
-    cell.className = 'oa-cal-cell oa-cal-wd';
-    cell.textContent = wd;
-    grid.appendChild(cell);
-  }
-
+  grid.className = 'oa-cal-days';
   const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
   const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0);
   const today = dashDateStr(new Date());
   const selected = dashState.selectedDate;
   const historySet = new Set(dashState.historyDates);
-
-  for (let i = 0; i < firstDay.getDay(); i++) {
-    const empty = document.createElement('div');
-    empty.className = 'oa-cal-cell oa-cal-empty';
-    grid.appendChild(empty);
-  }
+  for (let i = 0; i < firstDay.getDay(); i++) { const e = document.createElement('div'); e.className = 'oa-cal-day other'; grid.appendChild(e); }
   for (let day = 1; day <= lastDay.getDate(); day++) {
     const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
     const cell = document.createElement('div');
-    cell.className = 'oa-cal-cell oa-cal-day';
-    if (dateStr === today) cell.classList.add('oa-cal-today');
-    if (dateStr === selected) cell.classList.add('oa-cal-selected');
-    if (historySet.has(dateStr)) cell.classList.add('oa-cal-has-data');
+    cell.className = 'oa-cal-day';
+    if (dateStr === today) cell.classList.add('today');
+    if (dateStr === selected) cell.classList.add('selected');
+    if (historySet.has(dateStr)) cell.classList.add('has-data');
     cell.textContent = String(day);
-    cell.addEventListener('click', () => {
-      dashState.selectedDate = dateStr;
-      dashState.activeTab = 'tasks';
-      loadDashboard();
-    });
+    cell.addEventListener('click', () => { dashState.selectedDate = dateStr; dashState.activeTab = 'tasks'; loadDashboard(); });
     grid.appendChild(cell);
   }
   cal.appendChild(grid);
   return cal;
 }
 
-/* ══════ History Tab ══════ */
-async function renderHistoryTab() {
-  const el = document.createElement('div');
-  el.className = 'oa-history';
-
-  if (dashState.historyDates.length === 0) {
-    el.innerHTML = '<div class="oa-history-empty">暂无每日总结记录<br>完成今日任务后，点击"总结今天任务完成"生成</div>';
-    return el;
-  }
-
-  // Load summaries for all dates with data
+/* ══════ History ══════ */
+async function renderHistoryTabAsync(body) {
+  const container = document.createElement('div');
+  container.innerHTML = '<div class="dash-loading">加载中…</div>';
+  body.appendChild(container);
+  if (dashState.historyDates.length === 0) { container.innerHTML = '<div class="panel-empty" style="padding:60px 0">暂无每日总结</div>'; return; }
   const summaries = [];
   for (const date of dashState.historyDates) {
     try {
       const resp = await fetch(dashUrl('/v1/checklist?date=' + date), { headers: dashHeaders() });
-      if (resp.ok) {
-        const d = await resp.json();
-        if (d.summary) {
-          summaries.push({ date, title: d.title, summary: d.summary });
-        }
-      }
+      if (resp.ok) { const d = await resp.json(); if (d.summary) summaries.push({ date, title: d.title, summary: d.summary }); }
     } catch (_) {}
   }
-
-  if (summaries.length === 0) {
-    el.innerHTML = '<div class="oa-history-empty">暂无每日总结</div>';
-    return el;
-  }
-
-  const grid = document.createElement('div');
-  grid.className = 'oa-history-grid';
-  el.appendChild(grid);
-
+  if (summaries.length === 0) { container.innerHTML = '<div class="panel-empty" style="padding:60px 0">暂无每日总结</div>'; return; }
   summaries.sort((a, b) => b.date.localeCompare(a.date));
+  const list = document.createElement('div');
+  list.className = 'oa-history-list';
   for (const s of summaries) {
     const dt = s.date.split('-');
     const d = new Date(+dt[0], +dt[1] - 1, +dt[2]);
     const wd = WEEKDAY_LABELS[d.getDay()];
     const item = document.createElement('div');
     item.className = 'oa-history-item';
-    item.innerHTML =
-      '<div class="oa-history-date">📅 ' + s.date + ' · 星期' + wd + '</div>' +
-      '<div class="oa-history-title">' + escapeHtml(s.title || '') + '</div>' +
-      '<div class="oa-history-preview">' + escapeHtml(s.summary).slice(0, 200) + '…</div>';
-    item.addEventListener('click', () => {
-      dashState.selectedDate = s.date;
-      dashState.activeTab = 'tasks';
-      loadDashboard();
-    });
-    grid.appendChild(item);
+    item.innerHTML = '<div class="oa-history-date">📅 ' + s.date + ' · 星期' + wd + '</div>' + (s.title ? '<div style="font-weight:600;font-size:13px;margin-bottom:6px">' + escapeHtml(s.title) + '</div>' : '') + '<div class="oa-history-body">' + formatSummary(s.summary) + '</div>';
+    item.addEventListener('click', () => { dashState.selectedDate = s.date; dashState.activeTab = 'tasks'; loadDashboard(); });
+    list.appendChild(item);
   }
-  return el;
+  container.innerHTML = '';
+  container.appendChild(list);
 }
 
 /* ── Actions ── */
@@ -405,79 +276,40 @@ function onCheckChange(itemId, checked) {
   item.checked = checked;
   saveChecklist();
 }
-
 async function saveChecklist() {
   if (!dashState.data || dashState.saving) return;
   dashState.saving = true;
   const items = dashState.data.items.map(i => ({ id: i.id, checked: i.checked, note: i.note || '' }));
   try {
-    const resp = await fetch(dashUrl('/v1/checklist'), {
-      method: 'POST',
-      headers: { ...dashHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: dashState.selectedDate, items }),
-    });
+    const resp = await fetch(dashUrl('/v1/checklist'), { method: 'POST', headers: { ...dashHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ date: dashState.selectedDate, items }) });
     if (resp.ok) {
       const chkResp = await fetch(dashUrl('/v1/checklist?date=' + dashState.selectedDate), { headers: dashHeaders() });
-      if (chkResp.ok) {
-        const fresh = await chkResp.json();
-        dashState.data.progress = fresh.progress;
-      }
-      renderDashboard();
+      if (chkResp.ok) dashState.data.progress = (await chkResp.json()).progress;
+      renderActiveTabOnly();
     }
-  } catch (e) {
-    showToast('保存失败', 'error');
-  } finally {
-    dashState.saving = false;
-  }
+  } catch (e) { console.error('Save failed', e);
+  } finally { dashState.saving = false; }
 }
-
 async function onSummarize() {
   if (dashState.summarizing) return;
   if (!dashState.selectedDate) return;
   dashState.summarizing = true;
-  renderDashboard();
+  renderActiveTabOnly();
   try {
-    const resp = await fetch(dashUrl('/v1/checklist/summarize'), {
-      method: 'POST',
-      headers: { ...dashHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: dashState.selectedDate }),
-    });
-    if (!resp.ok) {
-      const errData = await resp.json().catch(() => ({}));
-      showToast(errData.error?.message || 'AI 总结失败', 'error');
-      return;
-    }
+    const resp = await fetch(dashUrl('/v1/checklist/summarize'), { method: 'POST', headers: { ...dashHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ date: dashState.selectedDate }) });
+    if (!resp.ok) return;
     const data = await resp.json();
     dashState.data.summary = data.summary;
-    if (!dashState.historyDates.includes(dashState.selectedDate)) {
-      dashState.historyDates.push(dashState.selectedDate);
-    }
-    showToast('总结完成 ✓', 'success');
-  } catch (e) {
-    showToast('AI 总结出错：' + e.message, 'error');
-  } finally {
-    dashState.summarizing = false;
-    renderDashboard();
-  }
+    if (!dashState.historyDates.includes(dashState.selectedDate)) dashState.historyDates.push(dashState.selectedDate);
+  } catch (e) { console.error('AI 总结出错：' + e.message);
+  } finally { dashState.summarizing = false; renderActiveTabOnly(); }
 }
-
 function formatSummary(text) {
   if (!text) return '';
-  return escapeHtml(text)
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>');
+  return escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
 }
-
 function escapeHtml(s) {
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
 }
-
-/* ── Bind ── */
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('dash-btn')?.addEventListener('click', showDashboard);
-  document.getElementById('dash-back-btn')?.addEventListener('click', hideDashboard);
-  document.getElementById('stats-btn2')?.addEventListener('click', () => { hideDashboard(); setTimeout(toggleStats, 100); });
-  document.getElementById('settings-btn2')?.addEventListener('click', () => { hideDashboard(); setTimeout(showSettings, 100); });
-});
