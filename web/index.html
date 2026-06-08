@@ -21,8 +21,7 @@
     <nav class="nav-items">
       <button class="nav-item" data-panel="dashboard">工作面板</button>
       <button class="nav-item active" data-panel="toolbox">工具箱</button>
-      <button class="nav-item" data-panel="stats">用量统计</button>
-      <button class="nav-item" data-panel="settings">设置</button>
+
     </nav>
   </aside>
   <main class="app-main">
@@ -54,51 +53,7 @@
       </div>
     </div>
 
-    <!-- Panel: Stats -->
-    <div class="panel" id="panel-stats">
-      <div class="panel-header"><h1>用量统计</h1></div>
-      <div class="panel-body" id="stats-body"><div class="dash-loading">加载中…</div></div>
-    </div>
 
-    <!-- Panel: Settings -->
-    <div class="panel" id="panel-settings">
-      <div class="panel-header"><h1>设置</h1></div>
-      <div class="panel-body">
-        <div class="settings-panel-form">
-          <div class="field">
-            <label for="api-base">API 地址</label>
-            <input type="url" id="api-base" class="input-wrap-field input" placeholder="https://api.sz-hrhb.com">
-          </div>
-          <div class="field">
-            <label for="app-token">访问令牌</label>
-            <input type="password" id="app-token" class="input-wrap-field input" autocomplete="off">
-          </div>
-          <div class="field">
-            <div class="toggle-row">
-              <span class="field-label">启用提醒</span>
-              <label class="toggle-switch">
-                <input type="checkbox" id="reminder-enabled" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-          </div>
-          <div class="field">
-            <label for="reminder-time">提醒时间</label>
-            <input type="time" id="reminder-time" value="09:00">
-          </div>
-          <div class="field">
-            <div class="toggle-row">
-              <span class="field-label">浏览器通知</span>
-              <label class="toggle-switch">
-                <input type="checkbox" id="notif-enabled" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-          </div>
-          <button class="oa-btn" id="save-settings-btn" style="width:100%;justify-content:center;margin-top:8px">保存设置</button>
-        </div>
-      </div>
-    </div>
 
   </main>
 </div>
