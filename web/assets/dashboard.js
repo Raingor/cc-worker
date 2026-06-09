@@ -145,10 +145,18 @@ function switchDashTab(id) {
 function randomBearImg(size, round) {
   const s = size || 80;
   const r = round !== undefined ? round : s;
-  if (!window.BEAR_GIFS || !window.BEAR_GIFS.length) return '';
-  const src = window.BEAR_GIFS[Math.floor(Math.random() * window.BEAR_GIFS.length)];
+  const pool = window.BEAR_GIFS || FALLBACK_BEARS;
+  if (!pool.length) return '';
+  const src = pool[Math.floor(Math.random() * pool.length)];
   return '<img class="bear-img" src="' + src + '" alt="" style="width:' + s + 'px;height:' + s + 'px;border-radius:' + r + 'px;object-fit:cover;display:block">';
 }
+var FALLBACK_BEARS = [
+  "https://media.tenor.com/IIWFOaA_TfoAAAAj/joke-bear.gif",
+  "https://media.tenor.com/5nzLdhWL7GoAAAAj/sad-bear-joke-bear-sad.gif",
+  "https://media.tenor.com/N-rSTqzfCOEAAAAj/bear-so-cute-funny-point-flower-so-cute.gif",
+  "https://media.tenor.com/pjH4YkUVZTcAAAAj/joke-bear.gif",
+  "https://media.tenor.com/m33QT3rELicAAAAj/joke-bear.gif"
+];
 
 function renderGreeting(data) {
   const el = document.createElement('div');
