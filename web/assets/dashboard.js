@@ -225,7 +225,7 @@ function renderSection(label, items, period) {
   section.className = 'oa-dash-section';
   const header = document.createElement('div');
   header.className = 'oa-section-header';
-  header.innerHTML = '  <span class="oa-section-dot ' + period + '"></span><span class="oa-section-label">' + label + '</span>' + (period === 'morning' ? '<span class="bear-dot" style="margin-left:auto"><svg viewBox="0 0 20 20" width="16" height="16"><ellipse cx="6.8" cy="3.5" rx="2.3" ry="2" class="ear"/><ellipse cx="13.2" cy="3.5" rx="2.3" ry="2" class="ear"/><ellipse cx="10" cy="11.5" rx="6.5" ry="6" class="face"/><circle cx="7.5" cy="10" r="1" class="eye"/><circle cx="12.5" cy="10" r="1" class="eye"/><path d="M8.5 14 Q10 16 11.5 14" fill="none" stroke="rgba(44,95,90,.2)" stroke-width=".8" stroke-linecap="round"/></svg></span>' : '')';
+  header.innerHTML = '  <span class="oa-section-dot ' + period + '"></span><span class="oa-section-label">' + label + '</span>' + (period === 'morning' ? '<span class="bear-dot" style="margin-left:auto"><svg viewBox="0 0 20 20" width="16" height="16"><ellipse cx="6.8" cy="3.5" rx="2.3" ry="2" class="ear"/><ellipse cx="13.2" cy="3.5" rx="2.3" ry="2" class="ear"/><ellipse cx="10" cy="11.5" rx="6.5" ry="6" class="face"/><circle cx="7.5" cy="10" r="1" class="eye"/><circle cx="12.5" cy="10" r="1" class="eye"/><path d="M8.5 14 Q10 16 11.5 14" fill="none" stroke="rgba(44,95,90,.2)" stroke-width=".8" stroke-linecap="round"/></svg></span>' : '');
   section.appendChild(header);
   const list = document.createElement('div');
   list.className = 'oa-task-grid';
