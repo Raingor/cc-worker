@@ -52,11 +52,22 @@ async function loadDashboard() {
   const body = document.getElementById('dash-body');
   body.innerHTML = '<div class="dash-loading" style="display:flex;flex-direction:column;align-items:center;gap:12px">' + bearSvg('think', 40) + '<span>加载中…</span></div>';
   dashState.loading = true;
+  // Safety timeout: show error if fetch hangs >15s
+  const timeoutId = setTimeout(() => {
+    if (dashState.loading) {
+      body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">请求超时，请检查网络或 API 地址</div>';
+      dashState.loading = false;
+    }
+  }, 15000);
   try {
+    const fetchOpts = { headers: dashHeaders(), signal: AbortSignal.timeout(12000) };
+    const url = dashUrl('/v1/checklist?date=' + dashState.selectedDate);
+    if (!url) { clearTimeout(timeoutId); body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">配置错误：API 地址未设置</div>'; dashState.loading = false; return; }
     const [checklistResp, historyResp] = await Promise.all([
-      fetch(dashUrl('/v1/checklist?date=' + dashState.selectedDate), { headers: dashHeaders() }),
-      fetch(dashUrl('/v1/checklist/history?year=' + dashState.viewDate.getFullYear() + '&month=' + (dashState.viewDate.getMonth() + 1)), { headers: dashHeaders() }),
+      fetch(url, fetchOpts),
+      fetch(dashUrl('/v1/checklist/history?year=' + dashState.viewDate.getFullYear() + '&month=' + (dashState.viewDate.getMonth() + 1)), fetchOpts),
     ]);
+    clearTimeout(timeoutId);
     if (!checklistResp.ok) {
       const errData = await checklistResp.json().catch(() => ({}));
       // Try cache fallback
@@ -90,7 +101,9 @@ async function loadDashboard() {
     }
     renderDashboard();
   } catch (e) {
-    body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">网络错误：' + e.message + '</div>';
+    clearTimeout(timeoutId);
+    const msg = e.name === 'AbortError' ? '请求超时' : e.message;
+    body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">网络错误：' + msg + '</div>';
   } finally {
     dashState.loading = false;
   }
