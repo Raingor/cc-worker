@@ -306,11 +306,25 @@ function renderCalendarTab() {
     if (dateStr === today) cell.classList.add('today');
     if (dateStr === selected) cell.classList.add('selected');
     if (historySet.has(dateStr)) cell.classList.add('has-data');
-    cell.textContent = String(day);
+    cell.innerHTML = '<span class="oa-cal-num">' + day + '</span>';
     cell.addEventListener('click', () => { dashState.selectedDate = dateStr; dashState.activeTab = 'tasks'; loadDashboard(); });
     grid.appendChild(cell);
   }
   cal.appendChild(grid);
+  // Legend & usage guide
+  const guide = document.createElement('div');
+  guide.className = 'oa-cal-guide';
+  guide.innerHTML =
+    '<div class="oa-cal-legend">' +
+      '<span class="oa-cal-legend-item"><span class="oa-cal-legend-dot today"></span> 今天</span>' +
+      '<span class="oa-cal-legend-item"><span class="oa-cal-legend-dot selected"></span> 当前选择</span>' +
+      '<span class="oa-cal-legend-item"><span class="oa-cal-legend-dot has-data"></span> 有任务/总结</span>' +
+    '</div>' +
+    '<div class="oa-cal-howto">' +
+      '<strong>如何使用</strong>' +
+      '<span>← → 切换月份 · 点击任意日期查看该日任务 · 带 <em>●</em> 标记的日期已有任务记录或每日总结</span>' +
+    '</div>';
+  cal.appendChild(guide);
   return cal;
 }
 
