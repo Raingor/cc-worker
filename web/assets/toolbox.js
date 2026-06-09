@@ -25,7 +25,14 @@ function renderActiveTool() {
 function renderPdfToExcel(container) {
   container.innerHTML = `
     <div class="tb-upload-zone" id="pte-zone">
-      <div class="tb-upload-icon">📄</div>
+      <svg class="tb-upload-icon" viewBox="0 0 40 40" width="36" height="36" style="display:block;margin:0 auto 10px">
+        <ellipse cx="13.5" cy="7" rx="4.5" ry="4" fill="var(--hairline)"/><ellipse cx="26.5" cy="7" rx="4.5" ry="4" fill="var(--hairline)"/>
+        <ellipse cx="20" cy="23" rx="13" ry="12" fill="var(--charcoal)"/>
+        <circle cx="15" cy="20" r="1.5" fill="var(--surface)"/><circle cx="25" cy="20" r="1.5" fill="var(--surface)"/>
+        <ellipse cx="20" cy="23.5" rx="1.2" ry="1" fill="rgba(255,255,255,.3)"/>
+        <path d="M17 27 Q20 30 23 27" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1" stroke-linecap="round"/>
+        <ellipse cx="14.5" cy="25" rx="2" ry="1" fill="rgba(255,255,255,.06)"/><ellipse cx="25.5" cy="25" rx="2" ry="1" fill="rgba(255,255,255,.06)"/>
+      </svg>
       <div class="tb-upload-text">点击选择或拖拽 PDF 文件</div>
       <div class="tb-upload-hint">支持 .pdf 格式</div>
     </div>
@@ -118,7 +125,14 @@ function renderPdfMerge(container) {
   _mergeFiles = [];
   container.innerHTML = `
     <div class="tb-upload-zone" id="pm-zone">
-      <div class="tb-upload-icon">📑</div>
+      <svg class="tb-upload-icon" viewBox="0 0 40 40" width="36" height="36" style="display:block;margin:0 auto 10px">
+        <ellipse cx="13.5" cy="7" rx="4.5" ry="4" fill="var(--hairline)"/><ellipse cx="26.5" cy="7" rx="4.5" ry="4" fill="var(--hairline)"/>
+        <ellipse cx="20" cy="23" rx="13" ry="12" fill="var(--charcoal)"/>
+        <path d="M14 18 L20 14 L26 18 L20 22 Z" fill="var(--surface)" opacity=".5"/>
+        <circle cx="15" cy="20" r="1.5" fill="var(--surface)"/><circle cx="25" cy="20" r="1.5" fill="var(--surface)"/>
+        <path d="M17 27 Q20 30 23 27" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1" stroke-linecap="round"/>
+        <ellipse cx="14.5" cy="25" rx="2" ry="1" fill="rgba(255,255,255,.06)"/><ellipse cx="25.5" cy="25" rx="2" ry="1" fill="rgba(255,255,255,.06)"/>
+      </svg>
       <div class="tb-upload-text">点击选择或拖拽多个 PDF 文件</div>
       <div class="tb-upload-hint">支持选择多个文件，按列表顺序合并</div>
     </div>

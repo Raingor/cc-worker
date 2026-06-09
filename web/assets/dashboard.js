@@ -50,7 +50,7 @@ function dashDateStr(d) {
 
 async function loadDashboard() {
   const body = document.getElementById('dash-body');
-  body.innerHTML = '<div class="dash-loading">加载中…</div>';
+  body.innerHTML = '<div class="dash-loading" style="display:flex;flex-direction:column;align-items:center;gap:12px">' + bearSvg('think', 40) + '<span>加载中…</span></div>';
   dashState.loading = true;
   try {
     const [checklistResp, historyResp] = await Promise.all([
@@ -129,6 +129,39 @@ function switchDashTab(id) {
 }
 
 /* ── Greeting ── */
+function bearSvg(pose, size) {
+  const s = size || 80;
+  if (pose === 'wave') return `<svg class="bear-svg" viewBox="0 0 80 80" width="${s}" height="${s}">
+    <ellipse cx="27" cy="14" rx="9" ry="8" class="bear-ear"/><ellipse cx="53" cy="14" rx="9" ry="8" class="bear-ear"/>
+    <ellipse cx="40" cy="46" rx="26" ry="24" class="bear-face"/>
+    <circle cx="31" cy="40" r="3" class="bear-eye"/><circle cx="49" cy="40" r="3" class="bear-eye"/>
+    <ellipse cx="40" cy="47" rx="2.5" ry="2" fill="rgba(255,255,255,.3)"/>
+    <path d="M34 54 Q40 60 46 54" class="bear-mouth"/>
+    <ellipse cx="29" cy="50" rx="4" ry="2" class="bear-blush"/><ellipse cx="51" cy="50" rx="4" ry="2" class="bear-blush"/>
+    <path class="bear-arm" d="M66 44 Q74 38 76 44 Q78 50 72 52" stroke="rgba(255,255,255,.15)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  </svg>`;
+  if (pose === 'sleep') return `<svg class="bear-svg bear-sleep" viewBox="0 0 80 80" width="${s}" height="${s}">
+    <ellipse cx="27" cy="14" rx="9" ry="8" class="bear-ear"/><ellipse cx="53" cy="14" rx="9" ry="8" class="bear-ear"/>
+    <ellipse cx="40" cy="46" rx="26" ry="24" class="bear-face"/>
+    <path d="M28 38 Q31 35 34 38" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M46 38 Q49 35 52 38" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.5" stroke-linecap="round"/>
+    <ellipse cx="40" cy="47" rx="2" ry="1.5" fill="rgba(255,255,255,.2)"/>
+    <path d="M36 54 Q40 57 44 54" class="bear-mouth" stroke="rgba(255,255,255,.3)"/>
+    <text x="58" y="20" class="bear-z">z</text><text x="64" y="12" class="bear-z">z</text><text x="68" y="6" class="bear-z" font-size:6px>z</text>
+  </svg>`;
+  if (pose === 'think') return `<svg class="bear-svg" viewBox="0 0 80 80" width="${s}" height="${s}">
+    <ellipse cx="27" cy="14" rx="9" ry="8" class="bear-ear"/><ellipse cx="53" cy="14" rx="9" ry="8" class="bear-ear"/>
+    <ellipse cx="40" cy="46" rx="26" ry="24" class="bear-face"/>
+    <circle cx="31" cy="39" r="3" class="bear-eye"/><circle cx="49" cy="39" r="3" class="bear-eye"/>
+    <ellipse cx="40" cy="46" rx="2" ry="1.5" fill="rgba(255,255,255,.25)"/>
+    <path d="M35 52 Q40 55 45 52" class="bear-mouth"/>
+    <ellipse cx="29" cy="49" rx="4" ry="2" class="bear-blush"/><ellipse cx="51" cy="49" rx="4" ry="2" class="bear-blush"/>
+    <path d="M66 32 Q72 28 74 34" stroke="rgba(255,255,255,.12)" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <text x="58" y="22" fill="rgba(255,255,255,.2)" font-size="10" font-family="var(--font-body)">?</text>
+  </svg>`;
+  return '';
+}
+
 function renderGreeting(data) {
   const el = document.createElement('div');
   el.className = 'oa-greeting';
@@ -144,11 +177,14 @@ function renderGreeting(data) {
     '  <div class="oa-greeting-sub">' + dt[0] + '年' + (+dt[1]) + '月' + (+dt[2]) + '日 · 星期' + weekday + (data.is_today ? ' · 今天' : '') + '</div>' +
     '  <div class="oa-greeting-title">' + escapeHtml(data.title || '工作面板') + '</div>' +
     '</div>' +
-    '<svg class="oa-greeting-ring" viewBox="0 0 52 52">' +
-    '  <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="3"/>' +
-    '  <circle cx="26" cy="26" r="22" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" transform="rotate(-90 26 26)"/>' +
-    '  <text x="26" y="26" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="12" font-weight="600" font-family="Inter,sans-serif">' + pct + '%</text>' +
-    '</svg>';
+    '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' +
+    '  <div class="bear-wrap">' + bearSvg('wave') + '</div>' +
+    '  <svg class="oa-greeting-ring" viewBox="0 0 52 52">' +
+    '    <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="3"/>' +
+    '    <circle cx="26" cy="26" r="22" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" transform="rotate(-90 26 26)"/>' +
+    '    <text x="26" y="26" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="12" font-weight="600" font-family="Inter,sans-serif">' + pct + '%</text>' +
+    '  </svg>' +
+    '</div>';
   return el;
 }
 
@@ -156,7 +192,7 @@ function renderGreeting(data) {
 function renderTasksTab(data) {
   const el = document.createElement('div');
   if (!data.items || data.items.length === 0) {
-    el.innerHTML = '<div class="panel-empty" style="padding:60px 0">该日期没有工作任务安排。</div>';
+    el.innerHTML = '<div class="panel-empty" style="padding:60px 0;flex-direction:column;gap:12px">' + bearSvg('sleep', 48) + '<span>该日期没有工作任务安排</span></div>';
     return el;
   }
   const morning = data.items.filter(i => i.period === 'morning');
@@ -169,7 +205,7 @@ function renderTasksTab(data) {
   const sumBtn = document.createElement('button');
   sumBtn.className = 'oa-btn';
   sumBtn.type = 'button';
-  sumBtn.textContent = dashState.summarizing ? '⏳ AI 正在总结…' : '🤖 总结今天任务完成';
+  sumBtn.textContent = dashState.summarizing ? 'AI 正在总结…' : '总结今天任务完成';
   sumBtn.disabled = dashState.summarizing;
   sumBtn.addEventListener('click', onSummarize);
   sumWrap.appendChild(sumBtn);
@@ -189,7 +225,7 @@ function renderSection(label, items, period) {
   section.className = 'oa-dash-section';
   const header = document.createElement('div');
   header.className = 'oa-section-header';
-  header.innerHTML = '<span class="oa-section-dot ' + period + '"></span><span class="oa-section-label">' + label + '</span>';
+  header.innerHTML = '  <span class="oa-section-dot ' + period + '"></span><span class="oa-section-label">' + label + '</span>' + (period === 'morning' ? '<span class="bear-dot" style="margin-left:auto"><svg viewBox="0 0 20 20" width="16" height="16"><ellipse cx="6.8" cy="3.5" rx="2.3" ry="2" class="ear"/><ellipse cx="13.2" cy="3.5" rx="2.3" ry="2" class="ear"/><ellipse cx="10" cy="11.5" rx="6.5" ry="6" class="face"/><circle cx="7.5" cy="10" r="1" class="eye"/><circle cx="12.5" cy="10" r="1" class="eye"/><path d="M8.5 14 Q10 16 11.5 14" fill="none" stroke="rgba(44,95,90,.2)" stroke-width=".8" stroke-linecap="round"/></svg></span>' : '')';
   section.appendChild(header);
   const list = document.createElement('div');
   list.className = 'oa-task-grid';
@@ -287,7 +323,7 @@ async function renderHistoryTabAsync(body) {
   const container = document.createElement('div');
   container.innerHTML = '<div class="dash-loading">加载中…</div>';
   body.appendChild(container);
-  if (dashState.historyDates.length === 0) { container.innerHTML = '<div class="panel-empty" style="padding:60px 0">暂无每日总结</div>'; return; }
+  if (dashState.historyDates.length === 0) { container.innerHTML = '<div class="panel-empty" style="padding:60px 0;flex-direction:column;gap:12px">' + bearSvg('sleep', 48) + '<span>暂无每日总结</span></div>'; return; }
   const summaries = [];
   for (const date of dashState.historyDates) {
     try {
