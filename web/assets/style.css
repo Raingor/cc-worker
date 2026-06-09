@@ -51,32 +51,12 @@ body::before{content:"";position:fixed;inset:0;background-image:radial-gradient(
 .panel-body::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 .panel-empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:14px}
 
-/* ── Bear SVG ── */
-.bear-wrap{flex-shrink:0;width:80px;height:80px;position:relative}
-.bear-svg{width:100%;height:100%}
-.bear-ear{fill:rgba(255,255,255,.15);transition:all .3s}
-.bear-face{fill:rgba(255,255,255,.1)}
-.bear-eye{fill:#fff;opacity:.7}
-.bear-mouth{fill:none;stroke:rgba(255,255,255,.5);stroke-width:1.5;stroke-linecap:round}
-.bear-blush{fill:rgba(255,255,255,.08)}
-@keyframes bearWave{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
-.bear-arm{animation:bearWave 2s ease-in-out infinite;transform-origin:60px 55px}
-@keyframes bearBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-.bear-sleep{opacity:.3}
-.bear-z{fill:rgba(255,255,255,.2);font-size:8px;font-family:var(--font-body)}
-
-/* ── Small bear avatar ── */
-.bear-avatar{display:inline-block;width:40px;height:40px;vertical-align:middle;flex-shrink:0}
-.bear-avatar-sm{width:28px;height:28px}
-.bear-ear-sm{fill:var(--charcoal)}
-.bear-face-sm{fill:var(--muted)}
-.bear-eye-sm{fill:var(--surface);opacity:.6}
+/* ── Bear Image ── */
+.bear-wrap{flex-shrink:0;position:relative}
+.bear-img{box-shadow:0 2px 8px rgba(0,0,0,.15)}
 
 /* ── Decorative tiny bears ── */
-.bear-dot{display:inline-block;width:20px;height:20px;vertical-align:middle}
-.bear-dot .ear{fill:var(--jade);opacity:.3}
-.bear-dot .face{fill:var(--jade);opacity:.2}
-.bear-dot .eye{fill:var(--surface);opacity:.5}
+.bear-dot{display:inline-flex;width:20px;height:20px;vertical-align:middle;align-items:center;justify-content:center}
 
 /* ── Greeting Card ── */
 .oa-greeting{background:linear-gradient(135deg,var(--jade) 0%,#1a403c 100%);border-radius:var(--radius-lg);padding:28px 32px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:center;gap:20px;position:relative;overflow:hidden}
