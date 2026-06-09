@@ -118,10 +118,8 @@ async function init() {
   loadState();
   if (!state.settings) { state.settings = getDefaultSettings(); saveState(); }
   startReminderTimer();
-  // default: open toolbox
-  document.querySelector('.nav-group:has(.nav-item[data-panel="toolbox"])')?.classList.add('open');
-  document.querySelector('.nav-sub[data-tool="pdf-to-excel"]')?.classList.add('active');
-  initToolbox('pdf-to-excel');
+  // default: open work panel → 今日任务
+  switchPanel('dashboard', 'tasks');
 }
 
 document.addEventListener('DOMContentLoaded', init);

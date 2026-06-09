@@ -39,3 +39,7 @@ bash scripts/deploy-api.sh
 | `server/app.py` | API 入口 |
 | `web/assets/app.js` | 聊天前端逻辑 |
 | `teamsapp.yml` | Teams Toolkit v5 |
+
+
+## 项目习惯
+- 当debug完成后，把debug的原因和解决方案都更新到debug-log这个目录下
