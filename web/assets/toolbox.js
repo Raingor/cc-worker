@@ -41,7 +41,7 @@ function renderActiveTool() {
 function renderPdfToExcel(container) {
   container.innerHTML = `
     <div class="tb-upload-zone" id="pte-zone">
-      <div class="tb-upload-icon">📄</div>
+      <div style="display:flex;justify-content:center;margin:0 auto 10px">${randomBearImg(36, 8)}</div>
       <div class="tb-upload-text">点击选择或拖拽 PDF 文件</div>
       <div class="tb-upload-hint">支持 .pdf 格式</div>
     </div>
@@ -134,7 +134,7 @@ function renderPdfMerge(container) {
   _mergeFiles = [];
   container.innerHTML = `
     <div class="tb-upload-zone" id="pm-zone">
-      <div class="tb-upload-icon">📑</div>
+      <div style="display:flex;justify-content:center;margin:0 auto 10px">${randomBearImg(36, 8)}</div>
       <div class="tb-upload-text">点击选择或拖拽多个 PDF 文件</div>
       <div class="tb-upload-hint">支持选择多个文件，按列表顺序合并</div>
     </div>

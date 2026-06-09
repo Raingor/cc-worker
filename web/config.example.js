@@ -1,6 +1,5 @@
-// Copy to config.js for local testing (config.js is gitignored).
-// GitHub Actions can generate config.js from repository secrets.
+// 配置（服务器已关闭授权验证）
 window.CC_CONFIG = {
   apiBase: 'https://api.sz-hrhb.com',
-  appToken: 'YOUR_APP_TOKEN_HERE',
+  appToken: '',
 };

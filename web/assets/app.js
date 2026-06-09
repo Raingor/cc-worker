@@ -80,8 +80,8 @@ function startReminderTimer() {
 
 /* ── Init ── */
 function initDashboard(tab) {
-  if (typeof dashState === 'undefined' || typeof loadDashboard !== 'function') return;
-  if (!state.settings) return;
+  if (typeof dashState === 'undefined' || typeof loadDashboard !== 'function') { console.warn('dash-init: dashboard.js not loaded'); return; }
+  if (!state || !state.settings) { console.warn('dash-init: settings missing'); return; }
   dashState.viewDate = new Date();
   dashState.selectedDate = dashDateStr(new Date());
   dashState.activeTab = tab || 'tasks';
@@ -118,10 +118,8 @@ async function init() {
   loadState();
   if (!state.settings) { state.settings = getDefaultSettings(); saveState(); }
   startReminderTimer();
-  // default: open toolbox
-  document.querySelector('.nav-group:has(.nav-item[data-panel="toolbox"])')?.classList.add('open');
-  document.querySelector('.nav-sub[data-tool="pdf-to-excel"]')?.classList.add('active');
-  initToolbox('pdf-to-excel');
+  // default: open work panel → 今日任务
+  switchPanel('dashboard', 'tasks');
 }
 
 document.addEventListener('DOMContentLoaded', init);

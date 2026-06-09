@@ -1,6 +1,7 @@
 /* CC 工作台 — 工作面板 */
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
+const DASH_CACHE_KEY = 'cc-dash-cache';
 
 let dashState = {
   viewDate: new Date(),
@@ -12,6 +13,29 @@ let dashState = {
   historyDates: [],
   activeTab: 'tasks',
 };
+
+/* ── LocalStorage cache (backup before server save) ── */
+function cacheSave(date) {
+  if (!dashState.data) return;
+  try {
+    localStorage.setItem(DASH_CACHE_KEY + '-' + date, JSON.stringify({
+      items: dashState.data.items.map(i => ({ id: i.id, checked: i.checked, note: i.note || '' })),
+      ts: Date.now(),
+    }));
+  } catch (e) {}
+}
+function cacheRestore(date) {
+  try {
+    const raw = localStorage.getItem(DASH_CACHE_KEY + '-' + date);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (Date.now() - saved.ts > 86400000) { localStorage.removeItem(DASH_CACHE_KEY + '-' + date); return null; }
+    return saved.items;
+  } catch (e) { return null; }
+}
+function cacheClear(date) {
+  try { localStorage.removeItem(DASH_CACHE_KEY + '-' + date); } catch (e) {}
+}
 
 function dashUrl(path) {
   if (!state.settings) return '';
@@ -26,26 +50,60 @@ function dashDateStr(d) {
 
 async function loadDashboard() {
   const body = document.getElementById('dash-body');
-  body.innerHTML = '<div class="dash-loading">加载中…</div>';
+  body.innerHTML = '<div class="dash-loading" style="display:flex;flex-direction:column;align-items:center;gap:12px">' + randomBearImg(40, 8) + '<span>加载中…</span></div>';
   dashState.loading = true;
+  // Safety timeout: show error if fetch hangs >15s
+  const timeoutId = setTimeout(() => {
+    if (dashState.loading) {
+      body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">请求超时，请检查网络或 API 地址</div>';
+      dashState.loading = false;
+    }
+  }, 15000);
   try {
+    const fetchOpts = { headers: dashHeaders(), signal: AbortSignal.timeout(12000) };
+    const url = dashUrl('/v1/checklist?date=' + dashState.selectedDate);
+    if (!url) { clearTimeout(timeoutId); body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">配置错误：API 地址未设置</div>'; dashState.loading = false; return; }
     const [checklistResp, historyResp] = await Promise.all([
-      fetch(dashUrl('/v1/checklist?date=' + dashState.selectedDate), { headers: dashHeaders() }),
-      fetch(dashUrl('/v1/checklist/history?year=' + dashState.viewDate.getFullYear() + '&month=' + (dashState.viewDate.getMonth() + 1)), { headers: dashHeaders() }),
+      fetch(url, fetchOpts),
+      fetch(dashUrl('/v1/checklist/history?year=' + dashState.viewDate.getFullYear() + '&month=' + (dashState.viewDate.getMonth() + 1)), fetchOpts),
     ]);
+    clearTimeout(timeoutId);
     if (!checklistResp.ok) {
       const errData = await checklistResp.json().catch(() => ({}));
+      // Try cache fallback
+      const cached = cacheRestore(dashState.selectedDate);
+      if (cached) {
+        dashState.data = { items: cached, progress: { checked: 0, total: cached.length }, is_today: true };
+        renderDashboard();
+        showDashNotice('离线模式 — 上次保存的数据', 'warn');
+        return;
+      }
       body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">加载失败：' + (errData.error?.message || checklistResp.statusText) + '</div>';
       return;
     }
     dashState.data = await checklistResp.json();
+    // Merge cached notes into server data (cache may have newer unsaved edits)
+    const cached = cacheRestore(dashState.selectedDate);
+    if (cached && dashState.data.items) {
+      const cacheMap = {};
+      for (const c of cached) cacheMap[c.id] = c;
+      for (const item of dashState.data.items) {
+        const cc = cacheMap[item.id];
+        if (cc) {
+          if (cc.note) item.note = cc.note;
+          item.checked = cc.checked;
+        }
+      }
+    }
     if (historyResp.ok) {
       const h = await historyResp.json();
       dashState.historyDates = h.dates || [];
     }
     renderDashboard();
   } catch (e) {
-    body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">网络错误：' + e.message + '</div>';
+    clearTimeout(timeoutId);
+    const msg = e.name === 'AbortError' ? '请求超时' : e.message;
+    body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">网络错误：' + msg + '</div>';
   } finally {
     dashState.loading = false;
   }
@@ -84,6 +142,22 @@ function switchDashTab(id) {
 }
 
 /* ── Greeting ── */
+function randomBearImg(size, round) {
+  const s = size || 80;
+  const r = round !== undefined ? round : s;
+  const pool = window.BEAR_GIFS || FALLBACK_BEARS;
+  if (!pool.length) return '';
+  const src = pool[Math.floor(Math.random() * pool.length)];
+  return '<img class="bear-img" src="' + src + '" alt="" style="width:' + s + 'px;height:' + s + 'px;border-radius:' + r + 'px;object-fit:cover;display:block">';
+}
+var FALLBACK_BEARS = [
+  "https://media.tenor.com/IIWFOaA_TfoAAAAj/joke-bear.gif",
+  "https://media.tenor.com/5nzLdhWL7GoAAAAj/sad-bear-joke-bear-sad.gif",
+  "https://media.tenor.com/N-rSTqzfCOEAAAAj/bear-so-cute-funny-point-flower-so-cute.gif",
+  "https://media.tenor.com/pjH4YkUVZTcAAAAj/joke-bear.gif",
+  "https://media.tenor.com/m33QT3rELicAAAAj/joke-bear.gif"
+];
+
 function renderGreeting(data) {
   const el = document.createElement('div');
   el.className = 'oa-greeting';
@@ -99,11 +173,14 @@ function renderGreeting(data) {
     '  <div class="oa-greeting-sub">' + dt[0] + '年' + (+dt[1]) + '月' + (+dt[2]) + '日 · 星期' + weekday + (data.is_today ? ' · 今天' : '') + '</div>' +
     '  <div class="oa-greeting-title">' + escapeHtml(data.title || '工作面板') + '</div>' +
     '</div>' +
-    '<svg class="oa-greeting-ring" viewBox="0 0 52 52">' +
-    '  <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="3"/>' +
-    '  <circle cx="26" cy="26" r="22" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" transform="rotate(-90 26 26)"/>' +
-    '  <text x="26" y="26" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="12" font-weight="600" font-family="Inter,sans-serif">' + pct + '%</text>' +
-    '</svg>';
+    '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' +
+    '  <div class="bear-wrap">' + randomBearImg(52, 12) + '</div>' +
+    '  <svg class="oa-greeting-ring" viewBox="0 0 52 52">' +
+    '    <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="3"/>' +
+    '    <circle cx="26" cy="26" r="22" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" transform="rotate(-90 26 26)"/>' +
+    '    <text x="26" y="26" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="12" font-weight="600" font-family="Inter,sans-serif">' + pct + '%</text>' +
+    '  </svg>' +
+    '</div>';
   return el;
 }
 
@@ -111,7 +188,7 @@ function renderGreeting(data) {
 function renderTasksTab(data) {
   const el = document.createElement('div');
   if (!data.items || data.items.length === 0) {
-    el.innerHTML = '<div class="panel-empty" style="padding:60px 0">该日期没有工作任务安排。</div>';
+    el.innerHTML = '<div class="panel-empty" style="padding:60px 0;flex-direction:column;gap:12px">' + randomBearImg(48, 10) + '<span>该日期没有工作任务安排</span></div>';
     return el;
   }
   const morning = data.items.filter(i => i.period === 'morning');
@@ -124,7 +201,7 @@ function renderTasksTab(data) {
   const sumBtn = document.createElement('button');
   sumBtn.className = 'oa-btn';
   sumBtn.type = 'button';
-  sumBtn.textContent = dashState.summarizing ? '⏳ AI 正在总结…' : '🤖 总结今天任务完成';
+  sumBtn.textContent = dashState.summarizing ? 'AI 正在总结…' : '总结今天任务完成';
   sumBtn.disabled = dashState.summarizing;
   sumBtn.addEventListener('click', onSummarize);
   sumWrap.appendChild(sumBtn);
@@ -144,7 +221,7 @@ function renderSection(label, items, period) {
   section.className = 'oa-dash-section';
   const header = document.createElement('div');
   header.className = 'oa-section-header';
-  header.innerHTML = '<span class="oa-section-dot ' + period + '"></span><span class="oa-section-label">' + label + '</span>';
+  header.innerHTML = '  <span class="oa-section-dot ' + period + '"></span><span class="oa-section-label">' + label + '</span>' + (period === 'morning' ? '<span class="bear-dot" style="margin-left:auto">' + randomBearImg(18, 4) + '</span>' : '');
   section.appendChild(header);
   const list = document.createElement('div');
   list.className = 'oa-task-grid';
@@ -229,11 +306,25 @@ function renderCalendarTab() {
     if (dateStr === today) cell.classList.add('today');
     if (dateStr === selected) cell.classList.add('selected');
     if (historySet.has(dateStr)) cell.classList.add('has-data');
-    cell.textContent = String(day);
+    cell.innerHTML = '<span class="oa-cal-num">' + day + '</span>';
     cell.addEventListener('click', () => { dashState.selectedDate = dateStr; dashState.activeTab = 'tasks'; loadDashboard(); });
     grid.appendChild(cell);
   }
   cal.appendChild(grid);
+  // Legend & usage guide
+  const guide = document.createElement('div');
+  guide.className = 'oa-cal-guide';
+  guide.innerHTML =
+    '<div class="oa-cal-legend">' +
+      '<span class="oa-cal-legend-item"><span class="oa-cal-legend-dot today"></span> 今天</span>' +
+      '<span class="oa-cal-legend-item"><span class="oa-cal-legend-dot selected"></span> 当前选择</span>' +
+      '<span class="oa-cal-legend-item"><span class="oa-cal-legend-dot has-data"></span> 有任务/总结</span>' +
+    '</div>' +
+    '<div class="oa-cal-howto">' +
+      '<strong>如何使用</strong>' +
+      '<span>← → 切换月份 · 点击任意日期查看该日任务 · 带 <em>●</em> 标记的日期已有任务记录或每日总结</span>' +
+    '</div>';
+  cal.appendChild(guide);
   return cal;
 }
 
@@ -242,7 +333,7 @@ async function renderHistoryTabAsync(body) {
   const container = document.createElement('div');
   container.innerHTML = '<div class="dash-loading">加载中…</div>';
   body.appendChild(container);
-  if (dashState.historyDates.length === 0) { container.innerHTML = '<div class="panel-empty" style="padding:60px 0">暂无每日总结</div>'; return; }
+  if (dashState.historyDates.length === 0) { container.innerHTML = '<div class="panel-empty" style="padding:60px 0;flex-direction:column;gap:12px">' + randomBearImg(48, 10) + '<span>暂无每日总结</span></div>'; return; }
   const summaries = [];
   for (const date of dashState.historyDates) {
     try {
@@ -276,19 +367,77 @@ function onCheckChange(itemId, checked) {
   item.checked = checked;
   saveChecklist();
 }
-async function saveChecklist() {
+let _saveTimer = null;
+function saveChecklist() {
+  if (!dashState.data) return;
+  cacheSave(dashState.selectedDate);
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(doSaveChecklist, 300);
+}
+async function doSaveChecklist() {
   if (!dashState.data || dashState.saving) return;
   dashState.saving = true;
   const items = dashState.data.items.map(i => ({ id: i.id, checked: i.checked, note: i.note || '' }));
   try {
     const resp = await fetch(dashUrl('/v1/checklist'), { method: 'POST', headers: { ...dashHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ date: dashState.selectedDate, items }) });
     if (resp.ok) {
+      cacheClear(dashState.selectedDate);
       const chkResp = await fetch(dashUrl('/v1/checklist?date=' + dashState.selectedDate), { headers: dashHeaders() });
-      if (chkResp.ok) dashState.data.progress = (await chkResp.json()).progress;
-      renderActiveTabOnly();
+      if (chkResp.ok) {
+        const fresh = await chkResp.json();
+        dashState.data.progress = fresh.progress;
+        if (fresh.items) {
+          const serverMap = {};
+          for (const si of fresh.items) serverMap[si.id] = si;
+          for (const item of dashState.data.items) {
+            const sv = serverMap[item.id];
+            if (sv) {
+              item.checked = sv.checked;
+              if (!item.note) item.note = sv.note || '';
+            }
+          }
+        }
+      }
+      updateProgressRing();
+    } else {
+      const errData = await resp.json().catch(() => ({}));
+      console.warn('Save rejected:', errData);
+      showDashNotice('保存失败，已暂存本地', 'error');
     }
-  } catch (e) { console.error('Save failed', e);
+  } catch (e) {
+    console.warn('Save network error:', e);
+    showDashNotice('网络异常，数据已保存在本地', 'warn');
   } finally { dashState.saving = false; }
+}
+function updateProgressRing() {
+  const prog = dashState.data?.progress || { checked: 0, total: 0 };
+  const pct = prog.total > 0 ? Math.round(prog.checked / prog.total * 100) : 0;
+  const circumference = 2 * Math.PI * 22;
+  const offset = circumference - (pct / 100) * circumference;
+  const ring = document.querySelector('.oa-greeting-ring');
+  if (ring) {
+    const circle = ring.querySelector('circle:last-of-type');
+    const text = ring.querySelector('text');
+    if (circle) circle.setAttribute('stroke-dashoffset', offset);
+    if (text) text.textContent = pct + '%';
+  }
+  // Update task visual state without full re-render
+  const body = document.getElementById('dash-body');
+  if (body) {
+    for (const item of (dashState.data?.items || [])) {
+      const row = body.querySelector('.oa-task[data-item-id="' + item.id + '"]');
+      if (row) {
+        row.classList.toggle('done', !!item.checked);
+        const cb = row.querySelector('.oa-cb');
+        if (cb) cb.checked = !!item.checked;
+        const ni = row.querySelector('.oa-task-note');
+        if (ni) {
+          ni.value = item.note || '';
+          ni.style.display = item.note ? 'block' : 'none';
+        }
+      }
+    }
+  }
 }
 async function onSummarize() {
   if (dashState.summarizing) return;
@@ -304,6 +453,18 @@ async function onSummarize() {
   } catch (e) { console.error('AI 总结出错：' + e.message);
   } finally { dashState.summarizing = false; renderActiveTabOnly(); }
 }
+/* ── Toast notice ── */
+function showDashNotice(msg, type) {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:6px;font-size:13px;z-index:999;animation:fadeSlide .25s ease;max-width:400px;text-align:center';
+  el.style.background = type === 'error' ? '#fef2f2' : type === 'warn' ? '#fffbeb' : '#f0fdf4';
+  el.style.border = '1px solid ' + (type === 'error' ? '#fca5a5' : type === 'warn' ? '#fcd34d' : '#86efac');
+  el.style.color = type === 'error' ? '#991b1b' : type === 'warn' ? '#92400e' : '#166534';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
 function formatSummary(text) {
   if (!text) return '';
   return escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
