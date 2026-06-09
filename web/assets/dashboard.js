@@ -1,6 +1,7 @@
 /* CC 工作台 — 工作面板 */
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
+const DASH_CACHE_KEY = 'cc-dash-cache';
 
 let dashState = {
   viewDate: new Date(),
@@ -12,6 +13,29 @@ let dashState = {
   historyDates: [],
   activeTab: 'tasks',
 };
+
+/* ── LocalStorage cache (backup before server save) ── */
+function cacheSave(date) {
+  if (!dashState.data) return;
+  try {
+    localStorage.setItem(DASH_CACHE_KEY + '-' + date, JSON.stringify({
+      items: dashState.data.items.map(i => ({ id: i.id, checked: i.checked, note: i.note || '' })),
+      ts: Date.now(),
+    }));
+  } catch (e) {}
+}
+function cacheRestore(date) {
+  try {
+    const raw = localStorage.getItem(DASH_CACHE_KEY + '-' + date);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (Date.now() - saved.ts > 86400000) { localStorage.removeItem(DASH_CACHE_KEY + '-' + date); return null; }
+    return saved.items;
+  } catch (e) { return null; }
+}
+function cacheClear(date) {
+  try { localStorage.removeItem(DASH_CACHE_KEY + '-' + date); } catch (e) {}
+}
 
 function dashUrl(path) {
   if (!state.settings) return '';
@@ -35,10 +59,31 @@ async function loadDashboard() {
     ]);
     if (!checklistResp.ok) {
       const errData = await checklistResp.json().catch(() => ({}));
+      // Try cache fallback
+      const cached = cacheRestore(dashState.selectedDate);
+      if (cached) {
+        dashState.data = { items: cached, progress: { checked: 0, total: cached.length }, is_today: true };
+        renderDashboard();
+        showDashNotice('离线模式 — 上次保存的数据', 'warn');
+        return;
+      }
       body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">加载失败：' + (errData.error?.message || checklistResp.statusText) + '</div>';
       return;
     }
     dashState.data = await checklistResp.json();
+    // Merge cached notes into server data (cache may have newer unsaved edits)
+    const cached = cacheRestore(dashState.selectedDate);
+    if (cached && dashState.data.items) {
+      const cacheMap = {};
+      for (const c of cached) cacheMap[c.id] = c;
+      for (const item of dashState.data.items) {
+        const cc = cacheMap[item.id];
+        if (cc) {
+          if (cc.note) item.note = cc.note;
+          item.checked = cc.checked;
+        }
+      }
+    }
     if (historyResp.ok) {
       const h = await historyResp.json();
       dashState.historyDates = h.dates || [];
@@ -280,14 +325,23 @@ async function saveChecklist() {
   if (!dashState.data || dashState.saving) return;
   dashState.saving = true;
   const items = dashState.data.items.map(i => ({ id: i.id, checked: i.checked, note: i.note || '' }));
+  // Always cache locally first
+  cacheSave(dashState.selectedDate);
   try {
     const resp = await fetch(dashUrl('/v1/checklist'), { method: 'POST', headers: { ...dashHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ date: dashState.selectedDate, items }) });
     if (resp.ok) {
+      cacheClear(dashState.selectedDate);
       const chkResp = await fetch(dashUrl('/v1/checklist?date=' + dashState.selectedDate), { headers: dashHeaders() });
       if (chkResp.ok) dashState.data.progress = (await chkResp.json()).progress;
       renderActiveTabOnly();
+    } else {
+      const errData = await resp.json().catch(() => ({}));
+      console.warn('Save rejected:', errData);
+      showDashNotice('保存失败，已暂存本地', 'error');
     }
-  } catch (e) { console.error('Save failed', e);
+  } catch (e) {
+    console.warn('Save network error:', e);
+    showDashNotice('网络异常，数据已保存在本地', 'warn');
   } finally { dashState.saving = false; }
 }
 async function onSummarize() {
@@ -304,6 +358,18 @@ async function onSummarize() {
   } catch (e) { console.error('AI 总结出错：' + e.message);
   } finally { dashState.summarizing = false; renderActiveTabOnly(); }
 }
+/* ── Toast notice ── */
+function showDashNotice(msg, type) {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:6px;font-size:13px;z-index:999;animation:fadeSlide .25s ease;max-width:400px;text-align:center';
+  el.style.background = type === 'error' ? '#fef2f2' : type === 'warn' ? '#fffbeb' : '#f0fdf4';
+  el.style.border = '1px solid ' + (type === 'error' ? '#fca5a5' : type === 'warn' ? '#fcd34d' : '#86efac');
+  el.style.color = type === 'error' ? '#991b1b' : type === 'warn' ? '#92400e' : '#166534';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
 function formatSummary(text) {
   if (!text) return '';
   return escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
