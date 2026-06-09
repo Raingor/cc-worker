@@ -357,19 +357,38 @@ function onCheckChange(itemId, checked) {
   item.checked = checked;
   saveChecklist();
 }
-async function saveChecklist() {
+let _saveTimer = null;
+function saveChecklist() {
+  if (!dashState.data) return;
+  cacheSave(dashState.selectedDate);
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(doSaveChecklist, 300);
+}
+async function doSaveChecklist() {
   if (!dashState.data || dashState.saving) return;
   dashState.saving = true;
   const items = dashState.data.items.map(i => ({ id: i.id, checked: i.checked, note: i.note || '' }));
-  // Always cache locally first
-  cacheSave(dashState.selectedDate);
   try {
     const resp = await fetch(dashUrl('/v1/checklist'), { method: 'POST', headers: { ...dashHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ date: dashState.selectedDate, items }) });
     if (resp.ok) {
       cacheClear(dashState.selectedDate);
       const chkResp = await fetch(dashUrl('/v1/checklist?date=' + dashState.selectedDate), { headers: dashHeaders() });
-      if (chkResp.ok) dashState.data.progress = (await chkResp.json()).progress;
-      renderActiveTabOnly();
+      if (chkResp.ok) {
+        const fresh = await chkResp.json();
+        dashState.data.progress = fresh.progress;
+        if (fresh.items) {
+          const serverMap = {};
+          for (const si of fresh.items) serverMap[si.id] = si;
+          for (const item of dashState.data.items) {
+            const sv = serverMap[item.id];
+            if (sv) {
+              item.checked = sv.checked;
+              if (!item.note) item.note = sv.note || '';
+            }
+          }
+        }
+      }
+      updateProgressRing();
     } else {
       const errData = await resp.json().catch(() => ({}));
       console.warn('Save rejected:', errData);
@@ -379,6 +398,36 @@ async function saveChecklist() {
     console.warn('Save network error:', e);
     showDashNotice('网络异常，数据已保存在本地', 'warn');
   } finally { dashState.saving = false; }
+}
+function updateProgressRing() {
+  const prog = dashState.data?.progress || { checked: 0, total: 0 };
+  const pct = prog.total > 0 ? Math.round(prog.checked / prog.total * 100) : 0;
+  const circumference = 2 * Math.PI * 22;
+  const offset = circumference - (pct / 100) * circumference;
+  const ring = document.querySelector('.oa-greeting-ring');
+  if (ring) {
+    const circle = ring.querySelector('circle:last-of-type');
+    const text = ring.querySelector('text');
+    if (circle) circle.setAttribute('stroke-dashoffset', offset);
+    if (text) text.textContent = pct + '%';
+  }
+  // Update task visual state without full re-render
+  const body = document.getElementById('dash-body');
+  if (body) {
+    for (const item of (dashState.data?.items || [])) {
+      const row = body.querySelector('.oa-task[data-item-id="' + item.id + '"]');
+      if (row) {
+        row.classList.toggle('done', !!item.checked);
+        const cb = row.querySelector('.oa-cb');
+        if (cb) cb.checked = !!item.checked;
+        const ni = row.querySelector('.oa-task-note');
+        if (ni) {
+          ni.value = item.note || '';
+          ni.style.display = item.note ? 'block' : 'none';
+        }
+      }
+    }
+  }
 }
 async function onSummarize() {
   if (dashState.summarizing) return;
