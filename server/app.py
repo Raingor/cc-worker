@@ -1,7 +1,5 @@
 """CC Worker API — OpenAI-compatible proxy with Bearer auth."""
 
-from __future__ import annotations
-
 import json
 import os
 import tempfile
@@ -226,6 +224,268 @@ def pdf_to_excel():
         Path(tmp_pdf.name).unlink(missing_ok=True)
 
 
+@APP.route("/v1/toolbox/pdf-split", methods=["POST", "OPTIONS"])
+def pdf_split():
+    """Upload a PDF, split into individual pages, return ZIP."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized", "type": "invalid_request_error"}}), 401
+
+    if "file" not in request.files:
+        return jsonify({"error": {"message": "No file provided", "type": "invalid_request_error"}}), 400
+    f = request.files["file"]
+    if not f.filename:
+        return jsonify({"error": {"message": "Empty filename", "type": "invalid_request_error"}}), 400
+
+    ext = Path(f.filename).suffix.lower()
+    if ext != ".pdf":
+        return jsonify({"error": {"message": f"Unsupported file type: {ext}. Only .pdf accepted"}}), 400
+
+    tmp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+    tmp_dir = tempfile.mkdtemp()
+    try:
+        f.save(tmp_pdf.name)
+        tmp_pdf.close()
+
+        import subprocess, zipfile
+        from io import BytesIO
+
+        env = os.environ.copy()
+        env["LANG"] = "en_US.UTF-8"
+        stem = Path(f.filename).stem
+        out_pattern = f"{tmp_dir}/{stem}_%d.pdf"
+        subprocess.run(["pdfseparate", tmp_pdf.name, out_pattern], check=True, capture_output=True, timeout=120, env=env)
+
+        page_files = sorted(Path(tmp_dir).glob(f"{stem}_*.pdf"))
+        if not page_files:
+            return jsonify({"error": {"message": "No pages found in PDF"}}), 400
+
+        buf = BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for i, pf in enumerate(page_files):
+                zf.write(pf, f"{stem}_第{i+1}页.pdf")
+        buf.seek(0)
+
+        return Response(
+            buf.getvalue(),
+            mimetype="application/zip",
+            headers={
+                "Content-Disposition": f'attachment; filename="{stem}_split.zip"',
+            },
+        )
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": {"message": f"PDF split failed: {e.stderr.decode()}"}}), 500
+    except Exception as e:
+        return jsonify({"error": {"message": f"PDF split failed: {e}"}}), 500
+    finally:
+        Path(tmp_pdf.name).unlink(missing_ok=True)
+        import shutil
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+@APP.route("/v1/toolbox/pdf-compress", methods=["POST", "OPTIONS"])
+def pdf_compress():
+    """Upload a PDF, compress it using Ghostscript, return compressed PDF."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized", "type": "invalid_request_error"}}), 401
+
+    if "file" not in request.files:
+        return jsonify({"error": {"message": "No file provided", "type": "invalid_request_error"}}), 400
+    f = request.files["file"]
+    if not f.filename:
+        return jsonify({"error": {"message": "Empty filename", "type": "invalid_request_error"}}), 400
+
+    ext = Path(f.filename).suffix.lower()
+    if ext != ".pdf":
+        return jsonify({"error": {"message": f"Unsupported file type: {ext}. Only .pdf accepted"}}), 400
+
+    tmp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+    out_pdf = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+    try:
+        f.save(tmp_pdf.name)
+        tmp_pdf.close()
+        out_pdf.close()
+
+        import subprocess
+        env = os.environ.copy()
+        env["LANG"] = "en_US.UTF-8"
+        subprocess.run(
+            ["gs", "-sDEVICE=pdfwrite", "-dCompatibilityLevel=1.7",
+             "-dPDFSETTINGS=/ebook", "-dNOPAUSE", "-dQUIET", "-dBATCH",
+             f"-sOutputFile={out_pdf.name}", tmp_pdf.name],
+            check=True, capture_output=True, timeout=120, env=env
+        )
+
+        with open(out_pdf.name, "rb") as fh:
+            data = fh.read()
+
+        return Response(
+            data,
+            mimetype="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{Path(f.filename).stem}_compressed.pdf"',
+            },
+        )
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": {"message": f"PDF compress failed: {e.stderr.decode()}"}}), 500
+    except Exception as e:
+        return jsonify({"error": {"message": f"PDF compress failed: {e}"}}), 500
+    finally:
+        Path(tmp_pdf.name).unlink(missing_ok=True)
+        Path(out_pdf.name).unlink(missing_ok=True)
+
+
+@APP.route("/v1/toolbox/ocr", methods=["POST", "OPTIONS"])
+def ocr_recognize():
+    """Upload a PDF or image, run OCR, return extracted text."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized", "type": "invalid_request_error"}}), 401
+
+    if "file" not in request.files:
+        return jsonify({"error": {"message": "No file provided", "type": "invalid_request_error"}}), 400
+    f = request.files["file"]
+    if not f.filename:
+        return jsonify({"error": {"message": "Empty filename", "type": "invalid_request_error"}}), 400
+
+    ext = Path(f.filename).suffix.lower()
+    if ext not in (".pdf", ".png", ".jpg", ".jpeg", ".webp", ".tiff", ".bmp"):
+        return jsonify({"error": {"message": f"Unsupported file type: {ext}"}}), 400
+
+    tmp_file = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+    try:
+        f.save(tmp_file.name)
+        tmp_file.close()
+
+        import subprocess
+        import shutil
+
+        tesseract_cmd = shutil.which("tesseract")
+        if not tesseract_cmd:
+            return jsonify({"error": {"message": "Tesseract not installed on server"}}), 503
+
+        if ext == ".pdf":
+            import pypdfium2 as pdfium
+            import os
+            os.environ["TESSERACT_OUTPUT_ENCODING"] = "UTF-8"
+            pdf = pdfium.PdfDocument(tmp_file.name)
+            all_text = []
+            tmp_dir = tempfile.mkdtemp()
+            try:
+                for i in range(len(pdf)):
+                    page = pdf[i]
+                    bitmap = page.render(scale=2)
+                    img_path = f"{tmp_dir}/page_{i:04d}.png"
+                    bitmap.to_pil().save(img_path)
+                    result = subprocess.run(
+                        [tesseract_cmd, img_path, "stdout", "-l", "chi_sim+eng"],
+                        capture_output=True, timeout=60
+                    )
+                    if result.returncode == 0:
+                        raw = result.stdout.decode("utf-8", errors="replace").strip()
+                        all_text.append(f"--- 第{i+1}页 ---\n{raw}")
+                    else:
+                        all_text.append(f"--- 第{i+1}页 ---\n[OCR失败]")
+            finally:
+                import shutil as sh
+                sh.rmtree(tmp_dir, ignore_errors=True)
+                pdf.close()
+            text = "\n\n".join(all_text)
+        else:
+            result = subprocess.run(
+                [tesseract_cmd, tmp_file.name, "stdout", "-l", "chi_sim+eng"],
+                capture_output=True, timeout=60
+            )
+            if result.returncode != 0:
+                err = result.stderr.decode("utf-8", errors="replace")
+                return jsonify({"error": {"message": f"OCR failed: {err}"}}), 500
+            text = result.stdout.decode("utf-8", errors="replace").strip()
+
+        if not text:
+            return jsonify({"error": {"message": "No text found in image"}}), 400
+
+        return jsonify({"success": True, "text": text})
+
+    except Exception as e:
+        return jsonify({"error": {"message": f"OCR failed: {e}"}}), 500
+    finally:
+        Path(tmp_file.name).unlink(missing_ok=True)
+
+
+@APP.route("/v1/toolbox/table-extract", methods=["POST", "OPTIONS"])
+def table_extract():
+    """Upload a PDF, extract tables, return an Excel file."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized", "type": "invalid_request_error"}}), 401
+
+    if "file" not in request.files:
+        return jsonify({"error": {"message": "No file provided", "type": "invalid_request_error"}}), 400
+    f = request.files["file"]
+    if not f.filename:
+        return jsonify({"error": {"message": "Empty filename", "type": "invalid_request_error"}}), 400
+
+    ext = Path(f.filename).suffix.lower()
+    if ext != ".pdf":
+        return jsonify({"error": {"message": f"Unsupported file type: {ext}. Only .pdf accepted"}}), 400
+
+    tmp_pdf = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+    try:
+        f.save(tmp_pdf.name)
+        tmp_pdf.close()
+
+        import pdfplumber
+        import pandas as pd
+        from io import BytesIO
+
+        all_tables = {}
+        with pdfplumber.open(tmp_pdf.name) as pdf:
+            for i, page in enumerate(pdf.pages):
+                tables = page.extract_tables()
+                if tables:
+                    page_dfs = []
+                    for j, table in enumerate(tables):
+                        if table:
+                            headers = table[0] if len(table) > 1 else None
+                            data = table[1:] if len(table) > 1 else table
+                            df = pd.DataFrame(data, columns=headers)
+                            page_dfs.append(df)
+                    all_tables[f"第{i+1}页"] = page_dfs
+
+        if not all_tables:
+            return jsonify({"error": {"message": "No tables found in the PDF"}}), 400
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            for page_key, dfs in all_tables.items():
+                if len(dfs) == 1:
+                    dfs[0].to_excel(writer, sheet_name=page_key[:31], index=False)
+                else:
+                    for j, df in enumerate(dfs):
+                        sheet = f"{page_key[:24]}-{j+1}"[:31]
+                        df.to_excel(writer, sheet_name=sheet, index=False)
+        output.seek(0)
+
+        return Response(
+            output.getvalue(),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f'attachment; filename="{Path(f.filename).stem}_tables.xlsx"',
+            },
+        )
+    except ImportError as e:
+        return jsonify({"error": {"message": f"Missing dependency: {e}"}}), 503
+    except Exception as e:
+        return jsonify({"error": {"message": f"Table extraction failed: {e}"}}), 500
+    finally:
+        Path(tmp_pdf.name).unlink(missing_ok=True)
+
+
 @APP.route("/v1/reminder/email", methods=["POST", "OPTIONS"])
 def reminder_email():
     """Send a daily reminder email. Requires SMTP config in .env"""
@@ -271,7 +531,7 @@ def _extract_provider() -> str:
     return base.replace("https://", "").split("/")[0]
 
 
-def _parse_usage(body: dict, provider: str) -> dict | None:
+def _parse_usage(body, provider):
     """Extract token usage from an upstream API response body."""
     usage = body.get("usage") if isinstance(body, dict) else None
     if not usage:

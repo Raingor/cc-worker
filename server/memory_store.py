@@ -6,8 +6,8 @@ keyword matching and injected into the context, so the AI "remembers" across
 sessions even without conversation history.
 """
 
-from __future__ import annotations
 
+from __future__ import annotations
 import sqlite3
 from pathlib import Path
 

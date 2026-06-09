@@ -1,7 +1,8 @@
 """Email checker — IMAP → download Excel → analyze."""
 
-from __future__ import annotations
 
+
+from __future__ import annotations
 import email
 import imaplib
 import tempfile

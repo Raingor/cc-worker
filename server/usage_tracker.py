@@ -4,7 +4,6 @@ Uses SQLite for thread-safe concurrent access (WAL mode). Auto-migrates
 from legacy JSON storage on first run.
 """
 
-from __future__ import annotations
 
 import json
 import sqlite3

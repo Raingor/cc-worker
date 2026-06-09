@@ -1,7 +1,8 @@
 """Excel file reader — auto-detect structure, normalize to common format."""
 
-from __future__ import annotations
 
+
+from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path

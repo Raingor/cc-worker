@@ -1,7 +1,8 @@
 """Main analyzer — reads Excel, runs all analyses, returns chat-friendly result."""
 
-from __future__ import annotations
 
+
+from __future__ import annotations
 from pathlib import Path
 
 from .reader import read_file

@@ -1,12 +1,13 @@
 """Server-side conversation storage — SQLite-backed.
 
+
 Each row stores a per-token conversation with messages as a JSON blob.
 SQLite WAL mode enables safe concurrent reads across uWSGI processes.
 Auto-migrates from legacy per-token JSON files on first run.
 """
 
-from __future__ import annotations
 
+from __future__ import annotations
 import hashlib
 import json
 import sqlite3

@@ -1,7 +1,8 @@
 """Email sender for daily reminders — uses QQ SMTP."""
 
-from __future__ import annotations
 
+
+from __future__ import annotations
 import json
 import smtplib
 import ssl

@@ -1,7 +1,8 @@
 """Statistical analysis for SQ&RQ Excel files."""
 
-from __future__ import annotations
 
+
+from __future__ import annotations
 from collections import Counter
 from typing import Any
 
