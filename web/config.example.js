@@ -1,6 +1,5 @@
-// Production config (served via GitHub Pages)
-// config.js overrides these values for local testing (gitignored)
+// 配置（服务器已关闭授权验证）
 window.CC_CONFIG = {
   apiBase: 'https://api.sz-hrhb.com',
-  appToken: '8d522cb8a4d7dd394d7687c32500a73c',
+  appToken: '',
 };
