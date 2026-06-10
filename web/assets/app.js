@@ -48,6 +48,9 @@ function switchPanel(name, tab) {
   if (name === 'board') {
     if (tab) setBoardTab(tab); else setBoardTab('board-list');
   }
+  if (name === 'memo') {
+    if (tab) setMemoTab(tab); else setMemoTab('memo-list');
+  }
   const group = document.querySelector(`.nav-item[data-panel="${name}"]`)?.closest('.nav-group');
   if (group) group.classList.add('open');
 }
@@ -101,6 +104,15 @@ function initBoard() {
   if (typeof renderBoard !== 'function') { console.warn('board-init: board.js not loaded'); return; }
   if (!state || !state.settings) { console.warn('board-init: settings missing'); return; }
   renderBoard();
+}
+function setMemoTab(tab) {
+  document.querySelectorAll('.nav-sub[data-tab="memo-list"]').forEach(s => s.classList.toggle('active', s.dataset.tab === tab));
+  initMemo();
+}
+function initMemo() {
+  if (typeof renderMemo !== 'function') { console.warn('memo-init: memo.js not loaded'); return; }
+  if (!state || !state.settings) { console.warn('memo-init: settings missing'); return; }
+  renderMemo();
 }
 
 function bindUi() {

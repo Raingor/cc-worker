@@ -57,6 +57,15 @@
           <button class="nav-sub" data-tab="board-list">全部留言</button>
         </div>
       </div>
+      <div class="nav-group">
+        <button class="nav-item" data-panel="memo">
+          <span class="nav-item-label">备忘录</span>
+          <span class="nav-chevron">▾</span>
+        </button>
+        <div class="nav-dropdown">
+          <button class="nav-sub" data-tab="memo-list">全部备忘</button>
+        </div>
+      </div>
     </nav>
   </aside>
   <main class="app-main">
@@ -82,6 +91,13 @@
       </div>
     </div>
 
+    <!-- Panel: Memo -->
+    <div class="panel" id="panel-memo">
+      <div class="panel-body" id="memo-body">
+        <div class="dash-loading">加载中…</div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -89,6 +105,7 @@
 <script src="assets/dashboard.js?v=3"></script>
 <script src="assets/toolbox.js?v=3"></script>
 <script src="assets/board.js?v=3"></script>
+<script src="assets/memo.js?v=3"></script>
 <script src="assets/bear-corner.js?v=3"></script>
 </body>
 </html>

@@ -225,6 +225,47 @@ body::before{content:"";position:fixed;inset:0;background-image:radial-gradient(
 .board-reply-submit:hover{background:#1e4a46}
 .board-reply-submit:disabled{opacity:.4;cursor:default}
 
+/* ── Memo ── */
+.memo-wrap{max-width:640px;margin:0 auto;animation:fadeSlide .35s ease}
+.memo-header{margin-bottom:20px}
+.memo-title{font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.memo-sub{font-size:13px;color:var(--muted)}
+.memo-add-btn{display:block;width:100%;padding:14px;border:2px dashed var(--hairline);border-radius:var(--radius-md);background:var(--surface);font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;font-family:var(--font-body);margin-bottom:24px;text-align:center}
+.memo-add-btn:hover{border-color:var(--jade);color:var(--jade);background:var(--jade-light)}
+.memo-list{display:flex;flex-direction:column;gap:24px}
+.memo-group{animation:fadeSlide .3s ease}
+.memo-group-date{font-size:13px;font-weight:700;color:var(--body);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--hairline);display:flex;align-items:center;gap:8px}
+.memo-group-sub{font-size:11px;color:var(--muted);font-weight:400}
+.memo-group-list{display:flex;flex-direction:column;gap:8px}
+.memo-item{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:16px 18px;transition:all .2s;cursor:pointer}
+.memo-item:hover{border-color:var(--charcoal);box-shadow:var(--shadow-sm)}
+.memo-item-head{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+.memo-item-title{font-size:14px;font-weight:600;color:var(--jade);flex:1}
+.memo-item-time{font-size:11px;color:var(--muted);flex-shrink:0}
+.memo-item-del{background:none;border:none;cursor:pointer;font-size:12px;color:var(--charcoal);padding:2px 6px;border-radius:3px;transition:all .15s;line-height:1;flex-shrink:0}
+.memo-item-del:hover{color:var(--terracotta);background:var(--terracotta-light)}
+.memo-item-body{font-size:13px;line-height:1.7;color:var(--body);white-space:pre-wrap;word-break:break-word}
+.memo-item:not(:has(.memo-item-title)) .memo-item-body{font-size:14px}
+
+/* ── Memo Modal ── */
+.memo-modal{display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center}
+.memo-modal.open{display:flex}
+.memo-modal-overlay{position:absolute;inset:0;background:rgba(26,24,22,.35);backdrop-filter:blur(2px)}
+.memo-modal-content{position:relative;background:var(--surface);border-radius:var(--radius-lg);padding:28px 32px;width:90%;max-width:500px;box-shadow:var(--shadow-lg);animation:fadeSlide .25s ease}
+.memo-modal-close{position:absolute;top:16px;right:18px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);padding:4px;line-height:1;border-radius:3px;transition:all .15s}
+.memo-modal-close:hover{color:var(--terracotta);background:var(--terracotta-light)}
+.memo-modal-title{font-family:var(--font-head);font-size:18px;font-weight:700;color:var(--ink);margin-bottom:18px}
+.memo-modal-input{width:100%;padding:10px 12px;border:1px solid var(--hairline);border-radius:var(--radius-sm);font-size:14px;font-family:var(--font-body);color:var(--body);outline:none;transition:border-color .2s;margin-bottom:12px}
+.memo-modal-input:focus{border-color:var(--jade)}
+.memo-modal-text{width:100%;padding:10px 12px;border:1px solid var(--hairline);border-radius:var(--radius-sm);font-size:14px;font-family:var(--font-body);color:var(--body);outline:none;resize:vertical;min-height:120px;transition:border-color .2s;line-height:1.7}
+.memo-modal-text:focus{border-color:var(--jade)}
+.memo-modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.memo-modal-cancel{background:none;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:9px 20px;font-size:13px;cursor:pointer;color:var(--muted);font-family:var(--font-body);transition:all .15s}
+.memo-modal-cancel:hover{border-color:var(--charcoal);color:var(--body)}
+.memo-modal-save{background:var(--jade);border:none;border-radius:var(--radius-sm);padding:9px 24px;font-size:13px;font-weight:600;cursor:pointer;color:#fff;font-family:var(--font-body);transition:all .2s}
+.memo-modal-save:hover{background:#1e4a46}
+.memo-modal-save:disabled{opacity:.4;cursor:default}
+
 /* ── Loader ── */
 @keyframes spin{to{transform:rotate(360deg)}}
 .oa-loader{width:20px;height:20px;border:2px solid var(--hairline);border-top-color:var(--jade);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
