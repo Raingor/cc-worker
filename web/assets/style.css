@@ -53,8 +53,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 @keyframes fadeSlide{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── Nav ── */
-.nav-bar{background:var(--surface);border-right:1px solid var(--hairline);display:flex;flex-direction:column}
-.nav-bar{min-width:200px}
+.nav-bar{background:var(--surface);border-right:1px solid var(--hairline);display:flex;flex-direction:column;min-width:200px;height:100%}
 .nav-brand{padding:28px 28px 22px;font-family:var(--font-head);font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.5px;border-bottom:1px solid var(--hairline)}
 .nav-items{flex:1;display:flex;flex-direction:column;padding:16px 14px;gap:4px}
 .nav-group{position:relative}
@@ -301,10 +300,11 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .memo-modal-save:disabled{opacity:.4;cursor:default}
 
 /* ── Theme Switcher ── */
-#theme-switcher{position:fixed;bottom:24px;right:112px;z-index:9998;font-family:var(--font-body)}
+#theme-switcher{margin:auto 14px 14px;font-family:var(--font-body)}
+#theme-switcher-wrap{display:flex;flex-direction:column;margin-top:auto}
 #theme-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;border:1px solid var(--hairline);background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer;box-shadow:var(--shadow-sm);transition:all .2s;backdrop-filter:blur(4px);font-family:var(--font-body)}
 #theme-btn:hover{border-color:var(--jade);color:var(--jade);box-shadow:var(--shadow-md)}
-#theme-panel{position:absolute;bottom:calc(100% + 10px);right:0;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:10px;box-shadow:var(--shadow-lg);display:none;min-width:180px;animation:fadeSlide .2s ease}
+#theme-panel{position:absolute;bottom:calc(100% + 10px);left:0;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:10px;box-shadow:var(--shadow-lg);display:none;min-width:180px;animation:fadeSlide .2s ease}
 #theme-panel.open{display:block}
 .theme-opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-size:13px;font-family:var(--font-body);color:var(--body)}
 .theme-opt:hover{background:var(--jade-light);color:var(--jade)}

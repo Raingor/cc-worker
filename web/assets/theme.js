@@ -22,7 +22,10 @@ function setTheme(id) {
 }
 
 function initTheme() {
-  setTheme(getTheme());
+  var saved = getTheme();
+
+  var wrap = document.createElement('div');
+  wrap.id = 'theme-switcher-wrap';
 
   var btn = document.createElement('button');
   btn.id = 'theme-btn';
@@ -49,10 +52,11 @@ function initTheme() {
     panel.appendChild(opt);
   }
 
-  var wrap = document.createElement('div');
-  wrap.id = 'theme-switcher';
-  wrap.appendChild(btn);
-  wrap.appendChild(panel);
+  var sw = document.createElement('div');
+  sw.id = 'theme-switcher';
+  sw.appendChild(btn);
+  sw.appendChild(panel);
+  wrap.appendChild(sw);
 
   btn.addEventListener('click', function (e) {
     e.stopPropagation();
@@ -67,9 +71,8 @@ function initTheme() {
     e.stopPropagation();
   });
 
-  document.body.appendChild(wrap);
-
-  setTheme(getTheme());
+  document.querySelector('.nav-bar').appendChild(wrap);
+  setTheme(saved);
 }
 
 document.addEventListener('DOMContentLoaded', initTheme);
