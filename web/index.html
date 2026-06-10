@@ -67,14 +67,11 @@
         </div>
       </div>
     </nav>
+    <div class="nav-lock">
+      <button class="lock-btn" id="lock-btn" type="button" title="锁屏">🔒</button>
+    </div>
   </aside>
   <main class="app-main">
-
-    <header class="app-header">
-      <time class="header-time" id="header-time"></time>
-      <span class="header-date" id="header-date"></span>
-    </header>
-    <script>(function(){var n=new Date,d=document.getElementById('header-time'),e=document.getElementById('header-date');if(d&&e){var h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0');d.textContent=h+':'+m;e.textContent=n.getFullYear()+'年'+(n.getMonth()+1)+'月'+n.getDate()+'日 星期'+['日','一','二','三','四','五','六'][n.getDay()]}})()</script>
 
     <!-- Panel: Dashboard -->
     <div class="panel" id="panel-dashboard">
@@ -113,6 +110,10 @@
 <script src="assets/board.js?v=4"></script>
 <script src="assets/memo.js?v=4"></script>
 <script src="assets/theme.js?v=4"></script>
+<div id="lock-screen">
+  <img class="lock-bear" src="https://media.tenor.com/Wx7E7j7b7x8AAAAC/bear-dance.gif" alt="bear">
+  <span class="lock-hint">点击解锁</span>
+</div>
 <script src="assets/bear-corner.js?v=4"></script>
 </body>
 </html>

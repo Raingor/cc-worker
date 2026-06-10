@@ -136,21 +136,18 @@ function bindUi() {
   });
 }
 
-/* ── Clock ── */
-const WEEKDAY_CN = ['日','一','二','三','四','五','六'];
-function updateClock() {
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2,'0');
-  const m = String(now.getMinutes()).padStart(2,'0');
-  const s = String(now.getSeconds()).padStart(2,'0');
-  document.getElementById('header-time').textContent = h + ':' + m + ':' + s;
-  document.getElementById('header-date').textContent =
-    now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 星期' + WEEKDAY_CN[now.getDay()];
+/* ── Lock Screen ── */
+let locked = false;
+function toggleLock() {
+  const screen = document.getElementById('lock-screen');
+  locked = !locked;
+  screen.classList.toggle('active', locked);
+  document.getElementById('lock-btn').textContent = locked ? '🔓' : '🔒';
 }
+document.getElementById('lock-btn').addEventListener('click', toggleLock);
+document.getElementById('lock-screen').addEventListener('click', toggleLock);
 
 async function init() {
-  updateClock();
-  setInterval(updateClock, 1000);
   bindUi();
   await loadMeta();
   loadState();
