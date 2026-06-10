@@ -166,21 +166,16 @@ function renderGreeting(data) {
   const weekday = WEEKDAY_LABELS[d.getDay()];
   const prog = data.progress || { checked: 0, total: 0 };
   const pct = prog.total > 0 ? Math.round(prog.checked / prog.total * 100) : 0;
-  const circumference = 2 * Math.PI * 22;
-  const offset = circumference - (pct / 100) * circumference;
   el.innerHTML =
     '<div class="oa-greeting-text">' +
-    '  <div class="oa-greeting-sub">' + dt[0] + '年' + (+dt[1]) + '月' + (+dt[2]) + '日 · 星期' + weekday + (data.is_today ? ' · 今天' : '') + '</div>' +
-    '  <div class="oa-greeting-title">' + escapeHtml(data.title || '工作面板') + '</div>' +
+    '  <div class="oa-greeting-date">' + dt[0] + '年' + (+dt[1]) + '月' + (+dt[2]) + '日' + (data.is_today ? ' · 今天' : '') + '</div>' +
+    '  <div class="oa-greeting-week"><span class="oa-weekday-badge">星期' + weekday + '</span><span class="oa-greeting-title">' + escapeHtml(data.title || '工作面板') + '</span></div>' +
     '</div>' +
-    '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' +
-    '  <div class="bear-wrap">' + randomBearImg(52, 12) + '</div>' +
-    '  <svg class="oa-greeting-ring" viewBox="0 0 52 52">' +
-    '    <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="3"/>' +
-    '    <circle cx="26" cy="26" r="22" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" transform="rotate(-90 26 26)"/>' +
-    '    <text x="26" y="26" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="12" font-weight="600" font-family="Inter,sans-serif">' + pct + '%</text>' +
-    '  </svg>' +
-    '</div>';
+    '<div class="oa-greeting-progress">' +
+    '  <div class="oa-progress-track"><div class="oa-progress-fill" style="width:' + pct + '%"></div></div>' +
+    '  <span class="oa-progress-label">' + pct + '%</span>' +
+    '</div>' +
+    '<div class="bear-wrap">' + randomBearImg(40, 10) + '</div>';
   return el;
 }
 
@@ -412,15 +407,10 @@ async function doSaveChecklist() {
 function updateProgressRing() {
   const prog = dashState.data?.progress || { checked: 0, total: 0 };
   const pct = prog.total > 0 ? Math.round(prog.checked / prog.total * 100) : 0;
-  const circumference = 2 * Math.PI * 22;
-  const offset = circumference - (pct / 100) * circumference;
-  const ring = document.querySelector('.oa-greeting-ring');
-  if (ring) {
-    const circle = ring.querySelector('circle:last-of-type');
-    const text = ring.querySelector('text');
-    if (circle) circle.setAttribute('stroke-dashoffset', offset);
-    if (text) text.textContent = pct + '%';
-  }
+  const fill = document.querySelector('.oa-progress-fill');
+  const label = document.querySelector('.oa-progress-label');
+  if (fill) fill.style.width = pct + '%';
+  if (label) label.textContent = pct + '%';
   // Update task visual state without full re-render
   const body = document.getElementById('dash-body');
   if (body) {
