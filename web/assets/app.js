@@ -144,11 +144,10 @@ function toggleLock() {
   screen.classList.toggle('active', locked);
   document.getElementById('lock-btn').textContent = locked ? '🔓' : '🔒';
 }
-document.getElementById('lock-btn').addEventListener('click', toggleLock);
-document.getElementById('lock-screen').addEventListener('click', toggleLock);
-
 async function init() {
   bindUi();
+  document.getElementById('lock-btn').addEventListener('click', toggleLock);
+  document.getElementById('lock-screen').addEventListener('click', toggleLock);
   await loadMeta();
   loadState();
   if (!state.settings) { state.settings = getDefaultSettings(); saveState(); }
