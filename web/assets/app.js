@@ -147,7 +147,7 @@ function toggleLock() {
 async function init() {
   bindUi();
   document.getElementById('lock-btn').addEventListener('click', toggleLock);
-  document.getElementById('lock-screen').addEventListener('click', toggleLock);
+  document.getElementById('lock-screen').querySelector('.lock-bear').addEventListener('click', toggleLock);
   await loadMeta();
   loadState();
   if (!state.settings) { state.settings = getDefaultSettings(); saveState(); }

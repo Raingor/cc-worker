@@ -87,10 +87,11 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
   position:fixed;inset:0;z-index:999;
   background:var(--bg);
   display:none;align-items:center;justify-content:center;
-  flex-direction:column;gap:12px;cursor:pointer
+  flex-direction:column;gap:12px
 }
 #lock-screen.active{display:flex;animation:fadeSlide .3s ease}
-.lock-bear{max-width:280px;max-height:280px;border-radius:var(--radius-lg);pointer-events:none}
+#lock-screen .lock-hint{pointer-events:none}
+.lock-bear{max-width:280px;max-height:280px;border-radius:var(--radius-lg);cursor:pointer}
 .lock-hint{font-size:13px;color:var(--muted);font-weight:400;pointer-events:none}
 
 /* ── Main Panel ── */
