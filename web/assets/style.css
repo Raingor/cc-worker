@@ -300,7 +300,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .memo-modal-save:disabled{opacity:.4;cursor:default}
 
 /* ── Theme Switcher ── */
-#theme-switcher{margin:auto 14px 14px;font-family:var(--font-body)}
+#theme-switcher{margin:auto 14px 14px;font-family:var(--font-body);position:relative}
 #theme-switcher-wrap{display:flex;flex-direction:column;margin-top:auto}
 #theme-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:20px;border:1px solid var(--hairline);background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer;box-shadow:var(--shadow-sm);transition:all .2s;backdrop-filter:blur(4px);font-family:var(--font-body)}
 #theme-btn:hover{border-color:var(--jade);color:var(--jade);box-shadow:var(--shadow-md)}
