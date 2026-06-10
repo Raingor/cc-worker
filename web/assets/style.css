@@ -116,18 +116,12 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .bear-dot{display:inline-flex;width:20px;height:20px;vertical-align:middle;align-items:center;justify-content:center}
 
 /* ── Greeting Card ── */
-.oa-greeting{background:linear-gradient(135deg,var(--jade) 0%,#1a403c 100%);border-radius:var(--radius-lg);padding:24px 28px;margin-bottom:28px;display:flex;align-items:center;gap:20px;position:relative;overflow:hidden}
+.oa-greeting{background:linear-gradient(135deg,var(--jade) 0%,#1a403c 100%);border-radius:var(--radius-lg);padding:28px 32px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:center;gap:20px;position:relative;overflow:hidden}
 .oa-greeting::before{content:"";position:absolute;top:-60px;right:-40px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.04);pointer-events:none}
 .oa-greeting::after{content:"";position:absolute;bottom:-80px;left:20%;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.03);pointer-events:none}
-.oa-greeting-text{flex:1;display:flex;flex-direction:column;gap:4px}
-.oa-greeting-date{font-size:12px;color:rgba(255,255,255,.5);position:relative;letter-spacing:.3px}
-.oa-greeting-week{display:flex;align-items:center;gap:10px;position:relative}
-.oa-weekday-badge{font-size:11px;font-weight:600;background:rgba(255,255,255,.12);color:#fff;padding:2px 8px;border-radius:4px;letter-spacing:.5px;flex-shrink:0}
-.oa-greeting-title{font-family:var(--font-head);font-size:20px;font-weight:600;color:#fff;letter-spacing:-.2px}
-.oa-greeting-progress{display:flex;align-items:center;gap:8px;position:relative;margin-top:2px}
-.oa-progress-track{flex:1;height:4px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden;min-width:80px}
-.oa-progress-fill{height:100%;background:#fff;border-radius:2px;transition:width .4s ease}
-.oa-progress-label{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);min-width:30px;text-align:right;font-variant-numeric:tabular-nums}
+.oa-greeting-title{font-family:var(--font-head);font-size:22px;font-weight:600;color:#fff;letter-spacing:-.3px;margin-bottom:4px;position:relative}
+.oa-greeting-sub{font-size:13px;color:rgba(255,255,255,.6);position:relative}
+.oa-greeting-ring{flex-shrink:0;width:72px;height:72px;position:relative}
 
 /* ── Section ── */
 .oa-dash-section{margin-bottom:28px;animation:fadeSlide .35s ease}
@@ -354,7 +348,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 /* ── Responsive ── */
 @media(max-width:768px){
   .panel-body{padding:18px}
-  .oa-greeting{padding:22px 24px;flex-wrap:wrap}
+  .oa-greeting{padding:22px 24px}
   .oa-task{padding:16px 14px;min-height:auto}
   .tb-upload-zone{padding:36px 16px}
   .stats-grid{grid-template-columns:1fr}
