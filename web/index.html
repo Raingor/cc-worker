@@ -32,7 +32,7 @@
         </div>
       </div>
       <div class="nav-group">
-        <button class="nav-item active" data-panel="toolbox">
+        <button class="nav-item" data-panel="toolbox">
           <span class="nav-item-label">工具箱</span>
           <span class="nav-chevron">▾</span>
         </button>
@@ -46,6 +46,15 @@
           <button class="nav-sub" data-tool="pdf-compress">PDF压缩</button>
           <button class="nav-sub" data-tool="ocr">OCR识别</button>
           <button class="nav-sub" data-tool="table-extract">表格提取</button>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button class="nav-item" data-panel="board">
+          <span class="nav-item-label">留言板</span>
+          <span class="nav-chevron">▾</span>
+        </button>
+        <div class="nav-dropdown">
+          <button class="nav-sub" data-tab="board-list">全部留言</button>
         </div>
       </div>
     </nav>
@@ -66,7 +75,12 @@
       </div>
     </div>
 
-
+    <!-- Panel: Board -->
+    <div class="panel" id="panel-board">
+      <div class="panel-body" id="board-body">
+        <div class="dash-loading">加载中…</div>
+      </div>
+    </div>
 
   </main>
 </div>
@@ -74,6 +88,7 @@
 <script src="assets/app.js?v=3"></script>
 <script src="assets/dashboard.js?v=3"></script>
 <script src="assets/toolbox.js?v=3"></script>
+<script src="assets/board.js?v=3"></script>
 <script src="assets/bear-corner.js?v=3"></script>
 </body>
 </html>

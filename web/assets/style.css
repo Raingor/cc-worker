@@ -178,6 +178,29 @@ body::before{content:"";position:fixed;inset:0;background-image:radial-gradient(
 
 
 
+/* ── Board ── */
+.board-wrap{max-width:640px;margin:0 auto;animation:fadeSlide .35s ease}
+.board-header{margin-bottom:24px}
+.board-title{font-family:var(--font-head);font-size:22px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.board-sub{font-size:13px;color:var(--muted)}
+.board-form{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:18px 20px;margin-bottom:24px}
+.board-input{width:100%;border:none;outline:none;resize:none;font-size:14px;font-family:var(--font-body);color:var(--body);background:transparent;line-height:1.7;min-height:60px}
+.board-input::placeholder{color:var(--charcoal)}
+.board-form-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--hairline)}
+.board-count{font-size:11px;color:var(--muted)}
+.board-btn{padding:8px 22px;border:none;border-radius:var(--radius-sm);background:var(--jade);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-body);transition:all .2s}
+.board-btn:hover{background:#1e4a46;box-shadow:var(--shadow-sm)}
+.board-empty{display:flex;flex-direction:column;align-items:center;padding:60px 0;color:var(--muted);font-size:14px}
+.board-list{display:flex;flex-direction:column;gap:10px}
+.board-item{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:16px 20px;transition:all .2s;animation:fadeSlide .25s ease}
+.board-item:hover{border-color:var(--charcoal);box-shadow:var(--shadow-sm)}
+.board-item-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.board-item-author{font-size:12px;font-weight:600;color:var(--jade)}
+.board-item-time{font-size:11px;color:var(--muted);flex:1}
+.board-item-del{background:none;border:none;cursor:pointer;font-size:13px;color:var(--charcoal);padding:4px;border-radius:3px;transition:all .15s;line-height:1}
+.board-item-del:hover{color:var(--terracotta);background:var(--terracotta-light)}
+.board-item-body{font-size:14px;line-height:1.7;color:var(--body);white-space:pre-wrap;word-break:break-word}
+
 /* ── Loader ── */
 @keyframes spin{to{transform:rotate(360deg)}}
 .oa-loader{width:20px;height:20px;border:2px solid var(--hairline);border-top-color:var(--jade);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}

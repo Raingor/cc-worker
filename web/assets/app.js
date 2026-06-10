@@ -45,6 +45,9 @@ function switchPanel(name, tab) {
   if (name === 'toolbox') {
     if (tab) setToolboxTab(tab); else setToolboxTab('pdf-to-excel');
   }
+  if (name === 'board') {
+    if (tab) setBoardTab(tab); else setBoardTab('board-list');
+  }
   const group = document.querySelector(`.nav-item[data-panel="${name}"]`)?.closest('.nav-group');
   if (group) group.classList.add('open');
 }
@@ -89,6 +92,15 @@ function initDashboard(tab) {
 }
 function initToolbox(tab) {
   if (typeof switchToolboxTab === 'function') switchToolboxTab(tab || 'pdf-to-excel');
+}
+function setBoardTab(tab) {
+  document.querySelectorAll('.nav-sub[data-tab="board-list"]').forEach(s => s.classList.toggle('active', s.dataset.tab === tab));
+  initBoard();
+}
+function initBoard() {
+  if (typeof renderBoard !== 'function') { console.warn('board-init: board.js not loaded'); return; }
+  if (!state || !state.settings) { console.warn('board-init: settings missing'); return; }
+  renderBoard();
 }
 
 function bindUi() {
