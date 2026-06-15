@@ -97,7 +97,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 /* ── Main Panel ── */
 .app-main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
 
-.panel{display:none;flex-direction:column;height:100%;animation:fadeSlide .35s ease}
+.panel{display:none;flex-direction:column;height:100%;position:relative;animation:fadeSlide .35s ease}
 .panel.active{display:flex}
 
 
