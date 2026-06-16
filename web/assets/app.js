@@ -52,7 +52,7 @@ function switchPanel(name, tab) {
     if (tab) setMemoTab(tab); else setMemoTab('memo-list');
   }
   const group = document.querySelector(`.nav-item[data-panel="${name}"]`)?.closest('.nav-group');
-  if (group) group.classList.add('open');
+  if (group && document.documentElement.getAttribute('data-layout') !== 'mac') group.classList.add('open');
 }
 
 function setDashTab(tab) {

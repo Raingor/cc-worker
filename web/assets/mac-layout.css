@@ -153,6 +153,65 @@
   to   { opacity: 1; transform: scale(1); }
 }
 
+/* ── Wallpaper Button (top-right of desktop) ── */
+#wallpaper-btn {
+  position: fixed;
+  top: 40px; right: 24px;
+  z-index: 99;
+}
+.wallpaper-toggle {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition: all .2s;
+  color: var(--muted);
+  line-height: 1;
+}
+.wallpaper-toggle:hover {
+  border-color: var(--jade);
+  color: var(--jade);
+  box-shadow: var(--shadow-md);
+  transform: scale(1.1);
+}
+.wallpaper-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  min-width: 120px;
+  display: none;
+  z-index: 200;
+  overflow: hidden;
+}
+.wallpaper-menu.open { display: block; animation: fadeSlide .15s ease; }
+.wallpaper-menu-item {
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--body);
+  transition: background .12s;
+  font-family: var(--font-body);
+  white-space: nowrap;
+}
+.wallpaper-menu-item:hover {
+  background: var(--jade);
+  color: #fff;
+}
+
 /* Window title bar via ::before on panel-body */
 [data-layout="mac"] .panel-body {
   padding-top: 48px;
@@ -335,4 +394,6 @@
   [data-layout="mac"] .mac-dock-label { display: none; }
   [data-layout="mac"] .app-main { padding: 8px; }
   #layout-switcher { bottom: 10px; left: 10px; }
+  #wallpaper-btn { top: 46px; right: 10px; }
+  .wallpaper-toggle { width: 30px; height: 30px; font-size: 13px; }
 }
