@@ -80,7 +80,7 @@
 
     var btn = document.createElement('button');
     btn.className = 'wallpaper-toggle';
-    btn.innerHTML = '🖼️';
+    btn.innerHTML = '壁纸';
     btn.title = '更换壁纸';
 
     btn.addEventListener('click', function (e) {

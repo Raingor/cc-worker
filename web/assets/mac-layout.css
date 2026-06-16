@@ -160,14 +160,14 @@
   z-index: 99;
 }
 .wallpaper-toggle {
-  width: 36px; height: 36px;
-  border-radius: 50%;
+  padding: 6px 14px;
+  border-radius: 20px;
   border: 1px solid var(--hairline);
   background: color-mix(in srgb, var(--surface) 82%, transparent);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -175,6 +175,8 @@
   transition: all .2s;
   color: var(--muted);
   line-height: 1;
+  font-weight: 500;
+  font-family: var(--font-body);
 }
 .wallpaper-toggle:hover {
   border-color: var(--jade);
@@ -395,5 +397,5 @@
   [data-layout="mac"] .app-main { padding: 8px; }
   #layout-switcher { bottom: 10px; left: 10px; }
   #wallpaper-btn { top: 46px; right: 10px; }
-  .wallpaper-toggle { width: 30px; height: 30px; font-size: 13px; }
+  .wallpaper-toggle { padding: 4px 10px; font-size: 11px; }
 }
