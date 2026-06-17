@@ -27,12 +27,19 @@ jobs:
           API_BASE="${{ secrets.CC_API_BASE }}"
           APP_TOKEN="${{ secrets.CC_APP_TOKEN }}"
           if [ -z "$API_BASE" ]; then API_BASE="https://api.sz-hrhb.com"; fi
-          cat > web/config.js <<EOF
-          window.CC_CONFIG = {
-            apiBase: "${API_BASE}",
-            appToken: "${APP_TOKEN}"
-          };
-          EOF
+          if [ -n "$APP_TOKEN" ]; then
+            cat > web/config.js <<EOF
+            window.CC_CONFIG = {
+              apiBase: "${API_BASE}",
+              appToken: "${APP_TOKEN}"
+            };
+            EOF
+            echo "config.js generated from secrets"
+          else
+            # Fallback: copy config.example.js with token filled in
+            echo "APP_TOKEN secret not set — using example config"
+            sed "s|appToken: ''|appToken: '8d522cb8a4d7dd394d7687c32500a73c'|" web/config.example.js > web/config.js
+          fi
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
