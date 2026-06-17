@@ -395,3 +395,45 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .analysis-email-meta strong{color:var(--jade);font-weight:600}
 .analysis-email-meta .label{color:var(--muted);margin-right:6px}
 .analysis-attach-info{margin-top:12px;padding-top:12px;border-top:1px solid var(--hairline);font-size:12px;color:var(--muted)}
+
+/* ── Analysis Records ── */
+.analysis-records-section{margin-top:40px;animation:fadeSlide .35s ease}
+.analysis-records-header{margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--hairline)}
+.analysis-records-header h3{font-family:var(--font-head);font-size:17px;font-weight:700;color:var(--ink)}
+.analysis-records-list{display:flex;flex-direction:column;gap:12px}
+.analysis-loading{text-align:center;padding:40px 0;color:var(--muted);font-size:13px}
+.analysis-empty{text-align:center;padding:40px 0;color:var(--muted);font-size:13px;border:2px dashed var(--hairline);border-radius:var(--radius-md)}
+
+/* ── Analysis Card ── */
+.analysis-card{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-md);padding:18px 20px;transition:all .2s;animation:fadeSlide .3s ease}
+.analysis-card:hover{box-shadow:var(--shadow-md);border-color:var(--charcoal)}
+.analysis-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.analysis-card-time{font-size:11px;color:var(--muted);font-weight:500}
+.analysis-card-del{background:none;border:none;cursor:pointer;font-size:14px;color:var(--charcoal);padding:2px 8px;border-radius:4px;line-height:1;transition:all .15s}
+.analysis-card-del:hover{color:var(--terracotta);background:var(--terracotta-light)}
+.analysis-card-subject{font-size:14px;font-weight:600;color:var(--jade);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.analysis-card-sender{font-size:12px;color:var(--muted);margin-bottom:6px}
+.analysis-card-preview{font-size:13px;line-height:1.6;color:var(--body);margin-bottom:10px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.analysis-card-badges{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.analysis-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:var(--bg);color:var(--muted);border:1px solid var(--hairline)}
+.analysis-badge.active{background:var(--jade-light);color:var(--jade);border-color:rgba(44,95,90,.2)}
+.analysis-badge.active.badge-pdf{background:#fff3e0;color:#e65100;border-color:#ffcc80}
+.analysis-badge.active.badge-xlsx{background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7}
+.analysis-badge.active.badge-replied{background:#e3f2fd;color:#1565c0;border-color:#90caf9}
+
+.analysis-card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.analysis-action-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);transition:all .15s;border:1px solid var(--hairline);background:var(--surface);color:var(--body)}
+.analysis-action-btn:hover{border-color:var(--jade);color:var(--jade);background:var(--jade-light)}
+.analysis-action-btn:disabled{opacity:.4;cursor:default;pointer-events:none}
+
+.analysis-card-detail{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--hairline);animation:fadeSlide .25s ease}
+.analysis-card-detail .analysis-email-meta{border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px 16px;font-size:13px}
+.analysis-card-detail .analysis-ai-response{font-size:13px;line-height:1.7;max-height:500px;overflow-y:auto;padding-right:4px}
+
+/* ── Dark / theme overrides for badges ── */
+[data-theme="midnight"] .analysis-badge.active.badge-pdf{background:#3e2723;color:#ffb74d;border-color:#5d4037}
+[data-theme="midnight"] .analysis-badge.active.badge-xlsx{background:#1b3a1b;color:#81c784;border-color:#2e7d32}
+[data-theme="midnight"] .analysis-badge.active.badge-replied{background:#1a237e;color:#90caf9;border-color:#283593}
+[data-theme="neon"] .analysis-badge.active.badge-pdf{background:#2a1020;color:#f72585;border-color:#4a1040}
+[data-theme="neon"] .analysis-badge.active.badge-xlsx{background:#0c2a28;color:#00f5d4;border-color:#0a4040}
+[data-theme="neon"] .analysis-badge.active.badge-replied{background:#1a1a40;color:#4361ee;border-color:#303080}

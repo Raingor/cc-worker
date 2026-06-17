@@ -18,6 +18,7 @@ from usage_tracker import get_stats, record_usage
 from conversation_store import list_conversations, get_conversation, upsert_conversation, delete_conversation, pop_last_message
 from memory_store import store_messages as memory_store_messages, search_memories, count_memories
 import checklist_store
+import analysis_store
 
 load_dotenv()
 
@@ -774,8 +775,24 @@ def email_ai_analyze():
             except Exception:
                 ai_error += f" - {resp.text[:300]}"
 
+        # 5. Save record to database
+        record = None
+        if ai_response_text and not ai_error:
+            try:
+                record = analysis_store.create_record({
+                    "email_subject": subject,
+                    "email_sender": sender,
+                    "email_date": date_str,
+                    "email_body_preview": body_text[:500] if body_text else "",
+                    "ai_response": ai_response_text,
+                    "attachment_files": [{"filename": a["filename"], "size": a.get("size", 0)} for a in attachments],
+                })
+            except Exception as e:
+                print(f"[analysis] save error: {e}")
+
         return jsonify({
             "success": True,
+            "record_id": record["id"] if record else None,
             "email": {
                 "subject": subject,
                 "sender": sender,
@@ -789,6 +806,47 @@ def email_ai_analyze():
 
     except Exception as e:
         return jsonify({"success": False, "error": f"处理失败: {e}"}), 500
+
+
+@APP.route("/v1/analysis", methods=["GET", "OPTIONS"])
+def analysis_list():
+    """List all analysis records, newest first."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    records = analysis_store.list_records(limit=100)
+    return jsonify({"records": records})
+
+
+@APP.route("/v1/analysis/<record_id>/flag", methods=["POST", "OPTIONS"])
+def analysis_set_flag(record_id):
+    """Set a flag: has_pdf, has_xlsx, has_replied."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+
+    body = request.get_json(silent=True) or {}
+    flag = body.get("flag")
+    if flag not in ("has_pdf", "has_xlsx", "has_replied"):
+        return jsonify({"error": {"message": "Invalid flag. Use: has_pdf, has_xlsx, has_replied"}}), 400
+
+    record = analysis_store.update_flag(record_id, flag)
+    if not record:
+        return jsonify({"error": {"message": "Record not found"}}), 404
+    return jsonify({"success": True, "record": record})
+
+
+@APP.route("/v1/analysis/<record_id>", methods=["DELETE", "OPTIONS"])
+def analysis_delete(record_id):
+    """Delete an analysis record."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    ok = analysis_store.delete_record(record_id)
+    return jsonify({"deleted": ok}), (200 if ok else 404)
 
 
 @APP.route("/v1/chat/completions", methods=["POST", "OPTIONS"])

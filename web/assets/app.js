@@ -121,10 +121,11 @@ function setAnalysisTab(tab) {
   document.querySelectorAll('.nav-sub[data-tab="analyze"]').forEach(s => s.classList.toggle('active', s.dataset.tab === tab));
 }
 function initAnalysis() {
-  if (typeof startEmailAnalysis === 'undefined') { console.warn('analysis-init: analysis.js not loaded'); return; }
-  if (!state || !state.settings) { console.warn('analysis-init: settings missing'); return; }
-  // Reset UI to initial state
-  closeAnalysisResult();
+  if (typeof initAnalysisPanel === 'function') {
+    initAnalysisPanel();
+  } else {
+    console.warn('analysis-init: analysis.js not loaded');
+  }
 }
 
 function bindUi() {
