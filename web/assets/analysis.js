@@ -17,7 +17,27 @@ function analysisHeaders() {
 function initAnalysisPanel() {
   if (typeof state === 'undefined' || !state || !state.settings) return;
   closeAnalysisResult();
+  // Auto-open guide if no records yet, else let user toggle freely
+  var guide = document.getElementById('analysis-guide');
+  if (guide) {
+    var saved = localStorage.getItem('analysis_guide_open');
+    if (saved === 'true') guide.setAttribute('open', '');
+    else if (saved === 'false') guide.removeAttribute('open');
+    guide.addEventListener('toggle', function () {
+      localStorage.setItem('analysis_guide_open', this.open);
+    });
+  }
   loadAnalysisRecords();
+}
+
+/* ── After records loaded, auto-open guide if empty ── */
+function afterAnalysisRecords() {
+  if (_analysisRecords.length === 0) {
+    var guide = document.getElementById('analysis-guide');
+    if (guide && !guide.open) {
+      guide.setAttribute('open', '');
+    }
+  }
 }
 
 function loadAnalysisRecords() {
@@ -51,6 +71,7 @@ function renderAnalysisRecords() {
 
   if (!_analysisRecords || _analysisRecords.length === 0) {
     listEl.innerHTML = '<div class="analysis-empty">暂无分析记录</div>';
+    afterAnalysisRecords();
     return;
   }
 
@@ -60,6 +81,7 @@ function renderAnalysisRecords() {
     html += renderRecordCard(r);
   }
   listEl.innerHTML = html;
+  afterAnalysisRecords();
 }
 
 function renderRecordCard(r) {

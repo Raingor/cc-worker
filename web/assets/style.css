@@ -396,6 +396,25 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .analysis-email-meta .label{color:var(--muted);margin-right:6px}
 .analysis-attach-info{margin-top:12px;padding-top:12px;border-top:1px solid var(--hairline);font-size:12px;color:var(--muted)}
 
+/* ── Analysis Usage Guide ── */
+.analysis-guide{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius-md);margin-bottom:24px;overflow:hidden;transition:all .2s}
+.analysis-guide:hover{border-color:var(--charcoal)}
+.analysis-guide-summary{padding:14px 18px;cursor:pointer;font-size:14px;font-weight:600;color:var(--ink);user-select:none;display:flex;align-items:center;gap:8px;transition:background .15s}
+.analysis-guide-summary::-webkit-details-marker{display:none}
+.analysis-guide-summary::before{content:"▶";font-size:10px;color:var(--jade);transition:transform .2s}
+details[open] .analysis-guide-summary::before{transform:rotate(90deg)}
+.analysis-guide-summary:hover{background:var(--jade-light)}
+.analysis-guide-body{padding:0 18px 16px}
+.analysis-guide-step{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--hairline)}
+.analysis-guide-step:last-child{border-bottom:none;padding-bottom:0}
+.guide-step-num{flex:0 0 32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--jade);color:#fff;font-size:14px;font-weight:700;font-family:var(--font-head)}
+.guide-step-content{flex:1;min-width:0}
+.guide-step-content strong{display:block;font-size:14px;color:var(--ink);margin-bottom:2px}
+.guide-step-content p{font-size:13px;line-height:1.7;color:var(--body);margin:0}
+.guide-step-content ul{margin:8px 0 0;padding-left:20px;font-size:13px;line-height:1.7;color:var(--body)}
+.guide-step-content ul li{margin-bottom:4px}
+.guide-step-content em{color:var(--jade);font-style:normal;font-weight:500}
+
 /* ── Analysis Records ── */
 .analysis-records-section{margin-top:40px;animation:fadeSlide .35s ease}
 .analysis-records-header{margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--hairline)}

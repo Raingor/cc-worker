@@ -119,6 +119,47 @@
             <h2 class="analysis-title">📊 邮箱数据分析</h2>
             <p class="analysis-desc">自动检查 sylvia.tan@assaabloy.com 发送的最新邮件，通过 AI 读取邮件内容和附件 Excel，完成任务分析。</p>
           </div>
+
+          <!-- 使用说明 -->
+          <details class="analysis-guide" id="analysis-guide">
+            <summary class="analysis-guide-summary">📖 使用说明（点击展开）</summary>
+            <div class="analysis-guide-body">
+              <div class="analysis-guide-step">
+                <span class="guide-step-num">1</span>
+                <div class="guide-step-content">
+                  <strong>检查并分析邮件</strong>
+                  <p>点击下方「📬 检查邮件并分析」按钮，系统将自动登录 QQ 邮箱，获取 sylvia.tan@assaabloy.com 的<em>最新一封邮件</em>（含附件 Excel）。AI 将读取邮件正文和附件表格数据，生成分析报告。</p>
+                </div>
+              </div>
+              <div class="analysis-guide-step">
+                <span class="guide-step-num">2</span>
+                <div class="guide-step-content">
+                  <strong>查看分析结果</strong>
+                  <p>分析完成后，页面顶部会显示本次分析结果的详细报告，包含邮件摘要、AI 分析结论和数据洞察。关闭后仍可在下方「分析历史」中随时查看。</p>
+                </div>
+              </div>
+              <div class="analysis-guide-step">
+                <span class="guide-step-num">3</span>
+                <div class="guide-step-content">
+                  <strong>管理分析历史</strong>
+                  <p>每次分析自动保存为历史卡片。每张卡片可：</p>
+                  <ul>
+                    <li><strong>查看详情</strong> — 展开完整 AI 分析报告</li>
+                    <li><strong>标记状态</strong> — 确认是否已生成 PDF ✅、是否导出 XLSX 📊、是否已回复邮件 📬</li>
+                    <li><strong>删除记录</strong> — 点击右上角 ✕ 移除不需要的记录</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="analysis-guide-step">
+                <span class="guide-step-num">4</span>
+                <div class="guide-step-content">
+                  <strong>工作流提醒</strong>
+                  <p>为了保障数据准确性，建议每次收到 sylvia 的新邮件后，先进行 AI 分析确认数据变化，再根据分析结果做后续下单、出货等操作。标记已完成步骤，方便后续追溯。</p>
+                </div>
+              </div>
+            </div>
+          </details>
+
           <div class="analysis-actions">
             <button class="analysis-btn" id="btn-check-email" onclick="startEmailAnalysis()">
               <span class="analysis-btn-icon">📬</span>
