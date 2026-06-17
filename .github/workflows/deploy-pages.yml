@@ -22,21 +22,6 @@ jobs:
       - name: Sync instructions to web assets
         run: python3 scripts/sync-instructions.py
 
-      - name: Generate config.js (from secret or keep tracked)
-        run: |
-          APP_TOKEN="${{ secrets.CC_APP_TOKEN }}"
-          if [ -n "$APP_TOKEN" ]; then
-            cat > web/config.js <<EOF
-            window.CC_CONFIG = {
-              apiBase: "${{ secrets.CC_API_BASE }}",
-              appToken: "${APP_TOKEN}"
-            };
-            EOF
-            echo "config.js generated from secrets"
-          else
-            echo "using tracked config.js (no secrets set)"
-          fi
-
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
