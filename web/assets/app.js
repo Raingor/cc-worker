@@ -53,6 +53,7 @@ function switchPanel(name, tab) {
   }
   if (name === 'analysis') {
     if (tab) setAnalysisTab(tab); else setAnalysisTab('analyze');
+    initAnalysis();
   }
   const group = document.querySelector(`.nav-item[data-panel="${name}"]`)?.closest('.nav-group');
   if (group && document.documentElement.getAttribute('data-layout') !== 'mac') group.classList.add('open');
