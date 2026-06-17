@@ -19,6 +19,8 @@ from conversation_store import list_conversations, get_conversation, upsert_conv
 from memory_store import store_messages as memory_store_messages, search_memories, count_memories
 import checklist_store
 import analysis_store
+import board_store
+import memo_store
 
 load_dotenv()
 
@@ -847,6 +849,124 @@ def analysis_delete(record_id):
         return jsonify({"error": {"message": "Unauthorized"}}), 401
     ok = analysis_store.delete_record(record_id)
     return jsonify({"deleted": ok}), (200 if ok else 404)
+
+
+# ── Board (留言板) ──────────────────────────────────────────────
+
+@APP.route("/v1/board", methods=["GET", "POST", "OPTIONS"])
+def board_handler():
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+
+    if request.method == "GET":
+        return jsonify({"messages": board_store.get_messages()})
+
+    # POST
+    body = request.get_json(silent=True) or {}
+    text = (body.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": {"message": "text is required"}}), 400
+    author = body.get("author", "CC").strip() or "CC"
+    msg = board_store.create_message(text, author)
+    return jsonify(msg), 201
+
+
+@APP.route("/v1/board/<int:msg_id>", methods=["DELETE", "OPTIONS"])
+def board_delete(msg_id):
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    ok = board_store.delete_message(msg_id)
+    return jsonify({"deleted": ok}), (200 if ok else 404)
+
+
+@APP.route("/v1/board/<int:msg_id>/like", methods=["POST", "OPTIONS"])
+def board_like(msg_id):
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    body = request.get_json(silent=True) or {}
+    action = body.get("action", "like")
+    new_likes = board_store.toggle_like(msg_id, action)
+    if new_likes is None:
+        return jsonify({"error": {"message": "Message not found"}}), 404
+    return jsonify({"likes": new_likes})
+
+
+@APP.route("/v1/board/<int:msg_id>/replies", methods=["POST", "OPTIONS"])
+def board_reply(msg_id):
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    body = request.get_json(silent=True) or {}
+    text = (body.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": {"message": "text is required"}}), 400
+    author = body.get("author", "CC").strip() or "CC"
+    reply = board_store.create_reply(msg_id, text, author)
+    if not reply:
+        return jsonify({"error": {"message": "Message not found"}}), 404
+    return jsonify(reply), 201
+
+
+@APP.route("/v1/board/reply/<int:reply_id>", methods=["DELETE", "OPTIONS"])
+def board_delete_reply(reply_id):
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    ok = board_store.delete_reply(reply_id)
+    return jsonify({"deleted": ok}), (200 if ok else 404)
+
+
+# ── Memo (备忘录) ───────────────────────────────────────────────
+
+@APP.route("/v1/memos", methods=["GET", "POST", "OPTIONS"])
+def memos_handler():
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+
+    if request.method == "GET":
+        return jsonify(memo_store.get_memos())
+
+    # POST
+    body = request.get_json(silent=True) or {}
+    content = (body.get("content") or "").strip()
+    if not content:
+        return jsonify({"error": {"message": "content is required"}}), 400
+    title = (body.get("title") or "").strip()
+    memo = memo_store.create_memo(title, content)
+    return jsonify(memo), 201
+
+
+@APP.route("/v1/memos/<int:memo_id>", methods=["PUT", "DELETE", "OPTIONS"])
+def memos_detail(memo_id):
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+
+    if request.method == "DELETE":
+        ok = memo_store.delete_memo(memo_id)
+        return jsonify({"deleted": ok}), (200 if ok else 404)
+
+    # PUT
+    body = request.get_json(silent=True) or {}
+    content = (body.get("content") or "").strip()
+    if not content:
+        return jsonify({"error": {"message": "content is required"}}), 400
+    title = (body.get("title") or "").strip()
+    memo = memo_store.update_memo(memo_id, title, content)
+    if not memo:
+        return jsonify({"error": {"message": "Memo not found"}}), 404
+    return jsonify(memo)
 
 
 @APP.route("/v1/chat/completions", methods=["POST", "OPTIONS"])
