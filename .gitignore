@@ -23,4 +23,3 @@ server/__pycache__/
 server/data/
 server/uwsgi.log
 server/uwsgi.pid
-web/config.js

@@ -22,23 +22,19 @@ jobs:
       - name: Sync instructions to web assets
         run: python3 scripts/sync-instructions.py
 
-      - name: Generate config.js
+      - name: Generate config.js (from secret or keep tracked)
         run: |
-          API_BASE="${{ secrets.CC_API_BASE }}"
           APP_TOKEN="${{ secrets.CC_APP_TOKEN }}"
-          if [ -z "$API_BASE" ]; then API_BASE="https://api.sz-hrhb.com"; fi
           if [ -n "$APP_TOKEN" ]; then
             cat > web/config.js <<EOF
             window.CC_CONFIG = {
-              apiBase: "${API_BASE}",
+              apiBase: "${{ secrets.CC_API_BASE }}",
               appToken: "${APP_TOKEN}"
             };
             EOF
             echo "config.js generated from secrets"
           else
-            # Fallback: copy config.example.js with token filled in
-            echo "APP_TOKEN secret not set — using example config"
-            sed "s|appToken: ''|appToken: '8d522cb8a4d7dd394d7687c32500a73c'|" web/config.example.js > web/config.js
+            echo "using tracked config.js (no secrets set)"
           fi
 
       - name: Deploy to gh-pages branch
