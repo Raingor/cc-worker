@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob: https://s1.aigei.com https://media.tenor.com; connect-src 'self' https://api.sz-hrhb.com http://127.0.0.1:5001 https://cdn.jsdelivr.net">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob: https://s1.aigei.com https://media.tenor.com; connect-src 'self' https://api.sz-hrhb.com http://127.0.0.1:5001 https://cdn.jsdelivr.net https://opencode.ai">
 <title>CC 工作台</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,6 +67,15 @@
           <button class="nav-sub" data-tab="memo-list">全部备忘</button>
         </div>
       </div>
+      <div class="nav-group">
+        <button class="nav-item" data-panel="analysis">
+          <span class="nav-item-label">数据分析</span>
+          <span class="nav-chevron">▾</span>
+        </button>
+        <div class="nav-dropdown">
+          <button class="nav-sub" data-tab="analyze">分析任务</button>
+        </div>
+      </div>
     </nav>
     <div class="nav-lock">
       <button class="lock-btn" id="lock-btn" type="button" title="锁屏">🔒</button>
@@ -102,6 +111,32 @@
       </div>
     </div>
 
+    <!-- Panel: Analysis -->
+    <div class="panel" id="panel-analysis">
+      <div class="panel-body" id="analysis-body">
+        <div class="analysis-wrap">
+          <div class="analysis-header">
+            <h2 class="analysis-title">📊 邮箱数据分析</h2>
+            <p class="analysis-desc">自动检查 sylvia.tan@assaabloy.com 发送的最新邮件，通过 AI 读取邮件内容和附件 Excel，完成任务分析。</p>
+          </div>
+          <div class="analysis-actions">
+            <button class="analysis-btn" id="btn-check-email" onclick="startEmailAnalysis()">
+              <span class="analysis-btn-icon">📬</span>
+              <span class="analysis-btn-text">检查邮件并分析</span>
+            </button>
+            <div class="analysis-status" id="analysis-status" style="display:none"></div>
+          </div>
+          <div class="analysis-result" id="analysis-result" style="display:none">
+            <div class="analysis-result-header">
+              <h3>分析结果</h3>
+              <button class="analysis-result-close" onclick="closeAnalysisResult()">✕</button>
+            </div>
+            <div class="analysis-result-body" id="analysis-result-body"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -109,13 +144,14 @@
   <img class="lock-bear" src="https://media.tenor.com/5nzLdhWL7GoAAAAj/sad-bear-joke-bear-sad.gif" alt="bear">
   <span class="lock-hint">点击解锁</span>
 </div>
-<script src="assets/app.js?v=5"></script>
-<script src="assets/dashboard.js?v=5"></script>
-<script src="assets/toolbox.js?v=5"></script>
-<script src="assets/board.js?v=5"></script>
-<script src="assets/memo.js?v=5"></script>
-<script src="assets/theme.js?v=5"></script>
-<script src="assets/layout-switcher.js?v=1"></script>
-<script src="assets/bear-corner.js?v=5"></script>
+<script src="assets/app.js?v=6"></script>
+<script src="assets/analysis.js?v=1"></script>
+<script src="assets/dashboard.js?v=6"></script>
+<script src="assets/toolbox.js?v=6"></script>
+<script src="assets/board.js?v=6"></script>
+<script src="assets/memo.js?v=6"></script>
+<script src="assets/theme.js?v=6"></script>
+<script src="assets/layout-switcher.js?v=2"></script>
+<script src="assets/bear-corner.js?v=6"></script>
 </body>
 </html>

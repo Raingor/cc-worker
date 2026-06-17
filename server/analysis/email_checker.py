@@ -5,6 +5,7 @@
 from __future__ import annotations
 import email
 import imaplib
+import re
 import tempfile
 from pathlib import Path
 from email.header import decode_header
@@ -28,6 +29,131 @@ def _decode(s: str | None) -> str:
         else:
             result.append(str(part))
     return "".join(result)
+
+
+def _extract_body(msg: email.message.Message) -> str:
+    """Extract plain text body from an email message."""
+    body_parts = []
+
+    if msg.is_multipart():
+        for part in msg.walk():
+            content_type = part.get_content_type()
+            if content_type == "text/plain":
+                payload = part.get_payload(decode=True)
+                if payload:
+                    charset = part.get_content_charset() or "utf-8"
+                    body_parts.append(payload.decode(charset, errors="ignore"))
+            elif content_type == "text/html" and not body_parts:
+                payload = part.get_payload(decode=True)
+                if payload:
+                    charset = part.get_content_charset() or "utf-8"
+                    html = payload.decode(charset, errors="ignore")
+                    body_parts.append(re.sub(r"<[^>]+>", "", html).strip())
+    else:
+        payload = msg.get_payload(decode=True)
+        if payload:
+            charset = msg.get_content_charset() or "utf-8"
+            body_parts.append(payload.decode(charset, errors="ignore"))
+
+    return "\n".join(body_parts).strip()
+
+
+def check_email_full(
+    imap_host: str,
+    imap_port: int,
+    email_user: str,
+    email_password: str,
+    sender_filter: str = SENDER_FILTER,
+) -> dict:
+    """Connect to IMAP, find latest email from sender, extract full content.
+
+    Returns dict with email metadata, body text, attachments (with raw bytes),
+    and attachment analysis results.
+    """
+    mail = None
+    try:
+        mail = imaplib.IMAP4_SSL(imap_host, imap_port)
+        mail.login(email_user, email_password)
+        mail.select("INBOX")
+    except Exception as e:
+        return {"success": False, "error": f"IMAP 连接失败: {e}"}
+
+    try:
+        # Search ALL emails (not just UNSEEN) to get the latest
+        status, msg_ids = mail.search(None, "ALL", f'FROM "{sender_filter}"')
+        if status != "OK" or not msg_ids[0]:
+            return {"success": False, "error": f"未找到来自 {sender_filter} 的邮件"}
+
+        latest_id = msg_ids[0].split()[-1]
+        status, msg_data = mail.fetch(latest_id, "(RFC822)")
+        if status != "OK":
+            return {"success": False, "error": "读取邮件失败"}
+
+        raw_email = msg_data[0][1]
+        msg = email.message_from_bytes(raw_email)
+
+        subject = _decode(msg.get("Subject", ""))
+        sender = _decode(msg.get("From", ""))
+        date_str = msg.get("Date", "")
+        body_text = _extract_body(msg)
+
+        # Collect xlsx attachments (with raw bytes for AI analysis)
+        attachments = []
+        if msg.is_multipart():
+            for part in msg.walk():
+                if part.get_content_maintype() == "multipart":
+                    continue
+                filename = _decode(part.get_filename())
+                if filename and filename.lower().endswith((".xlsx", ".xls", ".csv")):
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        attachments.append({
+                            "filename": filename,
+                            "size": len(payload),
+                            "data": payload,
+                        })
+
+        # Analyze xlsx attachments
+        attachment_results = []
+        for att in attachments:
+            tmp = tempfile.NamedTemporaryFile(suffix=Path(att["filename"]).suffix, delete=False)
+            try:
+                tmp.write(att["data"])
+                tmp.close()
+                analysis = analyze_excel(tmp.name)
+                attachment_results.append({
+                    "filename": att["filename"],
+                    "size": att["size"],
+                    "analysis": analysis,
+                })
+            except Exception as e:
+                attachment_results.append({
+                    "filename": att["filename"],
+                    "size": att.get("size", 0),
+                    "error": str(e),
+                })
+            finally:
+                Path(tmp.name).unlink(missing_ok=True)
+
+        return {
+            "success": True,
+            "sender": sender,
+            "subject": subject,
+            "date": date_str,
+            "body_text": body_text,
+            "attachments_count": len(attachments),
+            "attachments": attachment_results,
+        }
+
+    except Exception as e:
+        return {"success": False, "error": f"处理失败: {e}"}
+
+    finally:
+        if mail is not None:
+            try:
+                mail.logout()
+            except Exception:
+                pass
 
 
 def check_and_analyze(

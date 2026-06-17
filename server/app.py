@@ -13,7 +13,7 @@ from flask_cors import CORS
 
 from analysis.analyzer import analyze as analyze_excel
 from analysis.email_sender import send_reminder_email
-from analysis.email_checker import check_and_analyze
+from analysis.email_checker import check_and_analyze, check_email_full
 from usage_tracker import get_stats, record_usage
 from conversation_store import list_conversations, get_conversation, upsert_conversation, delete_conversation, pop_last_message
 from memory_store import store_messages as memory_store_messages, search_memories, count_memories
@@ -39,6 +39,11 @@ APP_TOKEN = os.getenv("APP_TOKEN", "")
 AI_API_BASE = os.getenv("AI_API_BASE", "https://api.openai.com/v1").rstrip("/")
 AI_API_KEY = os.getenv("AI_API_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
+
+# Email AI analysis config (separate from main chat AI)
+EMAIL_AI_API_BASE = os.getenv("EMAIL_AI_API_BASE", AI_API_BASE)
+EMAIL_AI_API_KEY = os.getenv("EMAIL_AI_API_KEY", AI_API_KEY)
+EMAIL_AI_MODEL = os.getenv("EMAIL_AI_MODEL", AI_MODEL)
 
 # Email reminder config
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.qq.com")
@@ -652,6 +657,138 @@ def email_check():
         email_password=SMTP_PASSWORD,
     )
     return jsonify(result), (200 if result.get("success") else 404)
+
+
+@APP.route("/v1/email/ai-analyze", methods=["POST", "OPTIONS"])
+def email_ai_analyze():
+    """Check IMAP for the latest email from sylvia, extract email body + xlsx,
+    then send everything to AI for task completion."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    if not SMTP_USER or not SMTP_PASSWORD:
+        return jsonify({"error": {"message": "Email (SMTP_USER) not configured"}}), 503
+    if not EMAIL_AI_API_KEY:
+        return jsonify({"error": {"message": "AI API not configured for email analysis"}}), 503
+
+    try:
+        # 1. Fetch latest email from sylvia with full content
+        email_data = check_email_full(
+            imap_host=IMAP_HOST,
+            imap_port=IMAP_PORT,
+            email_user=SMTP_USER,
+            email_password=SMTP_PASSWORD,
+        )
+
+        if not email_data.get("success"):
+            return jsonify(email_data), 404
+
+        subject = email_data.get("subject", "")
+        sender = email_data.get("sender", "")
+        date_str = email_data.get("date", "")
+        body_text = email_data.get("body_text", "")
+        attachments = email_data.get("attachments", [])
+
+        # 2. Build AI prompt with email context + xlsx analysis
+        prompt_parts = [
+            "你是一个专业的数据分析助手。请根据以下邮件内容和附件数据，按要求完成工作任务。\n",
+            "## 邮件信息",
+            f"发件人: {sender}",
+            f"主题: {subject}",
+            f"日期: {date_str}",
+        ]
+
+        if body_text:
+            prompt_parts.append(f"\n## 邮件正文\n{body_text[:3000]}")
+        else:
+            prompt_parts.append("\n## 邮件正文\n(无正文内容)")
+
+        if attachments:
+            prompt_parts.append(f"\n## 附件分析结果（共 {len(attachments)} 个附件）")
+            for att in attachments:
+                prompt_parts.append(f"\n### 附件: {att['filename']} ({att.get('size', 0) // 1024}KB)")
+                analysis = att.get("analysis", {})
+                if analysis.get("summary"):
+                    prompt_parts.append(f"摘要: {analysis['summary']}")
+                if analysis.get("overview"):
+                    prompt_parts.append(f"概览: {json.dumps(analysis['overview'], ensure_ascii=False, default=str)}")
+                if analysis.get("details"):
+                    details = analysis["details"]
+                    if details.get("version_comparison"):
+                        prompt_parts.append(f"版本对比: {json.dumps(details['version_comparison'], ensure_ascii=False, default=str)}")
+                    if details.get("monthly_demand"):
+                        prompt_parts.append(f"月需求: {json.dumps(details['monthly_demand'], ensure_ascii=False, default=str)}")
+                # Include table data for more context
+                tables = analysis.get("tables", [])
+                for tbl in tables:
+                    prompt_parts.append(f"\n[表格] {tbl.get('title', '')}")
+                    prompt_parts.append(f"表头: {', '.join(tbl.get('headers', []))}")
+                    for row in tbl.get("rows", [])[:10]:
+                        prompt_parts.append(f"  {json.dumps(list(row.values()), ensure_ascii=False, default=str)}")
+                if att.get("error"):
+                    prompt_parts.append(f"分析出错: {att['error']}")
+        else:
+            prompt_parts.append("\n## 附件\n(无 Excel 附件)")
+
+        prompt_parts.append("")
+        prompt_parts.append("## 任务")
+        prompt_parts.append("请根据以上邮件内容和附件数据，完成以下工作：")
+        prompt_parts.append("1. 理解邮件正文的要求和指令，明确需要完成的任务")
+        prompt_parts.append("2. 分析附件 Excel 中的数据，提取关键信息和趋势")
+        prompt_parts.append("3. 给出详细的分析报告，包括数据概览、关键发现和建议")
+        prompt_parts.append("4. 如果有需要回复的事项，请给出回复草稿")
+        prompt_parts.append("5. 用中文回答，格式清晰易读")
+
+        full_prompt = "\n".join(prompt_parts)
+
+        # 3. Call the AI API
+        upstream_url = f"{EMAIL_AI_API_BASE.rstrip('/')}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {EMAIL_AI_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": EMAIL_AI_MODEL,
+            "messages": [
+                {"role": "system", "content": "你是一个专业的数据分析助手。请仔细阅读邮件内容和附件数据，按要求完成工作任务。用中文回答，格式清晰易读。"},
+                {"role": "user", "content": full_prompt},
+            ],
+            "temperature": 0.3,
+            "max_tokens": 8192,
+        }
+
+        resp = requests.post(upstream_url, headers=headers, json=payload, timeout=600)
+
+        ai_response_text = ""
+        ai_error = None
+
+        if resp.ok:
+            resp_data = resp.json()
+            ai_response_text = resp_data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        else:
+            ai_error = f"AI API error: {resp.status_code}"
+            try:
+                err_body = resp.json()
+                ai_error += f" - {json.dumps(err_body, ensure_ascii=False)}"
+            except Exception:
+                ai_error += f" - {resp.text[:300]}"
+
+        return jsonify({
+            "success": True,
+            "email": {
+                "subject": subject,
+                "sender": sender,
+                "date": date_str,
+                "body_preview": body_text[:600] if body_text else "",
+            },
+            "attachments": [{"filename": a["filename"], "size": a.get("size", 0)} for a in attachments],
+            "ai_response": ai_response_text,
+            "ai_error": ai_error,
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": f"处理失败: {e}"}), 500
 
 
 @APP.route("/v1/chat/completions", methods=["POST", "OPTIONS"])

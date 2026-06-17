@@ -51,6 +51,9 @@ function switchPanel(name, tab) {
   if (name === 'memo') {
     if (tab) setMemoTab(tab); else setMemoTab('memo-list');
   }
+  if (name === 'analysis') {
+    if (tab) setAnalysisTab(tab); else setAnalysisTab('analyze');
+  }
   const group = document.querySelector(`.nav-item[data-panel="${name}"]`)?.closest('.nav-group');
   if (group && document.documentElement.getAttribute('data-layout') !== 'mac') group.classList.add('open');
 }
@@ -113,6 +116,15 @@ function initMemo() {
   if (typeof renderMemo !== 'function') { console.warn('memo-init: memo.js not loaded'); return; }
   if (!state || !state.settings) { console.warn('memo-init: settings missing'); return; }
   renderMemo();
+}
+function setAnalysisTab(tab) {
+  document.querySelectorAll('.nav-sub[data-tab="analyze"]').forEach(s => s.classList.toggle('active', s.dataset.tab === tab));
+}
+function initAnalysis() {
+  if (typeof startEmailAnalysis === 'undefined') { console.warn('analysis-init: analysis.js not loaded'); return; }
+  if (!state || !state.settings) { console.warn('analysis-init: settings missing'); return; }
+  // Reset UI to initial state
+  closeAnalysisResult();
 }
 
 function bindUi() {
