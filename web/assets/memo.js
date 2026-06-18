@@ -51,7 +51,7 @@ function renderMemo() {
   modal.id = 'memo-modal';
   modal.innerHTML =
     '<div class="memo-modal-overlay"></div>' +
-    '<div class="memo-modal-content">' +
+    '<div class="memo-modal-content ai-modal-blob">' +
       '<button class="memo-modal-close">✕</button>' +
       '<h3 class="memo-modal-title" id="memo-modal-title">新建备忘</h3>' +
       '<input class="memo-modal-input" id="memo-modal-input" placeholder="标题（可选）" maxlength="200">' +

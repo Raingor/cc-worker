@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'web/**'
+      - 'docs/PROMPT.md'
       - 'appPackage/declarativeAgent.json'
       - 'scripts/sync-instructions.py'
       - '.github/workflows/deploy-pages.yml'

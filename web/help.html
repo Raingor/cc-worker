@@ -4,69 +4,90 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CC 工作助手 — 使用教程</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #f5f5f5; --surface: #fff; --ink: #080808; --text: #363636; --text2: #5a5a5a;
-    --mute: #898989; --hairline: #d8d8d8; --primary: #080808;
-    --primary-light: #f0f0f0; --radius: 8px; --max-w: 760px;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #111; --surface: #1a1a1a; --text: #e8e8e8; --text2: #aaa;
-      --mute: #777; --hairline: #333; --primary-light: #222;
-    }
+    --bg: #f8f8f0;
+    --surface: rgb(247, 243, 223);
+    --ink: #794f27;
+    --text: #725d42;
+    --text2: #9f927d;
+    --mute: #8a7b66;
+    --hairline: #c4b89e;
+    --primary: #19c8b9;
+    --primary-light: #e6f9f6;
+    --radius: 18px;
+    --max-w: 760px;
+    --shadow-btn: #bdaea0;
   }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
-    background: var(--bg); color: var(--text); line-height: 1.8; font-size: 15px;
+    font-family: Nunito, 'Noto Sans SC', -apple-system, 'PingFang SC', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    font-size: 15px;
     -webkit-font-smoothing: antialiased;
   }
   .container { max-width: var(--max-w); margin: 0 auto; padding: 32px 20px 80px; }
-  h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; color: var(--ink); letter-spacing:-.5px; }
+  h1 { font-size: 28px; font-weight: 800; margin-bottom: 4px; color: var(--ink); letter-spacing: 0.02em; }
   .subtitle { color: var(--text2); font-size: 14px; margin-bottom: 32px; }
   h2 {
-    font-size: 18px; font-weight: 600; margin: 36px 0 12px; padding-bottom: 6px;
-    border-bottom: 2px solid var(--ink); display: inline-block; letter-spacing:-.3px;
+    font-size: 18px; font-weight: 700; margin: 36px 0 12px; padding-bottom: 6px;
+    border-bottom: 2px solid var(--primary); display: inline-block; letter-spacing: 0.02em;
+    color: var(--ink);
   }
   h3 { font-size: 15px; font-weight: 600; margin: 24px 0 8px; color: var(--ink); }
   p, li { color: var(--text); margin-bottom: 8px; }
+  a { color: var(--primary-active, #11a89b); }
   ul, ol { padding-left: 20px; margin: 8px 0 16px; }
   li { margin-bottom: 4px; }
   .card {
-    background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius);
-    padding: 16px 20px; margin: 16px 0;
+    background: var(--surface);
+    border: 2px solid var(--hairline);
+    border-radius: 20px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    transition: transform 0.3s ease;
   }
-  .card-title { font-weight: 600; margin-bottom: 8px; font-size: 14px; color: var(--ink); }
+  .card:hover { transform: translateY(-2px); }
+  .card-title { font-weight: 700; margin-bottom: 8px; font-size: 14px; color: var(--ink); }
   table {
     width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px;
+    background: var(--surface); border-radius: 20px; overflow: hidden;
   }
-  th, td { border: 1px solid var(--hairline); padding: 8px 12px; text-align: left; }
-  th { background: var(--bg); font-weight: 600; white-space: nowrap; }
+  th, td { border: 1px dashed rgb(240, 232, 216); padding: 10px 14px; text-align: left; }
+  th { background: rgba(248, 248, 240, 0.6); font-weight: 700; color: var(--ink); white-space: nowrap; }
   code {
-    background: var(--primary-light); padding: 2px 8px; border-radius: 4px;
-    font-size: 13px; font-family: "SF Mono", "Fira Code", monospace; color: var(--ink);
+    background: var(--primary-light); padding: 2px 8px; border-radius: 12px;
+    font-size: 13px; font-family: 'SF Mono', 'Fira Code', Consolas, monospace; color: var(--ink);
   }
   .tag {
-    display: inline-block; padding: 2px 10px; border-radius: 4px;
+    display: inline-block; padding: 3px 12px; border-radius: 50px;
     font-size: 12px; font-weight: 600; margin-right: 4px;
   }
-  .tag-ink { background: var(--ink); color: #fff; }
-  .tag-outline { border: 1px solid var(--hairline); color: var(--text2); }
+  .tag-ink { background: var(--primary); color: #fff; }
+  .tag-outline { border: 2px solid var(--hairline); color: var(--text2); }
   .step { display: flex; gap: 12px; margin: 12px 0; align-items: flex-start; }
   .step-num {
-    width: 28px; height: 28px; border-radius: 4px; background: var(--ink);
-    color: #fff; display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 600; flex-shrink: 0;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(25, 200, 185, 0.3);
   }
   .step-body { flex: 1; }
-  .faq { border-bottom: 1px solid var(--hairline); padding: 12px 0; }
-  .faq-q { font-weight: 500; cursor: pointer; color: var(--ink); }
+  .faq { border-bottom: 1px dashed var(--hairline); padding: 12px 0; }
+  .faq-q { font-weight: 600; cursor: pointer; color: var(--ink); }
   .faq-a { margin-top: 6px; color: var(--text2); font-size: 14px; display: none; }
   .faq.a .faq-a { display: block; }
   .note {
     background: var(--primary-light); border-radius: var(--radius); padding: 12px 16px;
-    margin: 12px 0; font-size: 14px; border: 1px solid var(--hairline);
+    margin: 12px 0; font-size: 14px; border: 2px solid var(--hairline);
   }
   @media (max-width: 600px) {
     .container { padding: 20px 16px 60px; }
