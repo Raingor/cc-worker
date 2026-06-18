@@ -405,4 +405,19 @@ details[open] .analysis-guide-summary::before{transform:rotate(90deg)}
 .analysis-card-detail .analysis-email-meta{border:1px solid var(--hairline);border-radius:var(--radius-md);padding:14px 16px;font-size:13px}
 .analysis-card-detail .analysis-ai-response{font-size:13px;line-height:1.7;max-height:500px;overflow-y:auto;padding-right:4px}
 
+/* ── Re-analyze (追加分析) ── */
+.analysis-reanalyze-wrap{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--hairline);animation:fadeSlide .25s ease}
+.analysis-reanalyze-input-wrap{margin-bottom:10px}
+.analysis-reanalyze-input{width:100%;min-height:72px;padding:10px 14px;border:2px solid var(--hairline);border-radius:var(--radius-md);font-size:13px;font-family:var(--font-body);color:var(--body);background:var(--bg);resize:vertical;transition:border-color .2s;outline:none}
+.analysis-reanalyze-input:focus{border-color:var(--jade)}
+.analysis-reanalyze-input::placeholder{color:var(--muted);font-size:12px}
+.analysis-reanalyze-actions{display:flex;gap:8px;align-items:center}
+.analysis-action-primary{background:var(--jade)!important;color:#fff!important;border-color:var(--jade)!important;font-weight:600!important}
+.analysis-action-primary:hover{background:var(--jade-dark, #0a9e95)!important}
+.analysis-action-primary:disabled{opacity:.5!important;cursor:wait!important}
+.analysis-reanalyze-status{margin-top:10px;padding:10px 14px;border-radius:var(--radius-md);font-size:13px;text-align:center;animation:fadeSlide .3s ease}
+.analysis-reanalyze-status.info{background:var(--primary-bg);color:var(--primary-active);border:2px solid var(--border)}
+.analysis-reanalyze-status.success{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
+.analysis-reanalyze-status.error{background:var(--terracotta-light);color:var(--terracotta);border:1px solid rgba(196,69,54,.15)}
+
 /* theme badge overrides removed — island palette only */

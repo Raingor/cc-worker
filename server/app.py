@@ -777,17 +777,35 @@ def email_ai_analyze():
             except Exception:
                 ai_error += f" - {resp.text[:300]}"
 
-        # 5. Save record to database
+        # 5. Save record to database (with full data for re-analysis)
         record = None
         if ai_response_text and not ai_error:
             try:
+                # Prepare attachment analysis summary for re-analysis
+                attachment_analysis = []
+                for a in attachments:
+                    analysis = a.get("analysis", {})
+                    att_entry = {
+                        "filename": a["filename"],
+                        "size": a.get("size", 0),
+                        "summary": analysis.get("summary", ""),
+                        "overview": analysis.get("overview", {}),
+                        "details": analysis.get("details", {}),
+                        "tables": analysis.get("tables", []),
+                    }
+                    if a.get("error"):
+                        att_entry["error"] = a["error"]
+                    attachment_analysis.append(att_entry)
+
                 record = analysis_store.create_record({
                     "email_subject": subject,
                     "email_sender": sender,
                     "email_date": date_str,
                     "email_body_preview": body_text[:500] if body_text else "",
+                    "email_body_full": body_text[:10000] if body_text else "",
                     "ai_response": ai_response_text,
                     "attachment_files": [{"filename": a["filename"], "size": a.get("size", 0)} for a in attachments],
+                    "attachment_analysis": attachment_analysis,
                 })
             except Exception as e:
                 print(f"[analysis] save error: {e}")
@@ -849,6 +867,139 @@ def analysis_delete(record_id):
         return jsonify({"error": {"message": "Unauthorized"}}), 401
     ok = analysis_store.delete_record(record_id)
     return jsonify({"deleted": ok}), (200 if ok else 404)
+
+
+@APP.route("/v1/analysis/<record_id>/reanalyze", methods=["POST", "OPTIONS"])
+def analysis_reanalyze(record_id):
+    """Re-analyze an existing record with additional user instructions.
+    Uses stored email data + attachment analysis, injects user instructions,
+    calls AI, and updates the record's ai_response.
+    """
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    if not EMAIL_AI_API_KEY:
+        return jsonify({"error": {"message": "AI API not configured"}}), 503
+
+    body = request.get_json(silent=True) or {}
+    instructions = (body.get("instructions") or "").strip()
+    if not instructions:
+        return jsonify({"error": {"message": "instructions required"}}), 400
+
+    # 1. Fetch the stored record
+    record = analysis_store.get_record(record_id)
+    if not record:
+        return jsonify({"error": {"message": "Record not found"}}), 404
+
+    try:
+        # 2. Reconstruct the AI prompt from stored data
+        prompt_parts = [
+            "你是一个专业的数据分析助手。请根据以下邮件内容和附件数据，按要求完成工作任务。\n",
+            "## 邮件信息",
+            f"发件人: {record.get('email_sender', '')}",
+            f"主题: {record.get('email_subject', '')}",
+            f"日期: {record.get('email_date', '')}",
+        ]
+
+        body_text = record.get("email_body_full", "") or record.get("email_body_preview", "")
+        if body_text:
+            prompt_parts.append(f"\n## 邮件正文\n{body_text[:3000]}")
+        else:
+            prompt_parts.append("\n## 邮件正文\n(无正文内容)")
+
+        attachment_analysis = record.get("attachment_analysis", [])
+        if attachment_analysis:
+            prompt_parts.append(f"\n## 附件分析结果（共 {len(attachment_analysis)} 个附件）")
+            for att in attachment_analysis:
+                prompt_parts.append(f"\n### 附件: {att.get('filename', '')} ({att.get('size', 0) // 1024}KB)")
+                if att.get("summary"):
+                    prompt_parts.append(f"摘要: {att['summary']}")
+                if att.get("overview"):
+                    prompt_parts.append(f"概览: {json.dumps(att['overview'], ensure_ascii=False, default=str)}")
+                if att.get("details"):
+                    details = att["details"]
+                    if details.get("version_comparison"):
+                        prompt_parts.append(f"版本对比: {json.dumps(details['version_comparison'], ensure_ascii=False, default=str)}")
+                    if details.get("monthly_demand"):
+                        prompt_parts.append(f"月需求: {json.dumps(details['monthly_demand'], ensure_ascii=False, default=str)}")
+                tables = att.get("tables", [])
+                for tbl in tables:
+                    prompt_parts.append(f"\n[表格] {tbl.get('title', '')}")
+                    prompt_parts.append(f"表头: {', '.join(tbl.get('headers', []))}")
+                    for row in tbl.get("rows", [])[:10]:
+                        prompt_parts.append(f"  {json.dumps(list(row.values()), ensure_ascii=False, default=str)}")
+                if att.get("error"):
+                    prompt_parts.append(f"分析出错: {att['error']}")
+        else:
+            prompt_parts.append("\n## 附件\n(无 Excel 附件)")
+
+        # 3. Include previous analysis result for context
+        prev_response = record.get("ai_response", "")
+        if prev_response:
+            prompt_parts.append("")
+            prompt_parts.append("## 上一次分析结果")
+            prompt_parts.append(prev_response[:2000])
+
+        # 4. Append user's supplementary instructions
+        prompt_parts.append("")
+        prompt_parts.append("## 用户补充需求")
+        prompt_parts.append(instructions)
+        prompt_parts.append("")
+        prompt_parts.append("## 任务")
+        prompt_parts.append("请结合以上原始邮件数据、附件分析结果、上一次分析结果，重点针对用户补充需求重新分析。")
+        prompt_parts.append("用中文回答，格式清晰易读。")
+
+        full_prompt = "\n".join(prompt_parts)
+
+        # 5. Call the AI API
+        upstream_url = f"{EMAIL_AI_API_BASE.rstrip('/')}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {EMAIL_AI_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": EMAIL_AI_MODEL,
+            "messages": [
+                {"role": "system", "content": "你是一个专业的数据分析助手。请仔细分析数据，按要求完成工作任务。用中文回答，格式清晰易读。"},
+                {"role": "user", "content": full_prompt},
+            ],
+            "temperature": 0.3,
+            "max_tokens": 8192,
+        }
+
+        resp = requests.post(upstream_url, headers=headers, json=payload, timeout=600)
+        ai_response_text = ""
+        ai_error = None
+
+        if resp.ok:
+            resp_data = resp.json()
+            ai_response_text = resp_data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        else:
+            ai_error = f"AI API error: {resp.status_code}"
+            try:
+                err_body = resp.json()
+                ai_error += f" - {json.dumps(err_body, ensure_ascii=False)}"
+            except Exception:
+                ai_error += f" - {resp.text[:300]}"
+
+        # 6. Update the record
+        if ai_response_text and not ai_error:
+            analysis_store.update_response(record_id, ai_response_text, instructions)
+            updated = analysis_store.get_record(record_id)
+            return jsonify({
+                "success": True,
+                "record": updated,
+                "ai_response": ai_response_text,
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": ai_error,
+            }), 500
+
+    except Exception as e:
+        return jsonify({"success": False, "error": f"重新分析失败: {e}"}), 500
 
 
 # ── Board (留言板) ──────────────────────────────────────────────

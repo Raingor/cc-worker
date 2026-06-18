@@ -109,12 +109,22 @@ function renderRecordCard(r) {
       '<div class="analysis-card-badges">' + badges + '</div>' +
       '<div class="analysis-card-actions">' +
         '<button class="analysis-action-btn" onclick="toggleAnalysisDetail(\'' + escHtml(r.id) + '\')">查看详情</button>' +
+        '<button class="analysis-action-btn" onclick="toggleReanalyze(\'' + escHtml(r.id) + '\')">🔄 追加分析</button>' +
         '<button class="analysis-action-btn" onclick="setAnalysisFlag(\'' + escHtml(r.id) + '\', \'has_pdf\')"' + (r.has_pdf ? ' disabled' : '') + '>📄 标记 PDF</button>' +
         '<button class="analysis-action-btn" onclick="setAnalysisFlag(\'' + escHtml(r.id) + '\', \'has_xlsx\')"' + (r.has_xlsx ? ' disabled' : '') + '>📊 标记 XLSX</button>' +
         '<button class="analysis-action-btn" onclick="setAnalysisFlag(\'' + escHtml(r.id) + '\', \'has_replied\')"' + (r.has_replied ? ' disabled' : '') + '>📬 已回复邮件</button>' +
       '</div>' +
       '<div class="analysis-card-detail" id="analysis-detail-' + escHtml(r.id) + '" style="display:none">' +
         '<div class="analysis-card-detail-body"></div>' +
+      '</div>' +
+      '<div class="analysis-reanalyze-wrap" id="analysis-reanalyze-' + escHtml(r.id) + '" style="display:none">' +
+        '<div class="analysis-reanalyze-input-wrap">' +
+          '<textarea class="analysis-reanalyze-input" id="analysis-reanalyze-input-' + escHtml(r.id) + '" placeholder="输入补充需求，AI 将结合原始数据重新分析…"></textarea>' +
+        '</div>' +
+        '<div class="analysis-reanalyze-actions">' +
+          '<button class="analysis-action-btn analysis-action-primary" onclick="reanalyzeAnalysis(\'' + escHtml(r.id) + '\')">🚀 开始重新分析</button>' +
+        '</div>' +
+        '<div class="analysis-reanalyze-status" id="analysis-reanalyze-status-' + escHtml(r.id) + '" style="display:none"></div>' +
       '</div>' +
     '</div>'
   );
@@ -386,6 +396,84 @@ function deleteAnalysisRecord(recordId) {
     })
     .catch(function (err) {
       alert('删除失败: ' + err.message);
+    });
+}
+
+/* ── Re-analyze (追加分析) ── */
+var _reanalyzingId = null;
+
+function toggleReanalyze(recordId) {
+  var wrap = document.getElementById('analysis-reanalyze-' + recordId);
+  if (!wrap) return;
+
+  var visible = wrap.style.display !== 'none';
+  wrap.style.display = visible ? 'none' : 'block';
+
+  if (!visible) {
+    // Focus the textarea when opening
+    var input = document.getElementById('analysis-reanalyze-input-' + recordId);
+    if (input) setTimeout(function () { input.focus(); }, 100);
+  }
+}
+
+function reanalyzeAnalysis(recordId) {
+  if (_reanalyzingId) return;
+
+  var input = document.getElementById('analysis-reanalyze-input-' + recordId);
+  if (!input) return;
+  var instructions = input.value.trim();
+  if (!instructions) {
+    input.focus();
+    input.style.borderColor = 'var(--terracotta)';
+    setTimeout(function () { input.style.borderColor = ''; }, 2000);
+    return;
+  }
+
+  _reanalyzingId = recordId;
+
+  var statusEl = document.getElementById('analysis-reanalyze-status-' + recordId);
+  var btn = statusEl.parentElement.querySelector('.analysis-action-primary');
+  if (statusEl) {
+    statusEl.style.display = 'block';
+    statusEl.className = 'analysis-reanalyze-status info';
+    statusEl.textContent = '🔄 正在重新分析，请稍候…';
+  }
+  if (btn) btn.disabled = true;
+
+  fetch(analysisApiUrl('/v1/analysis/' + recordId + '/reanalyze'), {
+    method: 'POST',
+    headers: analysisHeaders(),
+    body: JSON.stringify({ instructions: instructions }),
+  })
+    .then(function (r) {
+      if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || d.message || '重新分析失败 (' + r.status + ')'); });
+      return r.json();
+    })
+    .then(function (data) {
+      if (!data.success) {
+        throw new Error(data.error || '重新分析失败');
+      }
+      if (statusEl) {
+        statusEl.className = 'analysis-reanalyze-status success';
+        statusEl.textContent = '✅ 重新分析完成！';
+      }
+      // Refresh record list to show updated AI response
+      loadAnalysisRecords();
+      // If detail is open, refresh it
+      var detailEl = document.getElementById('analysis-detail-' + recordId);
+      if (detailEl && detailEl.style.display !== 'none') {
+        toggleAnalysisDetail(recordId);
+      }
+    })
+    .catch(function (err) {
+      if (statusEl) {
+        statusEl.className = 'analysis-reanalyze-status error';
+        statusEl.textContent = '❌ ' + err.message;
+      }
+    })
+    .then(function () {
+      _reanalyzingId = null;
+      if (btn) btn.disabled = false;
     });
 }
 

@@ -20,6 +20,21 @@ def _conn() -> sqlite3.Connection:
     return conn
 
 
+def _migrate_db():
+    """Add columns for re-analysis support (safe to run multiple times)."""
+    with _conn() as conn:
+        for col in (
+            "email_body_full TEXT DEFAULT ''",
+            "attachment_analysis TEXT DEFAULT '[]'",
+            "user_instructions TEXT DEFAULT ''",
+        ):
+            try:
+                conn.execute(f"ALTER TABLE analysis_records ADD COLUMN {col}")
+            except sqlite3.OperationalError:
+                pass  # column already exists
+        conn.commit()
+
+
 def _init_db():
     with _conn() as conn:
         conn.execute("""
@@ -45,6 +60,7 @@ def _init_db():
 
 
 _init_db()
+_migrate_db()
 
 
 def create_record(data: dict) -> dict:
@@ -56,8 +72,9 @@ def create_record(data: dict) -> dict:
         conn.execute(
             """INSERT INTO analysis_records
                (id, created_at, email_subject, email_sender, email_date,
-                email_body_preview, ai_response, attachment_files)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                email_body_preview, ai_response, attachment_files,
+                email_body_full, attachment_analysis)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 record_id,
                 now,
@@ -67,6 +84,8 @@ def create_record(data: dict) -> dict:
                 data.get("email_body_preview", "")[:500],
                 data.get("ai_response", ""),
                 json.dumps(data.get("attachment_files", []), ensure_ascii=False),
+                data.get("email_body_full", "")[:10000],
+                json.dumps(data.get("attachment_analysis", []), ensure_ascii=False),
             ),
         )
         conn.commit()
@@ -110,6 +129,20 @@ def update_flag(record_id: str, flag: str) -> dict | None:
     return get_record(record_id)
 
 
+def update_response(record_id: str, ai_response: str, user_instructions: str = "") -> dict | None:
+    """Update AI response and optionally save user instructions for re-analysis."""
+    with _conn() as conn:
+        conn.execute(
+            """UPDATE analysis_records
+               SET ai_response = ?,
+                   user_instructions = CASE WHEN ? != '' THEN ? ELSE user_instructions END
+               WHERE id = ?""",
+            (ai_response, user_instructions, user_instructions, record_id),
+        )
+        conn.commit()
+    return get_record(record_id)
+
+
 def delete_record(record_id: str) -> bool:
     """Delete a record. Returns True if deleted."""
     with _conn() as conn:
@@ -123,15 +156,19 @@ def delete_record(record_id: str) -> bool:
 
 def _row_to_dict(row: sqlite3.Row) -> dict:
     d = dict(row)
-    # Parse attachment_files JSON
-    try:
-        d["attachment_files"] = json.loads(d.get("attachment_files", "[]"))
-    except (json.JSONDecodeError, TypeError):
-        d["attachment_files"] = []
+    # Parse JSON fields
+    for field in ("attachment_files", "attachment_analysis"):
+        try:
+            d[field] = json.loads(d.get(field, "[]"))
+        except (json.JSONDecodeError, TypeError):
+            d[field] = []
     # Convert booleans
     d["has_pdf"] = bool(d.get("has_pdf", 0))
     d["has_xlsx"] = bool(d.get("has_xlsx", 0))
     d["has_replied"] = bool(d.get("has_replied", 0))
+    # Ensure string defaults
+    d.setdefault("email_body_full", "")
+    d.setdefault("user_instructions", "")
     # Truncate long response for list view
     if d.get("ai_response"):
         d["ai_response_preview"] = d["ai_response"][:200]
