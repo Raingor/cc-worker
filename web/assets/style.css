@@ -334,12 +334,9 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
   #mobile-menu-btn{display:flex}
   .nav-overlay{display:block}
 
-  /* Container establishes positioning context */
-  #app-screen{position:relative}
-
-  /* Convert sidebar to slide-in overlay (absolute, not fixed) */
+  /* Sidebar: fixed positioning for reliable stacking */
   .nav-bar{
-    position:absolute;top:0;left:0;bottom:0;z-index:100;
+    position:fixed;top:0;left:0;bottom:0;z-index:999;
     width:75vw;max-width:300px;min-width:0;
     transform:translateX(-105%);transition:transform .3s cubic-bezier(.22,1,.36,1);
     background:var(--bg-content);border-right:2px solid var(--border);
@@ -349,9 +346,9 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
     transform:translateX(0)
   }
 
-  /* Overlay inside same container, below sidebar */
+  /* Overlay: behind sidebar */
   .nav-overlay{
-    position:absolute;inset:0;z-index:50
+    position:fixed;inset:0;z-index:998
   }
 
   /* Adjust nav scroll */
