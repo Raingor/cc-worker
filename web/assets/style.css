@@ -416,8 +416,9 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
   /* Hide layout switcher on mobile classic */
   #layout-switcher{display:none}
 
-  /* Bear corner on mobile */
-  #bear-corner{display:none!important}
+  /* Bear corner + quote on mobile */
+  #bear-corner,
+  #inspire-quote{display:none!important}
 }
 
 @media(max-width:480px){
