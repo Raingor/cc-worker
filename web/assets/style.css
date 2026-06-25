@@ -316,6 +316,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
   font-family:var(--font-body);line-height:1;padding:0
 }
 #mobile-menu-btn:hover{border-color:var(--jade);color:var(--jade)}
+/* When sidebar is open, hamburger gets a distinct look */
+.sidebar-open #mobile-menu-btn{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 3px 10px rgba(0,0,0,.25)}
 
 /* ── Sidebar Overlay for mobile ── */
 .nav-overlay{
