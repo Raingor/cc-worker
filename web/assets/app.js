@@ -169,4 +169,48 @@ async function init() {
   switchPanel('dashboard', 'tasks');
 }
 
+/* ── Mobile Sidebar Toggle ── */
+function toggleMobileMenu(force) {
+  var body = document.body;
+  var overlay = document.getElementById('nav-overlay');
+  var btn = document.getElementById('mobile-menu-btn');
+  if (!overlay || !btn) return;
+  var isOpen = typeof force === 'boolean' ? force : body.classList.contains('sidebar-open');
+  if (isOpen) {
+    body.classList.remove('sidebar-open');
+    btn.textContent = '☰';
+    overlay.classList.remove('open');
+  } else {
+    body.classList.add('sidebar-open');
+    btn.textContent = '✕';
+    overlay.classList.add('open');
+  }
+}
+
+/* Close mobile sidebar when a nav link is clicked */
+document.addEventListener('click', function (e) {
+  if (e.target.closest('.nav-item') || e.target.closest('.nav-sub')) {
+    if (window.innerWidth < 768) {
+      setTimeout(function () { toggleMobileMenu(false); }, 200);
+    }
+  }
+});
+
+/* Close sidebar on overlay click */
+document.getElementById('nav-overlay')?.addEventListener('click', function () {
+  toggleMobileMenu(false);
+});
+
+/* Hamburger button toggle */
+document.getElementById('mobile-menu-btn')?.addEventListener('click', function () {
+  toggleMobileMenu();
+});
+
+/* Close sidebar on Escape */
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && document.body.classList.contains('sidebar-open')) {
+    toggleMobileMenu(false);
+  }
+});
+
 document.addEventListener('DOMContentLoaded', init);

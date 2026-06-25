@@ -378,14 +378,16 @@
   border-radius: 4px;
 }
 
-/* ── Responsive ── */
+/* ── Responsive: Mac layout on tablets & phones ── */
 @media (max-width: 768px) {
   [data-layout="mac"] .nav-bar { height: 36px; padding: 0 8px; }
   [data-layout="mac"] .nav-brand { font-size: 13px; padding-right: 8px; }
   [data-layout="mac"] .nav-item { font-size: 11px; padding: 0 7px; line-height: 36px; height: 36px; }
   [data-layout="mac"] .nav-chevron { display: none; }
+  [data-layout="mac"] .nav-dropdown { min-width: 130px; }
+  [data-layout="mac"] .nav-sub { font-size: 12px; padding: 5px 10px; }
   [data-layout="mac"] .panel { inset: 6px; border-radius: var(--radius-md); }
-  [data-layout="mac"] .panel-body { padding: 42px 16px 16px; }
+  [data-layout="mac"] .panel-body { padding: 42px 14px 14px; }
   [data-layout="mac"] .panel-body::before { height: 32px; }
   [data-layout="mac"] .panel::after { top: 10px; left: 10px; width: 10px; height: 10px; box-shadow: 16px 0 0 #febc2e, 32px 0 0 #28c840; }
   [data-layout="mac"] .mac-dock {
@@ -398,4 +400,90 @@
   #layout-switcher { bottom: 10px; left: 10px; }
   #wallpaper-btn { top: 46px; right: 10px; }
   .wallpaper-toggle { padding: 4px 10px; font-size: 11px; }
+
+  /* Compact content inside mac panels */
+  [data-layout="mac"] .oa-task-grid { grid-template-columns: 1fr 1fr !important; }
+  [data-layout="mac"] .oa-greeting { padding: 18px 20px; gap: 14px; }
+  [data-layout="mac"] .oa-greeting-title { font-size: 17px; }
+  [data-layout="mac"] .analysis-btn { padding: 12px 28px; font-size: 14px; }
+  [data-layout="mac"] .board-wrap,
+  [data-layout="mac"] .memo-wrap,
+  [data-layout="mac"] .analysis-wrap { max-width: 100%; }
+  [data-layout="mac"] .memo-modal-content { width: 92%; max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  [data-layout="mac"] .nav-bar { height: 32px; padding: 0 4px; gap: 0; }
+  [data-layout="mac"] .nav-brand { font-size: 12px; padding-right: 4px; }
+  [data-layout="mac"] .nav-item { font-size: 10px; padding: 0 5px; line-height: 32px; height: 32px; }
+  [data-layout="mac"] .nav-dropdown { min-width: 110px; }
+  [data-layout="mac"] .panel { inset: 4px; border-radius: var(--radius-sm); }
+  [data-layout="mac"] .panel-body { padding: 36px 10px 10px; }
+  [data-layout="mac"] .panel-body::before { height: 28px; }
+  [data-layout="mac"] .panel::after { top: 8px; left: 8px; width: 8px; height: 8px; box-shadow: 13px 0 0 #febc2e, 26px 0 0 #28c840; }
+  [data-layout="mac"] .app-main { padding: 4px; }
+  [data-layout="mac"] .mac-dock-icon { width: 34px; height: 34px; font-size: 15px; border-radius: 8px; }
+  [data-layout="mac"] .mac-dock { bottom: 4px; padding: 3px 6px; gap: 2px; }
+  [data-layout="mac"] .oa-task-grid { grid-template-columns: 1fr !important; }
+  [data-layout="mac"] .oa-history-list { grid-template-columns: 1fr !important; }
+  [data-layout="mac"] .analysis-btn { padding: 10px 20px; font-size: 13px; }
+  [data-layout="mac"] .analysis-title { font-size: 18px; }
+
+  /* Hide layout switcher & wallpaper btn on tiny screens */
+  #layout-switcher { display: none; }
+  #wallpaper-btn { display: none !important; }
+}
+
+/* Fix mobile sidebar not opening under Mac layout */
+@media(max-width:767px){
+  /* Mac mode also gets the mobile hamburger */
+  [data-layout="mac"] #mobile-menu-btn { display: flex; top: 6px; left: 8px; width: 30px; height: 30px; font-size: 15px; z-index: 1001; }
+  [data-layout="mac"] .nav-overlay { display: block; z-index: 1000; }
+  [data-layout="mac"] body.sidebar-open .nav-bar {
+    position: fixed !important;
+    top: 0; left: 0; bottom: 0;
+    width: 75vw; max-width: 280px;
+    transform: translateX(-105%);
+    transition: transform .3s cubic-bezier(.22,1,.36,1);
+    background: var(--surface);
+    border-right: 1px solid var(--hairline);
+    box-shadow: var(--shadow-lg);
+    z-index: 1002;
+    overflow-y: auto;
+    flex-direction: column !important;
+    height: 100% !important;
+    padding: 0 !important;
+  }
+  [data-layout="mac"] body.sidebar-open .nav-bar {
+    transform: translateX(0);
+  }
+  [data-layout="mac"] body.sidebar-open .nav-bar .nav-brand {
+    padding: 20px 16px 16px !important;
+    font-size: 18px !important;
+    border-bottom: 1px solid var(--hairline);
+    display: block !important;
+  }
+  [data-layout="mac"] body.sidebar-open .nav-bar .nav-items {
+    flex-direction: column !important;
+    padding: 12px !important;
+    gap: 2px;
+  }
+  [data-layout="mac"] body.sidebar-open .nav-bar .nav-item {
+    padding: 10px 14px !important;
+    height: auto !important;
+    line-height: 1.4 !important;
+    font-size: 14px !important;
+    border-radius: 6px;
+  }
+  [data-layout="mac"] body.sidebar-open .nav-bar .nav-chevron { display: inline !important; }
+  [data-layout="mac"] body.sidebar-open .nav-bar .nav-dropdown {
+    position: static !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 4px 0 4px 12px !important;
+    min-width: auto !important;
+  }
+  [data-layout="mac"] body.sidebar-open .nav-bar .nav-lock { display: flex !important; }
 }

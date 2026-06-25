@@ -301,25 +301,169 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .oa-loader{width:20px;height:20px;border:2px solid var(--hairline);border-top-color:var(--jade);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
 .dash-loading{text-align:center;padding:60px 0;color:var(--muted);font-size:14px}
 
-/* ── Responsive ── */
-@media(max-width:768px){
-  .panel-body{padding:18px}
-  .oa-greeting{padding:22px 24px}
-  .oa-task{padding:16px 14px;min-height:auto}
-  .tb-upload-zone{padding:36px 16px}
-  .stats-grid{grid-template-columns:1fr}
-  .nav-bar{min-width:0}
-  .nav-items{padding:12px 10px}
-  .nav-item{padding:10px 12px;font-size:13px}
-  .nav-sub{padding:7px 10px;font-size:12px}
-  .nav-brand{padding:20px 16px 16px;font-size:20px}
-  .nav-dropdown{padding-left:14px}
+/* ══════════════════════════════════════════════
+   Mobile Responsive (Classic Layout)
+   ══════════════════════════════════════════════ */
+
+/* ── Mobile Menu Toggle (hidden on desktop) ── */
+#mobile-menu-btn{
+  display:none;position:fixed;top:12px;left:12px;z-index:999;
+  width:36px;height:36px;border-radius:var(--radius-sm);
+  background:var(--surface);border:1px solid var(--hairline);
+  box-shadow:var(--shadow-md);cursor:pointer;
+  align-items:center;justify-content:center;
+  font-size:18px;color:var(--ink);transition:all .2s;
+  font-family:var(--font-body);line-height:1;padding:0
 }
+#mobile-menu-btn:hover{border-color:var(--jade);color:var(--jade)}
+
+/* ── Sidebar Overlay for mobile ── */
+.nav-overlay{
+  display:none;position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.35);backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);opacity:0;
+  transition:opacity .25s ease
+}
+.nav-overlay.open{opacity:1}
+
+@media(max-width:767px){
+  /* Prevent body scroll when sidebar open */
+  body.sidebar-open{overflow:hidden}
+
+  /* Show hamburger */
+  #mobile-menu-btn{display:flex}
+  .nav-overlay{display:block}
+
+  /* Convert sidebar to slide-in overlay */
+  #app-screen[data-layout="classic"] .nav-bar,
+  #app-screen:not([data-layout]) .nav-bar{
+    position:fixed;top:0;left:0;bottom:0;z-index:600;
+    width:75vw;max-width:300px;min-width:0;
+    transform:translateX(-105%);transition:transform .3s cubic-bezier(.22,1,.36,1);
+    background:var(--surface);border-right:1px solid var(--hairline);
+    box-shadow:var(--shadow-lg);overflow-y:auto
+  }
+  .sidebar-open #app-screen[data-layout="classic"] .nav-bar,
+  .sidebar-open #app-screen:not([data-layout]) .nav-bar{
+    transform:translateX(0)
+  }
+
+  /* Adjust nav scroll */
+  .sidebar-open .nav-bar .nav-lock{display:flex}
+  .sidebar-open .nav-bar::-webkit-scrollbar{width:4px}
+  .sidebar-open .nav-bar::-webkit-scrollbar-thumb{background:var(--charcoal);border-radius:2px}
+
+  /* Main content full width */
+  #app-screen[data-layout="classic"],
+  #app-screen:not([data-layout]){
+    padding-top:0
+  }
+
+  .panel-body{padding:16px}
+  .analysis-wrap{max-width:100%}
+  .board-wrap{max-width:100%}
+  .memo-wrap{max-width:100%}
+
+  /* Analysis panel */
+  .analysis-header{padding:0 4px}
+  .analysis-title{font-size:20px}
+  .analysis-desc{font-size:13px;max-width:100%}
+  .analysis-btn{padding:14px 24px;font-size:14px;width:100%;justify-content:center}
+  .analysis-guide-summary{font-size:13px;padding:12px 14px}
+  .analysis-guide-body{padding:0 14px 14px}
+  .analysis-card{padding:14px 16px}
+  .analysis-records-header h3{font-size:15px}
+
+  /* Dashboard */
+  .oa-greeting{flex-direction:column;text-align:center;padding:20px 18px}
+  .oa-greeting-ring{width:56px;height:56px}
+  .oa-greeting-title{font-size:18px}
+  .oa-section-header{margin-bottom:10px}
+  .oa-task-grid{grid-template-columns:1fr!important;gap:8px}
+  .oa-task{padding:14px;min-height:auto}
+  .oa-history-list{grid-template-columns:1fr!important}
+  .oa-calendar{max-width:100%}
+  .oa-cal-day{height:44px}
+
+  /* Toolbox */
+  .tb-upload-zone{padding:28px 14px}
+  .tb-file-item{padding:8px 10px;flex-wrap:wrap}
+  .tb-actions{flex-direction:column;gap:8px}
+  .tb-btn{width:100%;justify-content:center}
+
+  /* Board */
+  .board-item{padding:14px 16px}
+  .board-form{padding:14px 16px}
+  .board-reply-form{padding:10px}
+  .board-input{font-size:13px;min-height:50px}
+  .board-item-body{font-size:13px}
+
+  /* Memo */
+  .memo-item{padding:14px 16px}
+  .memo-modal-content{width:95%;padding:22px 20px;max-width:100%}
+  .memo-modal-text{min-height:100px}
+  .memo-modal-input{font-size:13px}
+  .memo-group-date{font-size:12px}
+
+  /* Theme switcher stays inside sidebar */
+  .sidebar-open #theme-switcher-wrap{
+    border-top:1px solid var(--hairline);
+    margin-top:auto;padding:10px 14px;
+    flex-shrink:0
+  }
+  .sidebar-open #theme-btn{font-size:12px;padding:5px 12px}
+
+  /* Hide layout switcher on mobile classic */
+  #layout-switcher{display:none}
+
+  /* Bear corner on mobile */
+  #bear-corner{display:none!important}
+}
+
 @media(max-width:480px){
-  .nav-items{gap:1px}
-  .nav-item{padding:7px 8px;font-size:11px}
-  .nav-sub{font-size:11px;padding:6px 10px}
+  .panel-body{padding:12px}
+  .analysis-title{font-size:18px}
+  .analysis-btn{padding:12px 20px;font-size:13px;gap:8px}
+  .analysis-btn-icon{font-size:18px}
+  .analysis-card-subject{font-size:13px}
+  .analysis-card-actions{gap:4px}
+  .analysis-action-btn{padding:5px 10px;font-size:11px}
+  .analysis-card-badges{gap:6px}
+  .analysis-badge{padding:2px 8px;font-size:10px}
+  .guide-step-num{flex:0 0 28px;height:28px;font-size:12px}
+  .guide-step-content strong{font-size:13px}
+  .guide-step-content p,.guide-step-content ul{font-size:12px}
+
+  .oa-greeting{padding:16px 14px}
+  .oa-greeting-title{font-size:16px}
+  .oa-greeting-sub{font-size:12px}
+  .oa-summary{padding:14px 16px;font-size:12px}
+  .oa-task{padding:12px;gap:8px}
+  .oa-task-label{font-size:12px}
+
+  .board-title{font-size:18px}
+  .board-sub{font-size:12px}
+  .board-item{padding:12px 14px}
+  .board-item-body{font-size:12px}
+  .board-reply-input{font-size:12px;min-height:34px}
+
+  .memo-title{font-size:18px}
+  .memo-sub{font-size:12px}
+  .memo-item{padding:12px 14px}
+  .memo-item-title{font-size:13px}
+  .memo-item-body{font-size:12px}
+
+  /* Sidebar narrower */
+  #app-screen[data-layout="classic"] .nav-bar,
+  #app-screen:not([data-layout]) .nav-bar{
+    width:85vw
+  }
+  .nav-brand{padding:16px 14px 14px;font-size:18px}
+  .nav-item{padding:9px 12px;font-size:13px}
+  .nav-sub{padding:7px 10px;font-size:12px}
+
 }
+
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* ── Analysis Panel ── */
