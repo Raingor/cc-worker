@@ -334,18 +334,24 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
   #mobile-menu-btn{display:flex}
   .nav-overlay{display:block}
 
-  /* Convert sidebar to slide-in overlay */
-  #app-screen[data-layout="classic"] .nav-bar,
-  #app-screen:not([data-layout]) .nav-bar{
-    position:fixed;top:0;left:0;bottom:0;z-index:600;
+  /* Container establishes positioning context */
+  #app-screen{position:relative}
+
+  /* Convert sidebar to slide-in overlay (absolute, not fixed) */
+  .nav-bar{
+    position:absolute;top:0;left:0;bottom:0;z-index:100;
     width:75vw;max-width:300px;min-width:0;
     transform:translateX(-105%);transition:transform .3s cubic-bezier(.22,1,.36,1);
-    background:var(--surface);border-right:1px solid var(--hairline);
-    box-shadow:var(--shadow-lg);overflow-y:auto
+    background:var(--bg-content);border-right:2px solid var(--border);
+    box-shadow:var(--shadow-lg);overflow-y:auto;padding-bottom:48px
   }
-  .sidebar-open #app-screen[data-layout="classic"] .nav-bar,
-  .sidebar-open #app-screen:not([data-layout]) .nav-bar{
+  .sidebar-open .nav-bar{
     transform:translateX(0)
+  }
+
+  /* Overlay inside same container, below sidebar */
+  .nav-overlay{
+    position:absolute;inset:0;z-index:50
   }
 
   /* Adjust nav scroll */
@@ -354,10 +360,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
   .sidebar-open .nav-bar::-webkit-scrollbar-thumb{background:var(--charcoal);border-radius:2px}
 
   /* Main content full width */
-  #app-screen[data-layout="classic"],
-  #app-screen:not([data-layout]){
-    padding-top:0
-  }
+  #app-screen{padding-top:0}
 
   .panel-body{padding:16px}
   .analysis-wrap{max-width:100%}

@@ -438,7 +438,7 @@
 @media(max-width:767px){
   /* Mac mode also gets the mobile hamburger */
   [data-layout="mac"] #mobile-menu-btn { display: flex; top: 6px; left: 8px; width: 30px; height: 30px; font-size: 15px; z-index: 1001; }
-  [data-layout="mac"] .nav-overlay { display: block; z-index: 1000; }
+  [data-layout="mac"] .nav-overlay { display: block; z-index: 400; }
   [data-layout="mac"] body.sidebar-open .nav-bar {
     position: fixed !important;
     top: 0; left: 0; bottom: 0;
