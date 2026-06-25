@@ -307,7 +307,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 /* ── Mobile Menu Toggle (hidden on desktop) ── */
 #mobile-menu-btn{
-  display:none;position:fixed;top:12px;left:12px;z-index:999;
+  display:none;position:fixed;top:12px;left:12px;z-index:1001;
   width:36px;height:36px;border-radius:var(--radius-sm);
   background:var(--surface);border:1px solid var(--hairline);
   box-shadow:var(--shadow-md);cursor:pointer;
@@ -331,7 +331,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
   body.sidebar-open{overflow:hidden}
 
   /* Show hamburger */
-  #mobile-menu-btn{display:flex}
+  #mobile-menu-btn{display:flex;z-index:1001}
   .nav-overlay{display:block}
 
   /* Sidebar: fixed positioning for reliable stacking */
