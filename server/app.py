@@ -187,6 +187,80 @@ def pdf_to_excel():
         import pdfplumber
         import pandas as pd
         from io import BytesIO
+        from collections import defaultdict
+
+        def _borderless_tables(page):
+            """Detect borderless tables from word positions."""
+            words = page.extract_words(keep_blank_chars=True, x_tolerance=1)
+            if not words:
+                return []
+
+            lines = defaultdict(list)
+            for w in words:
+                lines[round(w['top'])].append(w)
+
+            def _word_clusters(line_words):
+                sw = sorted(line_words, key=lambda w: w['x0'])
+                cl = [[sw[0]]]
+                for i in range(1, len(sw)):
+                    if sw[i]['x0'] - sw[i-1]['x1'] > 25:
+                        cl.append([])
+                    cl[-1].append(sw[i])
+                return [c for c in cl if c]
+
+            sorted_ys = sorted(lines.keys())
+            table_ys = [y for y in sorted_ys if len(_word_clusters(lines[y])) >= 3]
+            if not table_ys:
+                return []
+
+            # Cluster X positions to find column boundaries
+            all_x0 = []
+            for y in table_ys:
+                for w in lines[y]:
+                    all_x0.append(w['x0'])
+
+            xs = sorted(set(round(v) for v in all_x0))
+            col_clusters = [[x] for x in xs]
+            while True:
+                min_gap = float('inf')
+                min_idx = None
+                for i in range(len(col_clusters)-1):
+                    gap = col_clusters[i+1][0] - col_clusters[i][-1]
+                    if gap < min_gap:
+                        min_gap = gap
+                        min_idx = i
+                if min_gap > 15 or min_idx is None:
+                    break
+                col_clusters[min_idx] = col_clusters[min_idx] + col_clusters[min_idx+1]
+                col_clusters.pop(min_idx+1)
+
+            col_ranges = [(min(c), max(c)) for c in col_clusters]
+            N = len(col_ranges)
+            if N < 3:
+                return []
+
+            col_centers = [(s+e)/2 for s, e in col_ranges]
+            boundaries = [-1]
+            for i in range(N-1):
+                boundaries.append((col_centers[i] + col_centers[i+1]) / 2)
+            boundaries.append(99999)
+
+            rows = []
+            for y in table_ys:
+                row = [''] * N
+                for w in sorted(lines[y], key=lambda w: w['x0']):
+                    for ci in range(N):
+                        if boundaries[ci] <= w['x0'] < boundaries[ci+1]:
+                            row[ci] = (row[ci] + ' ' + w['text']).strip()
+                            break
+                rows.append(row)
+            return rows
+
+        def _total_rows(tables_dict):
+            return sum(
+                sum(df.shape[0] for df in dfs)
+                for dfs in tables_dict.values()
+            )
 
         all_tables = {}  # page_number -> list of dataframes
         with pdfplumber.open(tmp_pdf.name) as pdf:
@@ -203,18 +277,31 @@ def pdf_to_excel():
                             page_dfs.append(df)
                     all_tables[page_key] = page_dfs
 
+        # Also try borderless word-position detection; use whichever gives more rows
+        borderless_tables = {}
+        with pdfplumber.open(tmp_pdf.name) as pdf:
+            for i, page in enumerate(pdf.pages):
+                rows = _borderless_tables(page)
+                if rows:
+                    page_key = f"第{i+1}页"
+                    df = pd.DataFrame(rows)
+                    if not df.empty:
+                        borderless_tables[page_key] = [df]
+
+        if borderless_tables and _total_rows(borderless_tables) > _total_rows(all_tables):
+            all_tables = borderless_tables
+
         if not all_tables:
             return jsonify({"error": {"message": "No tables found in the PDF"}}), 400
 
         output = BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
             for page_key, dfs in all_tables.items():
-                if len(dfs) == 1:
-                    dfs[0].to_excel(writer, sheet_name=page_key[:31], index=False)
-                else:
-                    for j, df in enumerate(dfs):
-                        sheet = f"{page_key[:24]}-{j+1}"[:31]
-                        df.to_excel(writer, sheet_name=sheet, index=False)
+                for j, df in enumerate(dfs):
+                    sheet = page_key[:31] if len(dfs) <= 1 else f"{page_key[:24]}-{j+1}"[:31]
+                    # Skip numeric column headers (0,1,2…) for borderless tables
+                    has_header = not all(str(c).strip().isdigit() for c in df.columns)
+                    df.to_excel(writer, sheet_name=sheet, index=False, header=has_header)
         output.seek(0)
 
         return Response(
