@@ -48,17 +48,17 @@ EMAIL_AI_API_BASE = os.getenv("EMAIL_AI_API_BASE", AI_API_BASE)
 EMAIL_AI_API_KEY = os.getenv("EMAIL_AI_API_KEY", AI_API_KEY)
 EMAIL_AI_MODEL = os.getenv("EMAIL_AI_MODEL", AI_MODEL)
 
-# Email reminder config
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.qq.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
-SMTP_USER = os.getenv("SMTP_USER", "")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+# AgentMail config (for sending reminder emails)
+AGENTMAIL_INBOX = os.getenv("AGENTMAIL_INBOX", "oc-player-5823@agentmail.to")
+AGENTMAIL_API_KEY = os.getenv("AGENTMAIL_API_KEY", "")
 REMINDER_TO = os.getenv("REMINDER_TO", "")
 REMINDER_CC = os.getenv("REMINDER_CC", "")
 
-# IMAP config (for email analysis)
+# IMAP config (for reading email analysis)
 IMAP_HOST = os.getenv("IMAP_HOST", "imap.qq.com")
 IMAP_PORT = int(os.getenv("IMAP_PORT", "993"))
+IMAP_USER = os.getenv("IMAP_USER", "ro_ye@foxmail.com")
+IMAP_PASSWORD = os.getenv("IMAP_PASSWORD", "")
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "cc_instructions.txt"
 REMINDERS_PATH = Path(__file__).resolve().parent / "prompts" / "day_reminders.json"
@@ -583,13 +583,13 @@ def table_extract():
 
 @APP.route("/v1/reminder/email", methods=["POST", "OPTIONS"])
 def reminder_email():
-    """Send a daily reminder email. Requires SMTP config in .env"""
+    """Send a daily reminder email. Requires AgentMail config in .env"""
     if request.method == "OPTIONS":
         return "", 204
     if not _verify_token():
         return jsonify({"error": {"message": "Unauthorized"}}), 401
-    if not SMTP_USER or not SMTP_PASSWORD:
-        return jsonify({"error": {"message": "SMTP not configured"}}), 503
+    if not AGENTMAIL_API_KEY:
+        return jsonify({"error": {"message": "AgentMail not configured"}}), 503
 
     body = request.get_json(silent=True) or {}
     to_email = body.get("to") or REMINDER_TO
@@ -602,12 +602,10 @@ def reminder_email():
         return jsonify({"error": {"message": "mode must be 'morning' or 'afternoon'"}}), 400
 
     result = send_reminder_email(
+        agentmail_inbox=AGENTMAIL_INBOX,
+        agentmail_api_key=AGENTMAIL_API_KEY,
         to_email=to_email,
         cc_email=cc_email,
-        smtp_host=SMTP_HOST,
-        smtp_port=SMTP_PORT,
-        smtp_user=SMTP_USER,
-        smtp_password=SMTP_PASSWORD,
         mode=mode,
     )
     status = 200 if result["success"] else 500
@@ -737,14 +735,14 @@ def email_check():
         return "", 204
     if not _verify_token():
         return jsonify({"error": {"message": "Unauthorized"}}), 401
-    if not SMTP_USER or not SMTP_PASSWORD:
-        return jsonify({"error": {"message": "Email (SMTP_USER) not configured"}}), 503
+    if not IMAP_USER or not IMAP_PASSWORD:
+        return jsonify({"error": {"message": "IMAP not configured"}}), 503
 
     result = check_and_analyze(
         imap_host=IMAP_HOST,
         imap_port=IMAP_PORT,
-        email_user=SMTP_USER,
-        email_password=SMTP_PASSWORD,
+        email_user=IMAP_USER,
+        email_password=IMAP_PASSWORD,
     )
     return jsonify(result), (200 if result.get("success") else 404)
 
@@ -757,8 +755,8 @@ def email_ai_analyze():
         return "", 204
     if not _verify_token():
         return jsonify({"error": {"message": "Unauthorized"}}), 401
-    if not SMTP_USER or not SMTP_PASSWORD:
-        return jsonify({"error": {"message": "Email (SMTP_USER) not configured"}}), 503
+    if not IMAP_USER or not IMAP_PASSWORD:
+        return jsonify({"error": {"message": "IMAP not configured"}}), 503
     if not EMAIL_AI_API_KEY:
         return jsonify({"error": {"message": "AI API not configured for email analysis"}}), 503
 
@@ -767,8 +765,8 @@ def email_ai_analyze():
         email_data = check_email_full(
             imap_host=IMAP_HOST,
             imap_port=IMAP_PORT,
-            email_user=SMTP_USER,
-            email_password=SMTP_PASSWORD,
+            email_user=IMAP_USER,
+            email_password=IMAP_PASSWORD,
         )
 
         if not email_data.get("success"):

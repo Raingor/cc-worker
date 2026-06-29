@@ -1,14 +1,10 @@
-"""Email sender for daily reminders — uses QQ SMTP."""
-
-
+"""Email sender for daily reminders — uses AgentMail API."""
 
 from __future__ import annotations
 import json
-import smtplib
-import ssl
+import requests
 from datetime import datetime
 from pathlib import Path
-from email.mime.text import MIMEText
 
 REMINDERS_PATH = Path(__file__).resolve().parents[1] / "prompts" / "day_reminders.json"
 
@@ -29,7 +25,7 @@ def _fetch_checklist(date_str: str) -> list[dict] | None:
     """Load today's checklist items from checklist_store (if available)."""
     try:
         from checklist_store import get_or_create
-        data = get_or_create("", date_str)  # shared token hash
+        data = get_or_create("", date_str)
         if data and data.get("items"):
             return data["items"]
     except Exception:
@@ -80,7 +76,6 @@ def build_reminder_body(mode: str = "morning") -> tuple[str, str]:
         if not content:
             content = "今天没有待核准事项。"
 
-        # Fetch completed items with notes
         checklist = _fetch_checklist(date_str_iso)
         done_block = _format_checklist_done(checklist) if checklist else ""
 
@@ -123,40 +118,34 @@ def build_reminder_body(mode: str = "morning") -> tuple[str, str]:
 
 
 def send_reminder_email(
+    agentmail_inbox: str,
+    agentmail_api_key: str,
     to_email: str,
-    smtp_host: str,
-    smtp_port: int,
-    smtp_user: str,
-    smtp_password: str,
     cc_email: str | None = None,
-    use_ssl: bool = True,
     mode: str = "morning",
 ) -> dict:
-    """Send a daily reminder email (morning tasks or afternoon approval)."""
+    """Send a daily reminder email via AgentMail API."""
     subject, body = build_reminder_body(mode=mode)
 
-    msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = subject
-    msg["From"] = smtp_user
-    msg["To"] = to_email
-    if cc_email:
-        msg["Cc"] = cc_email
-
-    recipients = [to_email]
-    if cc_email:
-        recipients.append(cc_email)
-
     try:
-        if use_ssl:
-            ctx = ssl.create_default_context()
-            with smtplib.SMTP_SSL(smtp_host, smtp_port, context=ctx) as server:
-                server.login(smtp_user, smtp_password)
-                server.send_message(msg, to_addrs=recipients)
-        else:
-            with smtplib.SMTP(smtp_host, smtp_port) as server:
-                server.starttls()
-                server.login(smtp_user, smtp_password)
-                server.send_message(msg, to_addrs=recipients)
+        import urllib.parse
+        inbox_encoded = urllib.parse.quote(agentmail_inbox, safe='')
+        url = f"https://api.agentmail.to/v0/inboxes/{inbox_encoded}/messages/send"
+        headers = {
+            "Authorization": f"Bearer {agentmail_api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "to": to_email,
+            "subject": subject,
+            "text": body,
+        }
+        if cc_email:
+            payload["cc"] = cc_email
+
+        resp = requests.post(url, headers=headers, json=payload, timeout=30)
+        if not resp.ok:
+            return {"success": False, "error": f"AgentMail API error: {resp.status_code} {resp.text}", "to": to_email, "mode": mode}
 
         return {"success": True, "to": to_email, "subject": subject, "mode": mode}
     except Exception as e:
