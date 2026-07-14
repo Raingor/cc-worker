@@ -81,33 +81,29 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 /* ── Section ── */
 .oa-dash-section{margin-bottom:28px;animation:fadeSlide .35s ease}
-.oa-section-header{display:flex;align-items:center;gap:8px;margin-bottom:14px}
-.oa-section-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.oa-section-dot.morning{background:var(--jade)}
-.oa-section-dot.afternoon{background:var(--terracotta)}
-.oa-section-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px}
-
-/* ── Task Grid ── */
-.oa-task-grid{display:grid;grid-template-columns:1fr;gap:10px}
-@media(min-width:700px){.oa-task-grid{grid-template-columns:1fr 1fr}}
-@media(min-width:1050px){.oa-task-grid{grid-template-columns:1fr 1fr 1fr}}
-@media(min-width:1450px){.oa-task-grid{grid-template-columns:1fr 1fr 1fr 1fr}}
-.oa-task{background:var(--bg-content);border:2px solid var(--border);border-radius:20px;padding:20px 18px;display:flex;align-items:flex-start;gap:12px;transition:transform var(--d-slow) ease,border-color var(--d-base) var(--ease);position:relative;min-height:140px;box-shadow:none}
-.oa-task:hover{transform:translateY(-2px);border-color:var(--border-hover)}
-.oa-task.done{opacity:.5}
-.oa-task.done:hover{opacity:.7}
-.oa-cb-wrap{position:relative;width:20px;height:20px;flex-shrink:0;margin-top:2px}
-.oa-cb{appearance:none;width:20px;height:20px;border:1.5px solid var(--hairline);border-radius:4px;cursor:pointer;transition:all .2s;position:relative}
-.oa-cb:hover{border-color:var(--jade)}
-.oa-cb:checked{border-color:var(--jade);background:var(--jade)}
-.oa-cb:checked::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;line-height:1}
-.oa-task-body{flex:1;min-width:0}
-.oa-task-label{font-size:13px;line-height:1.6;color:var(--body);font-weight:500;transition:color .2s}
-.oa-task.done .oa-task-label{color:var(--muted);text-decoration:line-through}
-.oa-note-btn{background:none;border:none;cursor:pointer;font-size:13px;width:28px;height:28px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;transition:all .2s;margin-top:-2px}
-.oa-note-btn:hover{background:var(--jade-light);color:var(--jade)}
-.oa-task-note{width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--hairline);border-radius:var(--radius-sm);font-size:12px;font-family:var(--font-body);background:var(--bg);color:var(--body);resize:vertical;min-height:34px;outline:none;display:none;transition:border-color .2s,background .2s}
-.oa-task-note:focus{border-color:var(--jade);background:var(--surface)}
+/* ── Trello Board ── */
+.oa-trello{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;min-height:300px;scroll-snap-type:x mandatory}
+.oa-trello-col{flex:1;min-width:200px;max-width:340px;background:var(--bg);border-radius:var(--radius-md);padding:12px;display:flex;flex-direction:column;scroll-snap-align:start}
+.oa-trello-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px}
+.oa-trello-header-label{font-size:13px;font-weight:700;color:var(--ink)}
+.oa-trello-count{font-size:11px;font-weight:700;color:var(--muted);background:var(--surface);padding:2px 10px;border-radius:12px;border:1px solid var(--hairline)}
+.oa-trello-list{display:flex;flex-direction:column;gap:8px;flex:1}
+.oa-trello-card{background:var(--surface);border:1.5px solid var(--hairline);border-radius:var(--radius-sm);padding:12px 14px;transition:all .2s;box-shadow:var(--shadow-sm);border-left:4px solid var(--charcoal)}
+.oa-trello-card:hover{box-shadow:var(--shadow-md);border-color:var(--charcoal)}
+.oa-trello-card.status-todo{border-left-color:var(--terracotta)}
+.oa-trello-card.status-in_progress{border-left-color:var(--amber)}
+.oa-trello-card.status-done{border-left-color:var(--jade);opacity:.7}
+.oa-trello-label{font-size:12px;line-height:1.5;color:var(--body);font-weight:500;margin-bottom:8px;word-break:break-word}
+.oa-trello-card.status-done .oa-trello-label{color:var(--muted);text-decoration:line-through}
+.oa-trello-actions{display:flex;gap:4px;flex-wrap:wrap}
+.oa-trello-adv-btn,.oa-trello-note-btn{background:var(--bg);border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer;font-family:var(--font-body);color:var(--text-secondary);transition:all .15s}
+.oa-trello-adv-btn:hover{background:var(--primary-bg);border-color:var(--primary);color:var(--primary)}
+.oa-trello-note-btn{font-size:13px;padding:4px 6px;line-height:1}
+.oa-trello-note-btn:hover{background:var(--jade-light);color:var(--jade)}
+.oa-trello-note-wrap{margin-top:8px}
+.oa-trello-note{width:100%;padding:6px 8px;border:1px solid var(--hairline);border-radius:var(--radius-sm);font-size:11px;font-family:var(--font-body);background:var(--bg);color:var(--body);resize:vertical;min-height:28px;outline:none;transition:border-color .2s}
+.oa-trello-note:focus{border-color:var(--jade)}
+.oa-trello-empty{text-align:center;padding:24px 0;color:var(--text-disabled);font-size:12px}
 
 /* ── Summarize ── */
 .oa-summarize-wrap{margin-top:28px;text-align:center}
@@ -380,9 +376,9 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
   .oa-greeting{flex-direction:column;text-align:center;padding:20px 18px}
   .oa-greeting-ring{width:56px;height:56px}
   .oa-greeting-title{font-size:18px}
-  .oa-section-header{margin-bottom:10px}
-  .oa-task-grid{grid-template-columns:1fr!important;gap:8px}
-  .oa-task{padding:14px;min-height:auto}
+  .oa-trello{gap:8px}
+  .oa-trello-col{min-width:160px;padding:8px}
+  .oa-trello-card{padding:10px 12px}
   .oa-history-list{grid-template-columns:1fr!important}
   .oa-calendar{max-width:100%}
   .oa-cal-day{height:44px}
@@ -441,8 +437,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
   .oa-greeting-title{font-size:16px}
   .oa-greeting-sub{font-size:12px}
   .oa-summary{padding:14px 16px;font-size:12px}
-  .oa-task{padding:12px;gap:8px}
-  .oa-task-label{font-size:12px}
+  .oa-trello-card{padding:8px 10px}
+  .oa-trello-label{font-size:11px}
 
   .board-title{font-size:18px}
   .board-sub{font-size:12px}

@@ -90,6 +90,7 @@ def get_or_create(token: str, date: str) -> dict:
         saved = saved_items.get(item["id"])
         if saved:
             item["checked"] = saved.get("checked", False)
+            item["status"] = saved.get("status", "done" if saved.get("checked") else "todo")
             item["note"] = saved.get("note", "")
         else:
             item["checked"] = False
@@ -145,9 +146,14 @@ def save_items(token: str, date: str, items: list[dict]) -> dict:
 
     clean = []
     for item in items:
+        checked = bool(item.get("checked", False))
+        status = item.get("status", "")
+        if not status:
+            status = "done" if checked else "todo"
         clean.append({
             "id": item["id"],
-            "checked": bool(item.get("checked", False)),
+            "checked": checked,
+            "status": status,
             "note": item.get("note", "") or "",
             "updated_at": now,
         })

@@ -184,18 +184,119 @@ function renderGreeting(data) {
   return el;
 }
 
-/* ══════ Tasks Tab ══════ */
+/* ══════ Trello Board ══════ */
 function renderTasksTab(data) {
-  const el = document.createElement('div');
   if (!data.items || data.items.length === 0) {
+    const el = document.createElement('div');
     el.innerHTML = '<div class="panel-empty" style="padding:60px 0;flex-direction:column;gap:12px">' + randomBearImg(48, 10) + '<span>该日期没有工作任务安排</span></div>';
     return el;
   }
-  const morning = data.items.filter(i => i.period === 'morning');
-  if (morning.length > 0) el.appendChild(renderSection('上午 · 重点工作', morning, 'morning'));
-  const afternoon = data.items.filter(i => i.period === 'afternoon');
-  if (afternoon.length > 0) el.appendChild(renderSection('下午 · 核准事项', afternoon, 'afternoon'));
 
+  // Normalize statuses
+  for (const item of data.items) {
+    if (!item.status) item.status = item.checked ? 'done' : 'todo';
+  }
+
+  const columns = [
+    { key: 'todo', label: '📋 未完成' },
+    { key: 'in_progress', label: '🔄 完成中' },
+    { key: 'done', label: '✅ 已完成' },
+  ];
+
+  const board = document.createElement('div');
+  board.className = 'oa-trello';
+
+  for (const col of columns) {
+    const items = data.items.filter(i => i.status === col.key);
+    const section = document.createElement('div');
+    section.className = 'oa-trello-col';
+
+    const header = document.createElement('div');
+    header.className = 'oa-trello-header';
+    header.innerHTML = '<span class="oa-trello-header-label">' + col.label + '</span><span class="oa-trello-count">' + items.length + '</span>';
+    section.appendChild(header);
+
+    const list = document.createElement('div');
+    list.className = 'oa-trello-list';
+
+    for (const item of items) {
+      const card = document.createElement('div');
+      card.className = 'oa-trello-card status-' + item.status;
+      card.dataset.itemId = item.id;
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'oa-trello-label';
+      labelEl.textContent = item.label;
+      card.appendChild(labelEl);
+
+      const actions = document.createElement('div');
+      actions.className = 'oa-trello-actions';
+
+      // Note button
+      const noteBtn = document.createElement('button');
+      noteBtn.className = 'oa-trello-note-btn';
+      noteBtn.type = 'button';
+      noteBtn.textContent = '📝';
+      noteBtn.title = item.note ? '编辑备注' : '添加备注';
+      actions.appendChild(noteBtn);
+
+      // Advance status button
+      const advBtn = document.createElement('button');
+      advBtn.className = 'oa-trello-adv-btn';
+      advBtn.type = 'button';
+      if (item.status === 'todo') {
+        advBtn.textContent = '→ 完成中';
+        advBtn.title = '标记为完成中';
+      } else if (item.status === 'in_progress') {
+        advBtn.textContent = '→ 已完成';
+        advBtn.title = '标记为已完成';
+      } else {
+        advBtn.textContent = '↩ 重开';
+        advBtn.title = '重新打开';
+      }
+      advBtn.addEventListener('click', () => advanceStatus(item, card));
+      actions.appendChild(advBtn);
+
+      card.appendChild(actions);
+
+      // Note editor
+      const noteWrap = document.createElement('div');
+      noteWrap.className = 'oa-trello-note-wrap';
+      noteWrap.style.display = item.note ? 'block' : 'none';
+      const noteInput = document.createElement('textarea');
+      noteInput.className = 'oa-trello-note';
+      noteInput.placeholder = '备注…';
+      noteInput.value = item.note || '';
+      noteInput.addEventListener('blur', () => {
+        if (noteInput.value !== (item.note || '')) { item.note = noteInput.value; saveChecklist(); }
+      });
+      noteWrap.appendChild(noteInput);
+      card.appendChild(noteWrap);
+
+      noteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        noteWrap.style.display = noteWrap.style.display === 'none' ? 'block' : 'none';
+        if (noteWrap.style.display === 'block') noteInput.focus();
+      });
+
+      list.appendChild(card);
+    }
+
+    if (items.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'oa-trello-empty';
+      empty.textContent = '暂无';
+      list.appendChild(empty);
+    }
+
+    section.appendChild(list);
+    board.appendChild(section);
+  }
+
+  const wrap = document.createElement('div');
+  wrap.appendChild(board);
+
+  // Summarize section
   const sumWrap = document.createElement('div');
   sumWrap.className = 'oa-summarize-wrap';
   const sumBtn = document.createElement('button');
@@ -205,69 +306,31 @@ function renderTasksTab(data) {
   sumBtn.disabled = dashState.summarizing;
   sumBtn.addEventListener('click', onSummarize);
   sumWrap.appendChild(sumBtn);
-  el.appendChild(sumWrap);
+  wrap.appendChild(sumWrap);
 
   if (data.summary) {
     const card = document.createElement('div');
     card.className = 'oa-summary';
     card.innerHTML = '<strong style="display:block;margin-bottom:6px">🤖 AI 工作总结</strong>' + formatSummary(data.summary);
-    el.appendChild(card);
+    wrap.appendChild(card);
   }
-  return el;
+
+  return wrap;
 }
 
-function renderSection(label, items, period) {
-  const section = document.createElement('div');
-  section.className = 'oa-dash-section';
-  const header = document.createElement('div');
-  header.className = 'oa-section-header';
-  header.innerHTML = '  <span class="oa-section-dot ' + period + '"></span><span class="oa-section-label">' + label + '</span>' + (period === 'morning' ? '<span class="bear-dot" style="margin-left:auto">' + randomBearImg(18, 4) + '</span>' : '');
-  section.appendChild(header);
-  const list = document.createElement('div');
-  list.className = 'oa-task-grid';
-  for (const item of items) {
-    const row = document.createElement('div');
-    row.className = 'oa-task' + (item.checked ? ' done' : '');
-    row.dataset.itemId = item.id;
-    const cbWrap = document.createElement('div');
-    cbWrap.className = 'oa-cb-wrap';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.className = 'oa-cb';
-    cb.checked = item.checked;
-    cb.addEventListener('change', () => onCheckChange(item.id, cb.checked));
-    cbWrap.appendChild(cb);
-    row.appendChild(cbWrap);
-    const body = document.createElement('div');
-    body.className = 'oa-task-body';
-    const labelEl = document.createElement('div');
-    labelEl.className = 'oa-task-label';
-    labelEl.textContent = item.label;
-    body.appendChild(labelEl);
-    const noteInput = document.createElement('textarea');
-    noteInput.className = 'oa-task-note';
-    noteInput.placeholder = '备注…';
-    noteInput.value = item.note || '';
-    noteInput.addEventListener('blur', () => {
-      if (noteInput.value !== (item.note || '')) { item.note = noteInput.value; saveChecklist(); }
-    });
-    noteInput.style.display = item.note ? 'block' : 'none';
-    body.appendChild(noteInput);
-    row.appendChild(body);
-    const noteBtn = document.createElement('button');
-    noteBtn.className = 'oa-note-btn';
-    noteBtn.type = 'button';
-    noteBtn.textContent = '📝';
-    noteBtn.title = item.note ? '编辑备注' : '添加备注';
-    noteBtn.addEventListener('click', () => {
-      const ni = row.querySelector('.oa-task-note');
-      if (ni) { ni.style.display = ni.style.display === 'none' ? 'block' : 'none'; if (ni.style.display === 'block') ni.focus(); }
-    });
-    row.appendChild(noteBtn);
-    list.appendChild(row);
+function advanceStatus(item, cardEl) {
+  if (item.status === 'todo') {
+    item.status = 'in_progress';
+    item.checked = false;
+  } else if (item.status === 'in_progress') {
+    item.status = 'done';
+    item.checked = true;
+  } else {
+    item.status = 'todo';
+    item.checked = false;
   }
-  section.appendChild(list);
-  return section;
+  saveChecklist();
+  renderActiveTabOnly();
 }
 
 /* ══════ Calendar ══════ */
@@ -377,7 +440,7 @@ function saveChecklist() {
 async function doSaveChecklist() {
   if (!dashState.data || dashState.saving) return;
   dashState.saving = true;
-  const items = dashState.data.items.map(i => ({ id: i.id, checked: i.checked, note: i.note || '' }));
+  const items = dashState.data.items.map(i => ({ id: i.id, checked: i.checked, status: i.status || (i.checked ? 'done' : 'todo'), note: i.note || '' }));
   try {
     const resp = await fetch(dashUrl('/v1/checklist'), { method: 'POST', headers: { ...dashHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ date: dashState.selectedDate, items }) });
     if (resp.ok) {
@@ -421,23 +484,8 @@ function updateProgressRing() {
     if (circle) circle.setAttribute('stroke-dashoffset', offset);
     if (text) text.textContent = pct + '%';
   }
-  // Update task visual state without full re-render
-  const body = document.getElementById('dash-body');
-  if (body) {
-    for (const item of (dashState.data?.items || [])) {
-      const row = body.querySelector('.oa-task[data-item-id="' + item.id + '"]');
-      if (row) {
-        row.classList.toggle('done', !!item.checked);
-        const cb = row.querySelector('.oa-cb');
-        if (cb) cb.checked = !!item.checked;
-        const ni = row.querySelector('.oa-task-note');
-        if (ni) {
-          ni.value = item.note || '';
-          ni.style.display = item.note ? 'block' : 'none';
-        }
-      }
-    }
-  }
+  // Full re-render Trello board after save
+  renderActiveTabOnly();
 }
 async function onSummarize() {
   if (dashState.summarizing) return;

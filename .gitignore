@@ -23,4 +23,6 @@ server/__pycache__/
 server/data/
 server/uwsgi.log
 server/uwsgi.pid
+.joycode/
+.kilo/
 .pi/
