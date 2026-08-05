@@ -564,3 +564,10 @@ details[open] .analysis-guide-summary::before{transform:rotate(90deg)}
 .analysis-reanalyze-status.error{background:var(--terracotta-light);color:var(--terracotta);border:1px solid rgba(196,69,54,.15)}
 
 /* theme badge overrides removed — island palette only */
+
+/* ── 3C Certification Badge ── */
+.c3-badge{position:fixed;bottom:16px;left:16px;z-index:900;display:flex;align-items:center;gap:6px;padding:6px 12px 6px 8px;border:2px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);color:var(--text-secondary);font-size:11px;font-weight:600;cursor:default;transition:all .2s;box-shadow:var(--shadow-sm);opacity:.85;letter-spacing:.04em}
+.c3-badge:hover{opacity:1;box-shadow:var(--shadow-md);border-color:var(--jade);color:var(--jade)}
+.c3-badge svg{flex-shrink:0}
+.c3-badge-label{font-size:11px;font-weight:600}
+@media(max-width:767px){.c3-badge{bottom:10px;left:10px;padding:4px 8px 4px 6px;font-size:10px}}
