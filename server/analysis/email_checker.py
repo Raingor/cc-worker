@@ -79,21 +79,30 @@ def check_email_full(
         return {"success": False, "error": f"IMAP 连接失败: {e}"}
 
     try:
-        # Search ALL emails (not just UNSEEN) to get the latest
-        status, msg_ids = mail.search(None, "ALL", f'FROM "{sender_filter}"')
+        # Search ALL emails to get the latest (FROM criterion may not work on all IMAP servers)
+        status, msg_ids = mail.search(None, "ALL")
         if status != "OK" or not msg_ids[0]:
+            return {"success": False, "error": f"未找到邮件"}
+
+        # Iterate from newest to oldest to find the one matching sender_filter
+        msg_ids_list = msg_ids[0].split()
+        found_email = None
+        for mid in reversed(msg_ids_list):
+            status, msg_data = mail.fetch(mid, "(RFC822)")
+            if status != "OK":
+                continue
+            raw_email = msg_data[0][1]
+            msg = email.message_from_bytes(raw_email)
+            sender_raw = _decode(msg.get("From", ""))
+            if sender_filter.lower() in sender_raw.lower():
+                found_email = (msg, sender_raw)
+                break
+
+        if not found_email:
             return {"success": False, "error": f"未找到来自 {sender_filter} 的邮件"}
 
-        latest_id = msg_ids[0].split()[-1]
-        status, msg_data = mail.fetch(latest_id, "(RFC822)")
-        if status != "OK":
-            return {"success": False, "error": "读取邮件失败"}
-
-        raw_email = msg_data[0][1]
-        msg = email.message_from_bytes(raw_email)
-
+        msg, sender = found_email
         subject = _decode(msg.get("Subject", ""))
-        sender = _decode(msg.get("From", ""))
         date_str = msg.get("Date", "")
         body_text = _extract_body(msg)
 
@@ -176,22 +185,28 @@ def check_and_analyze(
         return {"success": False, "error": f"IMAP 连接失败: {e}"}
 
     try:
-        status, msg_ids = mail.search(None, "UNSEEN", f'FROM "{sender_filter}"')
+        # Search ALL emails first, then iterate to find the one matching sender_filter
+        status, msg_ids = mail.search(None, "ALL")
         if status != "OK" or not msg_ids[0]:
-            status, msg_ids = mail.search(None, "ALL", f'FROM "{sender_filter}"')
-            if status != "OK" or not msg_ids[0]:
-                return {"success": False, "error": f"未找到来自 {sender_filter} 的邮件"}
+            return {"success": False, "error": f"未找到来自 {sender_filter} 的邮件"}
 
-        latest_id = msg_ids[0].split()[-1]
-        status, msg_data = mail.fetch(latest_id, "(RFC822)")
-        if status != "OK":
-            return {"success": False, "error": "读取邮件失败"}
+        msg_ids_list = msg_ids[0].split()
+        found_email = None
+        for mid in reversed(msg_ids_list):
+            status, msg_data = mail.fetch(mid, "(RFC822)")
+            if status != "OK":
+                continue
+            raw_email = msg_data[0][1]
+            msg = email.message_from_bytes(raw_email)
+            sender_raw = _decode(msg.get("From", ""))
+            if sender_filter.lower() in sender_raw.lower():
+                found_email = (msg, sender_raw, _decode(msg.get("Subject", "")))
+                break
 
-        raw_email = msg_data[0][1]
-        msg = email.message_from_bytes(raw_email)
+        if not found_email:
+            return {"success": False, "error": f"未找到来自 {sender_filter} 的邮件"}
 
-        subject = _decode(msg.get("Subject", ""))
-        sender = _decode(msg.get("From", ""))
+        msg, sender, subject = found_email
 
         attachments = []
         if msg.is_multipart():

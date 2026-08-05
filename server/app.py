@@ -811,7 +811,7 @@ def email_ai_analyze():
                 tables = analysis.get("tables", [])
                 for tbl in tables:
                     prompt_parts.append(f"\n[表格] {tbl.get('title', '')}")
-                    prompt_parts.append(f"表头: {', '.join(tbl.get('headers', []))}")
+                    prompt_parts.append(f"表头: {', '.join(str(h) for h in tbl.get('headers', []))}")
                     for row in tbl.get("rows", [])[:10]:
                         prompt_parts.append(f"  {json.dumps(list(row.values()), ensure_ascii=False, default=str)}")
                 if att.get("error"):
@@ -1011,7 +1011,7 @@ def analysis_reanalyze(record_id):
                 tables = att.get("tables", [])
                 for tbl in tables:
                     prompt_parts.append(f"\n[表格] {tbl.get('title', '')}")
-                    prompt_parts.append(f"表头: {', '.join(tbl.get('headers', []))}")
+                    prompt_parts.append(f"表头: {', '.join(str(h) for h in tbl.get('headers', []))}")
                     for row in tbl.get("rows", [])[:10]:
                         prompt_parts.append(f"  {json.dumps(list(row.values()), ensure_ascii=False, default=str)}")
                 if att.get("error"):
