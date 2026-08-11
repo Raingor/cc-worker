@@ -23,7 +23,7 @@
     "https://s1.aigei.com/src/img/gif/bb/bb270aff17384c4baa8cef860c95a46d.gif?imageMogr2/auto-orient/thumbnail/!282x282r/gravity/Center/crop/282x282/quality/85/%7CimageView2/2/w/282&e=2051020800&token=P7S2Xpzfz11vAkASLTkfHN7Fw-oOZBecqeJaxypL:H36FnqF-GmZKQ6MKwuSi7pEynAE=",
     "https://s1.aigei.com/src/img/gif/9e/9e3c781366814d8a97921d5a6d0ca865.gif?imageMogr2/auto-orient/thumbnail/!282x282r/gravity/Center/crop/282x282/quality/85/%7CimageView2/2/w/282&e=2051020800&token=P7S2Xpzfz11vAkASLTkfHN7Fw-oOZBecqeJaxypL:67QqvgJgaxJ8gXMcdWcg9X5hp0s=",
     "https://s1.aigei.com/src/img/gif/69/691f9304521b40318be1e1e901d61a1e.gif?imageMogr2/auto-orient/thumbnail/!282x282r/gravity/Center/crop/282x282/quality/85/%7CimageView2/2/w/282&e=2051020800&token=P7S2Xpzfz11vAkASLTkfHN7Fw-oOZBecqeJaxypL:aKCGVtKzqe8-XRALIyEAyDMOOnk=",
-    // joke bear from Tenor (30)
+    // joke bear from Tenor (56)
     "https://media.tenor.com/IIWFOaA_TfoAAAAj/joke-bear.gif",
     "https://media.tenor.com/5nzLdhWL7GoAAAAj/sad-bear-joke-bear-sad.gif",
     "https://media.tenor.com/N-rSTqzfCOEAAAAj/bear-so-cute-funny-point-flower-so-cute.gif",
@@ -53,7 +53,34 @@
     "https://media.tenor.com/N1WZEisOLXsAAAAM/%EB%86%8D%EB%8B%B4%EA%B3%B0-jokebear.gif",
     "https://media.tenor.com/MPCPvINDMKUAAAAM/%E5%AF%B6%E8%B2%9D%E7%86%8A.gif",
     "https://media.tenor.com/z4wNGNq_qwwAAAAM/lmtqy.gif",
-    "https://media.tenor.com/tUXrpBDSRr4AAAAM/%EB%86%8D%EB%8B%B4%EA%B3%B0-bear.gif"
+    "https://media.tenor.com/tUXrpBDSRr4AAAAM/%EB%86%8D%EB%8B%B4%EA%B3%B0-bear.gif",
+    // jokebear / nongdamgom / yenkim — 2026-08-12 补充 (26)
+    "https://media.tenor.com/MiVO5ntD6JEAAAAM/jokebear.gif",
+    "https://media.tenor.com/YsW43jVD1wEAAAAM/jokebear-monch.gif",
+    "https://media.tenor.com/KlBgIzD1k-wAAAAM/jokebear-together.gif",
+    "https://media.tenor.com/_jqI9rb09D4AAAAM/joke-bear-run-away.gif",
+    "https://media.tenor.com/IxV_nvAAZtQAAAAM/joke-bear-line.gif",
+    "https://media.tenor.com/0HXLpbpnbkEAAAAM/bar-joke.gif",
+    "https://media.tenor.com/itYwNwGIOxgAAAAM/akuu-bear.gif",
+    "https://media.tenor.com/7twRUwaX-CoAAAAM/%EB%86%8D%EB%8B%B4%EA%B3%B0-jokebear.gif",
+    "https://media.tenor.com/Sxyf_E_7F6wAAAAM/ivory-yenkim.gif",
+    "https://media.tenor.com/9rLwpsslHogAAAAM/%EB%86%8D%EB%8B%B4%EA%B3%B0-jokebear.gif",
+    "https://media.tenor.com/Mg_iMjOUQUoAAAAM/yenkim-ivory.gif",
+    "https://media.tenor.com/byg3R82aUhYAAAAM/yenkim-ivory.gif",
+    "https://media.tenor.com/PWXEWpx8WZ4AAAAM/vitwoiv-joke-bear.gif",
+    "https://media.tenor.com/L9MBh0RfIuUAAAAM/yenkim-jokebear.gif",
+    "https://media.tenor.com/pxmY2glVxGoAAAAM/nagano-yenkim.gif",
+    "https://media.tenor.com/hr44bmI5OpwAAAAM/yenkim-jokebear.gif",
+    "https://media.tenor.com/wHA-wkYQajEAAAAM/jokebear-yenkim.gif",
+    "https://media.tenor.com/FiXIDyT6xHwAAAAM/huh-yenkim.gif",
+    "https://media.tenor.com/n9RZftqM7n0AAAAM/yenkim-dance.gif",
+    "https://media.tenor.com/59KdJdwetL0AAAAM/dance-yenkim.gif",
+    "https://media.tenor.com/ztOzrYcm8WoAAAAM/yenkim-no.gif",
+    "https://media.tenor.com/ORcbs7lq3LwAAAAM/yenkim-jokebear.gif",
+    "https://media.tenor.com/dPtUTHf6iG0AAAAM/no-yenkim.gif",
+    "https://media.tenor.com/zvIu_tUjNvoAAAAM/yenkim-ivory.gif",
+    "https://media.tenor.com/CDhLuH_cX1sAAAAM/yay-jokebear.gif",
+    "https://media.tenor.com/fdvnXO6c_bkAAAAM/fly-yenkim.gif"
   ];
 
   var QUOTES = [
