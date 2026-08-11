@@ -1355,26 +1355,18 @@ def checklist_route():
         return jsonify({"error": {"message": str(e)}}), 500
 
 
-@APP.route("/v1/checklist/summarize", methods=["POST", "OPTIONS"])
-def checklist_summarize():
-    """Generate AI summary for today's checklist and save it."""
-    if request.method == "OPTIONS":
-        return "", 204
-    if not _verify_token():
-        return jsonify({"error": {"message": "Unauthorized"}}), 401
-    if not AI_API_KEY:
-        return jsonify({"error": {"message": "AI API not configured"}}), 503
+def _generate_daily_summary(token: str, date: str) -> str:
+    """Generate and persist an AI summary for a date's checklist.
 
-    auth = request.headers.get("Authorization", "")
-    token = auth[7:].strip()
-    body = request.get_json(silent=True) or {}
-    date = body.get("date", "")
-    if not date:
-        return jsonify({"error": {"message": "date required"}}), 400
+    Raises RuntimeError if AI is not configured, the date has no template,
+    the upstream API fails, or the response is empty.
+    """
+    if not AI_API_KEY:
+        raise RuntimeError("AI API not configured")
 
     ctx = checklist_store.get_summary_context(token, date)
     if ctx is None:
-        return jsonify({"error": {"message": "No template for this date"}}), 400
+        raise RuntimeError("No template for this date")
 
     lines = [f"日期：{date}"]
     lines.append(f"主题：{ctx['title']}")
@@ -1406,17 +1398,65 @@ def checklist_summarize():
         "max_tokens": 1024,
     }
 
-    try:
-        resp = requests.post(upstream_url, headers=headers, json=payload, timeout=120)
-        if not resp.ok:
-            return jsonify({"error": {"message": f"AI API error: {resp.status_code}"}}), 502
-        resp_data = resp.json()
-        summary = resp_data["choices"][0]["message"]["content"]
+    resp = requests.post(upstream_url, headers=headers, json=payload, timeout=120)
+    if not resp.ok:
+        raise RuntimeError(f"AI API error: {resp.status_code}")
+    resp_data = resp.json()
+    summary = resp_data["choices"][0]["message"]["content"]
+    if not summary:
+        raise RuntimeError("AI returned empty summary")
+    checklist_store.save_summary(token, date, summary)
+    return summary
 
-        checklist_store.save_summary(token, date, summary)
-        return jsonify({"date": date, "summary": summary})
-    except Exception as e:
-        return jsonify({"error": {"message": str(e)}}), 500
+
+@APP.route("/v1/checklist/summarize", methods=["POST", "OPTIONS"])
+def checklist_summarize():
+    """Generate AI summary for today's checklist and save it."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:].strip()
+    body = request.get_json(silent=True) or {}
+    date = body.get("date", "")
+    if not date:
+        return jsonify({"error": {"message": "date required"}}), 400
+
+    try:
+        summary = _generate_daily_summary(token, date)
+    except RuntimeError as e:
+        msg = str(e)
+        status = 503 if "not configured" in msg else 400 if "template" in msg else 502
+        return jsonify({"error": {"message": msg}}), status
+    return jsonify({"date": date, "summary": summary})
+
+
+@APP.route("/v1/reminder/auto-summary", methods=["POST", "OPTIONS"])
+def reminder_auto_summary():
+    """每天 17:30 定时调用：若当天尚无工作总结则自动生成（跳过已总结的日期）。"""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:].strip()
+    body = request.get_json(silent=True) or {}
+    date = body.get("date") or datetime.now().strftime("%Y-%m-%d")
+
+    existing = checklist_store.get_or_create(token, date)
+    if existing.get("summary"):
+        return jsonify({"date": date, "status": "skipped", "reason": "already-summarized"}), 200
+
+    try:
+        summary = _generate_daily_summary(token, date)
+    except RuntimeError as e:
+        msg = str(e)
+        status = 503 if "not configured" in msg else 400 if "template" in msg else 502
+        return jsonify({"error": {"message": msg}}), status
+    return jsonify({"date": date, "status": "generated", "summary": summary})
 
 
 @APP.route("/v1/checklist/history", methods=["GET", "OPTIONS"])
