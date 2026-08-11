@@ -11,6 +11,7 @@ if [ -f "$OLD_DIR/uwsgi.pid" ]; then
   sleep 1
 fi
 pkill -f "uwsgi.*5001" 2>/dev/null || true
+sleep 2  # 等旧实例释放端口，避免 bind(): Address already in use
 
 echo "==> Remove old project"
 rm -rf "$OLD_DIR"
