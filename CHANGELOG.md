@@ -10,6 +10,7 @@ CC 工作助手版本更新记录。格式遵循 [Keep a Changelog](https://keep
 - **每日自动工作总结** — 工作日 17:30 定时检查当天是否有工作总结；未手动总结时自动生成（`POST /v1/reminder/auto-summary`，幂等，已总结则跳过）
 
 ### Changed
+- **jokebear GIF 扩充** — 熊角落动画从 30 增至 56 个（nongdamgom/yenkim/jokebear 系列，全部验证有效）
 - **PIR 删除任务移至周二** — 周四删除 SAP PIR 的提醒/任务/checklist 全部移到周二
 - **周四新增下车间检查工作** — 任务、checklist、下午核准事项同步更新
 - **AI 模型切换为 mimo-v2.5-free** — 邮件分析/聊天改用 opencode 网关免费模型中响应最快的
