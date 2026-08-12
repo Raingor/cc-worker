@@ -262,6 +262,180 @@ def pdf_to_excel():
                 for dfs in tables_dict.values()
             )
 
+        def _ocr_words_hocr(page, tesseract_cmd, scale):
+            """Render a PDF page, OCR via tesseract hOCR, return words with PDF-pt coords."""
+            import subprocess, re, html as _html
+            bitmap = page.render(scale=scale)
+            img = bitmap.to_pil()
+            fd, img_path = tempfile.mkstemp(suffix=".png")
+            os.close(fd)
+            img.save(img_path)
+            fd2, outbase = tempfile.mkstemp(suffix=".hocr")
+            os.close(fd2)
+            os.unlink(outbase)
+            try:
+                subprocess.run(
+                    [tesseract_cmd, img_path, outbase, "-l", "chi_sim+eng", "hocr"],
+                    capture_output=True, timeout=180,
+                )
+                hocr_path = outbase + ".hocr"
+                if not os.path.exists(hocr_path):
+                    return []
+                html = open(hocr_path, encoding="utf-8", errors="replace").read()
+            finally:
+                for p in (img_path, outbase + ".hocr"):
+                    try:
+                        os.unlink(p)
+                    except OSError:
+                        pass
+            words = []
+            for m in re.finditer(
+                r"<span class='ocrx_word'[^>]*title='bbox (\d+) (\d+) (\d+) (\d+);[^']*'[^>]*>(.*?)</span>",
+                html, re.S,
+            ):
+                l, t, r, b = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
+                text = re.sub(r"<[^>]+>", "", m.group(5))
+                text = _html.unescape(text).strip()
+                if not text:
+                    continue
+                words.append({
+                    "text": text,
+                    "x0": l / scale,
+                    "x1": r / scale,
+                    "top": t / scale,
+                    "bottom": b / scale,
+                })
+            return words
+
+        def _detect_table_from_words(words):
+            """从 OCR 单词坐标重建表格（行带聚类 + 参考行列边界 + 换行合并）。"""
+            import re as _re
+            if len(words) < 20:
+                return []
+            # 1. 行带聚类：top 相差 <12pt 视为同一行
+            bands = []
+            for w in sorted(words, key=lambda w: (w['top'], w['x0'])):
+                if bands and w['top'] - bands[-1]['top'] < 12:
+                    bands[-1]['words'].append(w)
+                else:
+                    bands.append({'top': w['top'], 'words': [w]})
+
+            def _clusters(ws):
+                sw = sorted(ws, key=lambda w: w['x0'])
+                groups = [[sw[0]]]
+                for i in range(1, len(sw)):
+                    if sw[i]['x0'] - sw[i-1]['x1'] > 25:
+                        groups.append([])
+                    groups[-1].append(sw[i])
+                return [g for g in groups if g]
+
+            def _split_numeric(clusters):
+                """纯数字簇（如数量+料号粘连）按词拆分：每词一列。"""
+                out = []
+                for c in clusters:
+                    if len(c) > 1 and all(_re.match(r'^[0-9][0-9,.\s]*$', w['text']) for w in c):
+                        c2 = sorted(c, key=lambda w: w['x0'])
+                        out.extend([w] for w in c2)
+                    else:
+                        out.append(c)
+                return out
+
+            # 2. 参考行：列簇最多者（并列取靠后——数据行通常比表头更准确）
+            ref_cnt = 0
+            ref = None
+            for b in bands:
+                b['clusters'] = _split_numeric(_clusters(b['words']))
+                if len(b['clusters']) >= ref_cnt:
+                    ref = b
+                    ref_cnt = len(b['clusters'])
+            if ref is None or ref_cnt < 3:
+                return []
+
+            # 3. 列边界：相邻列簇之间取（左列右缘 + 右列左缘）/ 2
+            cls = sorted(ref['clusters'], key=lambda c: c[0]['x0'])
+            N = len(cls)
+            boundaries = [-1]
+            for i in range(N - 1):
+                left_edge = max(w['x1'] for w in cls[i])
+                right_edge = min(w['x0'] for w in cls[i + 1])
+                boundaries.append((left_edge + right_edge) / 2)
+            boundaries.append(10 ** 9)
+
+            # 4. 逐行分配单元格；仅描述列的换行合并到上一行
+            rows = []
+            for b in bands:
+                cells = [''] * N
+                for w in sorted(b['words'], key=lambda w: w['x0']):
+                    for ci in range(N):
+                        if boundaries[ci] <= w['x0'] < boundaries[ci + 1]:
+                            cells[ci] = (cells[ci] + ' ' + w['text']).strip()
+                            break
+                if not any(cells):
+                    continue
+                is_new = bool(any(cells[0]) or any(cells[1]) or (any(cells[N - 1]) and not any(cells[2:N - 1])))
+                if is_new or not rows:
+                    rows.append(cells)
+                else:
+                    for ci in range(N):
+                        if cells[ci]:
+                            rows[-1][ci] = (rows[-1][ci] + ' ' + cells[ci]).strip()
+            return rows
+
+        def _table_region(rows):
+            """只保留表格区域：表头 + 明细行 + 合计行（剔除 PO 抬头/装箱说明等噪音）。"""
+            import re as _re
+            item_idx = [j for j, r in enumerate(rows)
+                        if r and _re.match(r'^[0-9][0-9,.\s]*$', r[0])
+                        and len(r) > 2 and any(ch.isdigit() for ch in r[1]) and r[2].strip()]
+            if not item_idx:
+                return []
+            # 表头：首条明细上方最近一行 ≥4 列填充
+            start = max(0, item_idx[0] - 1)
+            for k in range(item_idx[0] - 1, -1, -1):
+                if sum(1 for c in rows[k] if c.strip()) >= 4:
+                    start = k
+                    break
+            end = min(len(rows), item_idx[-1] + 2)
+            region = rows[start:end]
+            # 剔除表头与首条明细之间填充 <3 列的行（装箱说明等）
+            kept = [region[0]]
+            for i in range(1, item_idx[0] - start):
+                if sum(1 for c in region[i] if c.strip()) >= 3:
+                    kept.append(region[i])
+            kept.extend(region[item_idx[0] - start:])
+            return kept
+
+        def _ocr_tables(pdf_path):
+            """扫描版 PDF（无文本层）→ OCR → 表格。无 tesseract 时返回空 dict。"""
+            import shutil
+            tesseract_cmd = shutil.which("tesseract")
+            if not tesseract_cmd:
+                return {}
+            import pypdfium2 as pdfium
+            tables = {}
+            import traceback as _tb
+            try:
+                pdf = pdfium.PdfDocument(pdf_path)
+                try:
+                    for i in range(len(pdf)):
+                        words = _ocr_words_hocr(pdf[i], tesseract_cmd, scale=2)
+                        rows = _detect_table_from_words(words)
+                        rows = _table_region(rows)
+                        if rows:
+                            df = pd.DataFrame(rows)
+                            if not df.empty:
+                                tables[f"第{i+1}页"] = [df]
+                finally:
+                    pdf.close()
+            except Exception:
+                # 记录 OCR 失败原因便于排查
+                try:
+                    with open("/tmp/ocr_debug.log", "a", encoding="utf-8") as f:
+                        f.write(_tb.format_exc())
+                except Exception:
+                    pass
+            return tables
+
         all_tables = {}  # page_number -> list of dataframes
         with pdfplumber.open(tmp_pdf.name) as pdf:
             for i, page in enumerate(pdf.pages):
@@ -290,6 +464,12 @@ def pdf_to_excel():
 
         if borderless_tables and _total_rows(borderless_tables) > _total_rows(all_tables):
             all_tables = borderless_tables
+
+        # 扫描版 PDF（无文本层）→ OCR 兜底
+        if not all_tables:
+            ocr_tables = _ocr_tables(tmp_pdf.name)
+            if _total_rows(ocr_tables) > _total_rows(all_tables):
+                all_tables = ocr_tables
 
         if not all_tables:
             return jsonify({"error": {"message": "No tables found in the PDF"}}), 400
