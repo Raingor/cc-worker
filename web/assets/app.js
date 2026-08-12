@@ -42,9 +42,6 @@ function switchPanel(name, tab) {
   if (name === 'dashboard') {
     if (tab) setDashTab(tab); else setDashTab('tasks');
   }
-  if (name === 'toolbox') {
-    if (tab) setToolboxTab(tab); else setToolboxTab('pdf-to-excel');
-  }
   if (name === 'board') {
     if (tab) setBoardTab(tab); else setBoardTab('board-list');
   }
@@ -62,11 +59,6 @@ function switchPanel(name, tab) {
 function setDashTab(tab) {
   document.querySelectorAll('.nav-sub[data-tab]').forEach(s => s.classList.toggle('active', s.dataset.tab === tab));
   initDashboard(tab);
-}
-
-function setToolboxTab(tab) {
-  document.querySelectorAll('.nav-sub[data-tool]').forEach(s => s.classList.toggle('active', s.dataset.tool === tab));
-  initToolbox(tab);
 }
 
 /* ── Reminder ── */
@@ -96,9 +88,6 @@ function initDashboard(tab) {
   dashState.selectedDate = dashDateStr(new Date());
   dashState.activeTab = tab || 'tasks';
   loadDashboard();
-}
-function initToolbox(tab) {
-  if (typeof switchToolboxTab === 'function') switchToolboxTab(tab || 'pdf-to-excel');
 }
 function setBoardTab(tab) {
   document.querySelectorAll('.nav-sub[data-tab="board-list"]').forEach(s => s.classList.toggle('active', s.dataset.tab === tab));

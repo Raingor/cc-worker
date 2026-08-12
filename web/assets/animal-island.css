@@ -178,7 +178,6 @@
 
 /* ── Primary button (3D pixel stack) ── */
 .ai-btn-primary,
-.tb-btn-primary,
 .board-btn,
 .board-reply-submit,
 .memo-modal-save,
@@ -203,7 +202,6 @@
   box-shadow: 0 5px 0 0 var(--shadow-btn);
 }
 .ai-btn-primary:hover,
-.tb-btn-primary:hover:not(:disabled),
 .board-btn:hover,
 .board-reply-submit:hover:not(:disabled),
 .memo-modal-save:hover:not(:disabled),
@@ -212,7 +210,6 @@
   transform: translateY(-1px);
 }
 .ai-btn-primary:active,
-.tb-btn-primary:active:not(:disabled),
 .board-btn:active,
 .board-reply-submit:active:not(:disabled),
 .memo-modal-save:active:not(:disabled),
@@ -221,13 +218,11 @@
   transform: translateY(2px);
 }
 .ai-btn-primary:focus-visible,
-.tb-btn-primary:focus-visible,
 .analysis-btn:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 .ai-btn-primary:disabled,
-.tb-btn-primary:disabled,
 .analysis-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -248,8 +243,6 @@
 /* ── Default / outline buttons ── */
 .ai-btn-default,
 .oa-btn,
-.tb-btn-outline,
-.tb-btn,
 .analysis-action-btn,
 .memo-modal-cancel,
 .board-reply-cancel,
@@ -259,7 +252,6 @@
   letter-spacing: 0.02em;
 }
 .oa-btn,
-.tb-btn-outline,
 .analysis-action-btn,
 .memo-modal-cancel,
 .board-reply-cancel {
@@ -271,7 +263,6 @@
   transition: all var(--d-base) var(--ease);
 }
 .oa-btn:hover,
-.tb-btn-outline:hover,
 .analysis-action-btn:hover,
 .memo-modal-cancel:hover,
 .board-reply-cancel:hover {
@@ -291,7 +282,6 @@
 .analysis-card,
 .analysis-result,
 .analysis-guide,
-.tb-file-item,
 .oa-cal-day:not(.other) {
   background: var(--bg-content);
   border: 2px solid var(--border);
@@ -305,8 +295,7 @@
 .oa-history-item:hover,
 .board-item:hover,
 .memo-item:hover,
-.analysis-card:hover,
-.tb-file-item:hover {
+.analysis-card:hover {
   transform: translateY(-2px);
   border-color: var(--border-hover);
 }
@@ -427,18 +416,6 @@ textarea {
 /* ── Table-like panels ── */
 .analysis-records-header {
   border-bottom: 2px dashed rgb(240, 232, 216);
-}
-
-/* ── Upload zone ── */
-.tb-upload-zone {
-  border: 2px dashed var(--border);
-  border-radius: var(--r-lg);
-  background: var(--bg-content);
-}
-.tb-upload-zone:hover,
-.tb-upload-zone.dragover {
-  border-color: var(--primary);
-  background: var(--primary-bg);
 }
 
 /* ── Loader ── */
