@@ -5,6 +5,7 @@
 
   var DOCK_ITEMS = [
     { panel: 'dashboard', icon: '📋', label: '工作面板' },
+    { panel: 'toolbox',   icon: '🧰', label: '工具箱' },
     { panel: 'board',     icon: '💬', label: '留言板' },
     { panel: 'memo',      icon: '📝', label: '备忘录' }
   ];
