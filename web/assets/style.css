@@ -104,6 +104,14 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .oa-trello-note{width:100%;padding:6px 8px;border:1px solid var(--hairline);border-radius:var(--radius-sm);font-size:11px;font-family:var(--font-body);background:var(--bg);color:var(--body);resize:vertical;min-height:28px;outline:none;transition:border-color .2s}
 .oa-trello-note:focus{border-color:var(--jade)}
 .oa-trello-empty{text-align:center;padding:24px 0;color:var(--text-disabled);font-size:12px}
+.oa-trello-add-header{padding:6px 0}
+.oa-trello-add-btn{background:var(--primary-bg);border:2px dashed var(--hairline);border-radius:var(--radius-sm);padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;color:var(--jade);width:100%;text-align:left}
+.oa-trello-add-input{display:flex;gap:4px}
+.oa-trello-add-input input{flex:1;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:4px 8px;font-size:12px;font-family:var(--font-body);background:var(--bg);color:var(--body);outline:none}
+.oa-trello-add-input button{font-size:11px;padding:4px 10px;border:none;border-radius:var(--radius-sm);background:var(--jade);color:#fff;cursor:pointer;font-family:var(--font-body);font-weight:600}
+.oa-trello-add-input button:disabled{opacity:.4;cursor:default}
+.oa-trello-del-btn{font-size:11px;padding:4px 6px;line-height:1;opacity:.4}
+.oa-trello-del-btn:hover{color:var(--terracotta);opacity:1}
 
 /* ── Summarize ── */
 .oa-summarize-wrap{margin-top:28px;text-align:center}

@@ -84,8 +84,10 @@ def get_or_create(token: str, date: str) -> dict:
             saved_items = {}
         saved_summary = row["summary"]
 
+    template_ids = set()
     merged = []
     for tpl in (template or {}).get("items", []):
+        template_ids.add(tpl["id"])
         item = dict(tpl)
         saved = saved_items.get(item["id"])
         if saved:
@@ -96,6 +98,18 @@ def get_or_create(token: str, date: str) -> dict:
             item["checked"] = False
             item["note"] = ""
         merged.append(item)
+
+    # Append user-created custom items (not part of template)
+    for sid, saved in saved_items.items():
+        if sid.startswith("custom_") and sid not in template_ids:
+            merged.append({
+                "id": sid,
+                "label": saved.get("label", ""),
+                "checked": saved.get("checked", False),
+                "status": saved.get("status", "done" if saved.get("checked") else "todo"),
+                "note": saved.get("note", ""),
+                "is_custom": True,
+            })
 
     checked_count = sum(1 for m in merged if m.get("checked"))
     total_count = len(merged)
@@ -155,6 +169,8 @@ def save_items(token: str, date: str, items: list[dict]) -> dict:
             "checked": checked,
             "status": status,
             "note": item.get("note", "") or "",
+            "label": item.get("label", ""),
+            "is_custom": item.get("is_custom", False),
             "updated_at": now,
         })
 

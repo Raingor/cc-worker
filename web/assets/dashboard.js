@@ -188,7 +188,35 @@ function renderGreeting(data) {
 function renderTasksTab(data) {
   if (!data.items || data.items.length === 0) {
     const el = document.createElement('div');
-    el.innerHTML = '<div class="panel-empty" style="padding:60px 0;flex-direction:column;gap:12px">' + randomBearImg(48, 10) + '<span>该日期没有工作任务安排</span></div>';
+    el.className = 'oa-trello';
+    const col = document.createElement('div');
+    col.className = 'oa-trello-col';
+    const header = document.createElement('div');
+    header.className = 'oa-trello-header';
+    header.innerHTML = '<span class="oa-trello-header-label">📋 未完成</span><span class="oa-trello-count">0</span>';
+    col.appendChild(header);
+    const list = document.createElement('div');
+    list.className = 'oa-trello-list';
+    const addHeader = document.createElement('div');
+    addHeader.className = 'oa-trello-add-header';
+    addHeader.innerHTML = '<button class="oa-trello-add-btn" type="button">＋ 添加自定义任务</button>';
+    const addInput = document.createElement('div');
+    addInput.className = 'oa-trello-add-input';
+    addInput.style.display = 'none';
+    addInput.innerHTML = '<input type="text" placeholder="输入自定义任务…" maxlength="200" /><button type="submit">添加</button>';
+    const formEl = addInput.querySelector('input');
+    const addSubmit = addInput.querySelector('button');
+    addSubmit.addEventListener('click', (e) => { e.preventDefault(); const val = formEl.value.trim(); if (!val) return; addCustomItem(val); formEl.value = ''; addInput.style.display = 'none'; addHeader.style.display = ''; });
+    formEl.addEventListener('keydown', (e) => { if (e.key === 'Escape') { formEl.value = ''; addInput.style.display = 'none'; addHeader.style.display = ''; } else if (e.key === 'Enter') { e.preventDefault(); addSubmit.click(); } });
+    addHeader.addEventListener('click', () => { addHeader.style.display = 'none'; addInput.style.display = 'flex'; formEl.focus(); });
+    col.appendChild(addHeader);
+    col.appendChild(addInput);
+    const empty = document.createElement('div');
+    empty.className = 'oa-trello-empty';
+    empty.textContent = '该日期没有工作任务安排';
+    list.appendChild(empty);
+    col.appendChild(list);
+    el.appendChild(col);
     return el;
   }
 
@@ -218,6 +246,35 @@ function renderTasksTab(data) {
 
     const list = document.createElement('div');
     list.className = 'oa-trello-list';
+
+    /* Add custom task button (only in todo column) */
+    if (col.key === 'todo') {
+      const addHeader = document.createElement('div');
+      addHeader.className = 'oa-trello-add-header';
+      addHeader.innerHTML = '<button class="oa-trello-add-btn" type="button">＋ 添加任务</button>';
+      const addInput = document.createElement('div');
+      addInput.className = 'oa-trello-add-input';
+      addInput.style.display = 'none';
+      addInput.innerHTML = '<input type="text" placeholder="输入自定义任务…" maxlength="200" /><button type="submit">添加</button>';
+      const formEl = addInput.querySelector('input');
+      const addSubmit = addInput.querySelector('button');
+      addSubmit.addEventListener('click', (e) => {
+        e.preventDefault();
+        const val = formEl.value.trim();
+        if (!val) return;
+        addCustomItem(val);
+        formEl.value = '';
+        addInput.style.display = 'none';
+        addHeader.style.display = '';
+      });
+      formEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { formEl.value = ''; addInput.style.display = 'none'; addHeader.style.display = ''; }
+        else if (e.key === 'Enter') { e.preventDefault(); addSubmit.click(); }
+      });
+      addHeader.addEventListener('click', () => { addHeader.style.display = 'none'; addInput.style.display = 'flex'; formEl.focus(); });
+      section.appendChild(addHeader);
+      section.appendChild(addInput);
+    }
 
     for (const item of items) {
       const card = document.createElement('div');
@@ -258,6 +315,24 @@ function renderTasksTab(data) {
       actions.appendChild(advBtn);
 
       card.appendChild(actions);
+
+      /* Delete button for custom items */
+      if (item.is_custom) {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'oa-trello-del-btn';
+        delBtn.type = 'button';
+        delBtn.textContent = '🗑';
+        delBtn.title = '删除任务';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (confirm('删除「' + item.label + '」？')) {
+            dashState.data.items = dashState.data.items.filter(i => i.id !== item.id);
+            saveChecklist();
+            renderActiveTabOnly();
+          }
+        });
+        actions.appendChild(delBtn);
+      }
 
       // Note editor
       const noteWrap = document.createElement('div');
@@ -329,6 +404,16 @@ function advanceStatus(item, cardEl) {
     item.status = 'todo';
     item.checked = false;
   }
+  saveChecklist();
+  renderActiveTabOnly();
+}
+
+function addCustomItem(label) {
+  const id = 'custom_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  const newItem = {
+    id, label, checked: false, status: 'todo', note: '',
+  };
+  dashState.data.items.push(newItem);
   saveChecklist();
   renderActiveTabOnly();
 }
@@ -440,7 +525,7 @@ function saveChecklist() {
 async function doSaveChecklist() {
   if (!dashState.data || dashState.saving) return;
   dashState.saving = true;
-  const items = dashState.data.items.map(i => ({ id: i.id, checked: i.checked, status: i.status || (i.checked ? 'done' : 'todo'), note: i.note || '' }));
+  const items = dashState.data.items.map(i => ({ id: i.id, checked: i.checked, status: i.status || (i.checked ? 'done' : 'todo'), note: i.note || '', label: i.label || '', is_custom: i.is_custom || false }));
   try {
     const resp = await fetch(dashUrl('/v1/checklist'), { method: 'POST', headers: { ...dashHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ date: dashState.selectedDate, items }) });
     if (resp.ok) {
@@ -456,6 +541,8 @@ async function doSaveChecklist() {
             const sv = serverMap[item.id];
             if (sv) {
               item.checked = sv.checked;
+              item.is_custom = sv.is_custom || false;
+              if (sv.label) item.label = sv.label;
               if (!item.note) item.note = sv.note || '';
             }
           }
