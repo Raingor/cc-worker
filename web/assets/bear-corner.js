@@ -1,4 +1,6 @@
 ;(function () {
+  // GIF 过滤规则：仅保留 Nagano 原版 joke-bear / nongdamgom / yenkim / ivory 系列
+  // 不含蜡笔小新 (Crayon Shin-chan)、fan art 或跨界角色
   window.BEAR_GIFS = [
     // 自嘲熊 from aigei.com (22)
     "https://s1.aigei.com/src/img/gif/33/332524b9bbe34f029fc0f2744ebcfd27.gif?e=2051020800&token=P7S2Xpzfz11vAkASLTkfHN7Fw-oOZBecqeJaxypL:zufjktQMAvjjC6hhOdGSlI_oXsY=",

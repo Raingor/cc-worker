@@ -184,6 +184,88 @@ function renderGreeting(data) {
   return el;
 }
 
+/* ── Add Task UI helper ── */
+function createAddTaskUI(container, onAdd) {
+  const fab = document.createElement('div');
+  fab.className = 'oa-trello-add-fab';
+  fab.innerHTML = '<span class="oa-trello-add-icon">＋</span><span class="oa-trello-add-label">添加任务</span>';
+
+  const card = document.createElement('div');
+  card.className = 'oa-trello-add-card';
+
+  const row = document.createElement('div');
+  row.className = 'oa-trello-add-row';
+
+  const input = document.createElement('input');
+  input.className = 'oa-trello-add-input-el';
+  input.type = 'text';
+  input.placeholder = '输入自定义任务…';
+  input.maxLength = 200;
+
+  const counter = document.createElement('span');
+  counter.className = 'oa-trello-add-counter';
+  counter.textContent = '0/200';
+
+  input.addEventListener('input', () => {
+    const len = input.value.length;
+    counter.textContent = len + '/200';
+    counter.classList.toggle('warn', len > 180);
+    confirmBtn.disabled = !input.value.trim();
+  });
+
+  row.appendChild(input);
+  row.appendChild(counter);
+
+  const actions = document.createElement('div');
+  actions.className = 'oa-trello-add-actions';
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'oa-trello-add-confirm';
+  confirmBtn.type = 'button';
+  confirmBtn.textContent = '添加';
+  confirmBtn.disabled = true;
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'oa-trello-add-cancel';
+  cancelBtn.type = 'button';
+  cancelBtn.textContent = '✕';
+
+  actions.appendChild(confirmBtn);
+  actions.appendChild(cancelBtn);
+  card.appendChild(row);
+  card.appendChild(actions);
+  container.appendChild(fab);
+  container.appendChild(card);
+
+  function expand() {
+    fab.classList.add('hide');
+    card.classList.add('open');
+    input.value = '';
+    counter.textContent = '0/200';
+    counter.classList.remove('warn');
+    confirmBtn.disabled = true;
+    input.focus();
+  }
+  function collapse() {
+    fab.classList.remove('hide');
+    card.classList.remove('open');
+    input.blur();
+  }
+
+  fab.addEventListener('click', expand);
+  cancelBtn.addEventListener('click', collapse);
+  confirmBtn.addEventListener('click', () => {
+    const val = input.value.trim();
+    if (!val) return;
+    onAdd(val);
+    collapse();
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') collapse();
+    else if (e.key === 'Enter' && !confirmBtn.disabled) confirmBtn.click();
+  });
+}
+
 /* ══════ Trello Board ══════ */
 function renderTasksTab(data) {
   if (!data.items || data.items.length === 0) {
@@ -197,20 +279,7 @@ function renderTasksTab(data) {
     col.appendChild(header);
     const list = document.createElement('div');
     list.className = 'oa-trello-list';
-    const addHeader = document.createElement('div');
-    addHeader.className = 'oa-trello-add-header';
-    addHeader.innerHTML = '<button class="oa-trello-add-btn" type="button">＋ 添加自定义任务</button>';
-    const addInput = document.createElement('div');
-    addInput.className = 'oa-trello-add-input';
-    addInput.style.display = 'none';
-    addInput.innerHTML = '<input type="text" placeholder="输入自定义任务…" maxlength="200" /><button type="submit">添加</button>';
-    const formEl = addInput.querySelector('input');
-    const addSubmit = addInput.querySelector('button');
-    addSubmit.addEventListener('click', (e) => { e.preventDefault(); const val = formEl.value.trim(); if (!val) return; addCustomItem(val); formEl.value = ''; addInput.style.display = 'none'; addHeader.style.display = ''; });
-    formEl.addEventListener('keydown', (e) => { if (e.key === 'Escape') { formEl.value = ''; addInput.style.display = 'none'; addHeader.style.display = ''; } else if (e.key === 'Enter') { e.preventDefault(); addSubmit.click(); } });
-    addHeader.addEventListener('click', () => { addHeader.style.display = 'none'; addInput.style.display = 'flex'; formEl.focus(); });
-    col.appendChild(addHeader);
-    col.appendChild(addInput);
+    createAddTaskUI(col, (label) => addCustomItem(label));
     const empty = document.createElement('div');
     empty.className = 'oa-trello-empty';
     empty.textContent = '该日期没有工作任务安排';
@@ -249,31 +318,7 @@ function renderTasksTab(data) {
 
     /* Add custom task button (only in todo column) */
     if (col.key === 'todo') {
-      const addHeader = document.createElement('div');
-      addHeader.className = 'oa-trello-add-header';
-      addHeader.innerHTML = '<button class="oa-trello-add-btn" type="button">＋ 添加任务</button>';
-      const addInput = document.createElement('div');
-      addInput.className = 'oa-trello-add-input';
-      addInput.style.display = 'none';
-      addInput.innerHTML = '<input type="text" placeholder="输入自定义任务…" maxlength="200" /><button type="submit">添加</button>';
-      const formEl = addInput.querySelector('input');
-      const addSubmit = addInput.querySelector('button');
-      addSubmit.addEventListener('click', (e) => {
-        e.preventDefault();
-        const val = formEl.value.trim();
-        if (!val) return;
-        addCustomItem(val);
-        formEl.value = '';
-        addInput.style.display = 'none';
-        addHeader.style.display = '';
-      });
-      formEl.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { formEl.value = ''; addInput.style.display = 'none'; addHeader.style.display = ''; }
-        else if (e.key === 'Enter') { e.preventDefault(); addSubmit.click(); }
-      });
-      addHeader.addEventListener('click', () => { addHeader.style.display = 'none'; addInput.style.display = 'flex'; formEl.focus(); });
-      section.appendChild(addHeader);
-      section.appendChild(addInput);
+      createAddTaskUI(section, (label) => addCustomItem(label));
     }
 
     for (const item of items) {
@@ -416,6 +461,7 @@ function addCustomItem(label) {
   dashState.data.items.push(newItem);
   saveChecklist();
   renderActiveTabOnly();
+  showDashNotice('✅ 已添加：' + label, 'success');
 }
 
 /* ══════ Calendar ══════ */

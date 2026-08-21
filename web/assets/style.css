@@ -104,13 +104,33 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .oa-trello-note{width:100%;padding:6px 8px;border:1px solid var(--hairline);border-radius:var(--radius-sm);font-size:11px;font-family:var(--font-body);background:var(--bg);color:var(--body);resize:vertical;min-height:28px;outline:none;transition:border-color .2s}
 .oa-trello-note:focus{border-color:var(--jade)}
 .oa-trello-empty{text-align:center;padding:24px 0;color:var(--text-disabled);font-size:12px}
-.oa-trello-add-header{padding:6px 0}
-.oa-trello-add-btn{background:var(--primary-bg);border:2px dashed var(--hairline);border-radius:var(--radius-sm);padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;color:var(--jade);width:100%;text-align:left}
-.oa-trello-add-input{display:flex;gap:4px}
-.oa-trello-add-input input{flex:1;border:1px solid var(--hairline);border-radius:var(--radius-sm);padding:4px 8px;font-size:12px;font-family:var(--font-body);background:var(--bg);color:var(--body);outline:none}
-.oa-trello-add-input button{font-size:11px;padding:4px 10px;border:none;border-radius:var(--radius-sm);background:var(--jade);color:#fff;cursor:pointer;font-family:var(--font-body);font-weight:600}
-.oa-trello-add-input button:disabled{opacity:.4;cursor:default}
-.oa-trello-del-btn{font-size:11px;padding:4px 6px;line-height:1;opacity:.4}
+/* ── Add Task FAB ── */
+.oa-trello-add-fab{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:all .2s ease;user-select:none}
+.oa-trello-add-fab.hide{display:none}
+.oa-trello-add-icon{font-size:15px;font-weight:700;transition:transform .25s ease;color:var(--jade)}
+.oa-trello-add-fab:hover .oa-trello-add-icon{transform:rotate(45deg)}
+.oa-trello-add-label{font-size:11px;font-weight:600;color:var(--jade)}
+.oa-trello-add-fab:hover .oa-trello-add-label{text-decoration:underline;text-underline-offset:2px}
+
+/* ── Add Task Card (glassmorphism) ── */
+.oa-trello-add-card{background:var(--bg);border:1.5px solid var(--jade-light);border-radius:var(--radius-md);padding:12px;margin-top:6px;box-shadow:0 8px 32px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.25);display:none;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:fadeSlideDown .25s ease}
+.oa-trello-add-card.open{display:block}
+@keyframes fadeSlideDown{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.oa-trello-add-row{display:flex;gap:6px;align-items:center}
+.oa-trello-add-input-el{flex:1;border:1.5px solid var(--hairline);border-radius:var(--radius-sm);padding:7px 10px;font-size:12px;font-family:var(--font-body);background:var(--surface);color:var(--body);outline:none;transition:border-color .2s,box-shadow .2s}
+.oa-trello-add-input-el:focus{border-color:var(--jade);box-shadow:0 0 0 3px rgba(44,95,90,.12)}
+.oa-trello-add-input-el::placeholder{color:var(--muted)}
+.oa-trello-add-counter{font-size:10px;color:var(--muted);text-align:right;min-width:32px;font-variant-numeric:tabular-nums}
+.oa-trello-add-counter.warn{color:var(--terracotta)}
+.oa-trello-add-actions{display:flex;gap:6px;margin-top:8px}
+.oa-trello-add-confirm{padding:5px 14px;border:none;border-radius:var(--radius-sm);background:var(--jade);color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-body);transition:all .15s;letter-spacing:.02em}
+.oa-trello-add-confirm:hover{background:var(--jade-dark,#0a9e95);box-shadow:0 2px 8px rgba(44,95,90,.2)}
+.oa-trello-add-confirm:disabled{opacity:.3;cursor:default;box-shadow:none}
+.oa-trello-add-cancel{padding:5px 10px;border:1px solid var(--hairline);border-radius:var(--radius-sm);background:transparent;font-size:11px;cursor:pointer;color:var(--muted);font-family:var(--font-body);transition:all .15s}
+.oa-trello-add-cancel:hover{color:var(--terracotta);background:var(--terracotta-light);border-color:var(--terracotta)}
+
+/* ── Del button (custom items) ── */
+.oa-trello-del-btn{font-size:11px;padding:4px 6px;line-height:1;opacity:.35;transition:all .15s}
 .oa-trello-del-btn:hover{color:var(--terracotta);opacity:1}
 
 /* ── Summarize ── */
