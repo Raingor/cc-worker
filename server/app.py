@@ -2,9 +2,11 @@
 
 import json
 import os
+import re
 import tempfile
 from datetime import datetime
 from pathlib import Path
+from typing import List
 
 import requests
 from dotenv import load_dotenv
@@ -101,6 +103,41 @@ def build_system_prompt() -> str:
 
 def _verify_token() -> bool:
     return True
+
+
+def _safe_upload_stem(filename: str) -> str:
+    """Return a filesystem/ZIP-safe stem derived from an uploaded filename."""
+    stem = Path(filename).stem
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "_", stem).strip("._")
+    return safe or "document"
+
+
+def _parse_page_range(value: str, page_count: int) -> List[int]:
+    """Parse 1-based page ranges such as ``1-3,5,8-10``."""
+    raw = (value or "").strip()
+    if not raw:
+        return list(range(1, page_count + 1))
+
+    pages: List[int] = []
+    for part in re.split(r"[,，]", raw):
+        part = part.strip()
+        if not part:
+            continue
+        match = re.fullmatch(r"(\d+)\s*(?:[-–—~]\s*(\d+))?", part)
+        if not match:
+            raise ValueError(f"页码范围格式错误：{part}。示例：1-3,5,8-10")
+        start = int(match.group(1))
+        end = int(match.group(2) or start)
+        if start < 1 or end < 1 or start > end:
+            raise ValueError(f"页码范围无效：{part}")
+        if end > page_count:
+            raise ValueError(f"页码超出范围：{part}。PDF 共 {page_count} 页")
+        pages.extend(range(start, end + 1))
+
+    if not pages:
+        raise ValueError("请填写要分割的页码范围")
+    # Preserve the user-entered order while removing duplicates.
+    return list(dict.fromkeys(pages))
 
 
 def _client_messages(body: dict) -> list:
@@ -501,7 +538,7 @@ def pdf_to_excel():
 
 @APP.route("/v1/toolbox/pdf-split", methods=["POST", "OPTIONS"])
 def pdf_split():
-    """Upload a PDF, split into individual pages, return ZIP."""
+    """Upload a PDF and return all pages or a selected page range as a ZIP."""
     if request.method == "OPTIONS":
         return "", 204
     if not _verify_token():
@@ -523,40 +560,143 @@ def pdf_split():
         f.save(tmp_pdf.name)
         tmp_pdf.close()
 
-        import subprocess, zipfile
+        import shutil
+        import subprocess
+        import zipfile
         from io import BytesIO
+
+        pdfseparate_cmd = shutil.which("pdfseparate")
+        if not pdfseparate_cmd:
+            return jsonify({"error": {"message": "pdfseparate 未安装，暂时无法分割 PDF"}}), 503
 
         env = os.environ.copy()
         env["LANG"] = "en_US.UTF-8"
-        stem = Path(f.filename).stem
-        out_pattern = f"{tmp_dir}/{stem}_%d.pdf"
-        subprocess.run(["pdfseparate", tmp_pdf.name, out_pattern], check=True, capture_output=True, timeout=120, env=env)
 
-        page_files = sorted(Path(tmp_dir).glob(f"{stem}_*.pdf"))
-        if not page_files:
-            return jsonify({"error": {"message": "No pages found in PDF"}}), 400
+        # Read the page count before validating a user-supplied range.
+        pdfinfo_cmd = shutil.which("pdfinfo")
+        if not pdfinfo_cmd:
+            return jsonify({"error": {"message": "pdfinfo 未安装，暂时无法读取 PDF 页数"}}), 503
+        info = subprocess.run([pdfinfo_cmd, tmp_pdf.name], check=True, capture_output=True, timeout=30, env=env)
+        page_match = re.search(r"^Pages:\s+(\d+)", info.stdout.decode("utf-8", errors="replace"), re.MULTILINE)
+        if not page_match:
+            return jsonify({"error": {"message": "无法读取 PDF 页数"}}), 400
+        page_count = int(page_match.group(1))
+
+        try:
+            selected_pages = _parse_page_range(request.form.get("range", ""), page_count)
+        except ValueError as e:
+            return jsonify({"error": {"message": str(e), "type": "invalid_request_error"}}), 400
+
+        stem = _safe_upload_stem(f.filename)
+        out_pattern = f"{tmp_dir}/{stem}_%d.pdf"
+        command = [pdfseparate_cmd]
+        if request.form.get("range", "").strip():
+            command.extend(["-f", str(min(selected_pages)), "-l", str(max(selected_pages))])
+        command.extend([tmp_pdf.name, out_pattern])
+        subprocess.run(command, check=True, capture_output=True, timeout=120, env=env)
 
         buf = BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-            for i, pf in enumerate(page_files):
-                zf.write(pf, f"{stem}_第{i+1}页.pdf")
+            for page_number in selected_pages:
+                page_file = Path(tmp_dir) / f"{stem}_{page_number}.pdf"
+                if not page_file.is_file():
+                    return jsonify({"error": {"message": f"未生成第 {page_number} 页"}}), 500
+                zf.write(page_file, f"{stem}_第{page_number}页.pdf")
         buf.seek(0)
 
+        suffix = "split" if not request.form.get("range", "").strip() else "split_selected"
         return Response(
             buf.getvalue(),
             mimetype="application/zip",
             headers={
-                "Content-Disposition": f'attachment; filename="{stem}_split.zip"',
+                "Content-Disposition": f'attachment; filename="{stem}_{suffix}.zip"',
             },
         )
     except subprocess.CalledProcessError as e:
-        return jsonify({"error": {"message": f"PDF split failed: {e.stderr.decode()}"}}), 500
+        detail = e.stderr.decode("utf-8", errors="replace").strip()
+        return jsonify({"error": {"message": f"PDF split failed: {detail or e}"}}), 500
+    except subprocess.TimeoutExpired:
+        return jsonify({"error": {"message": "PDF 分割超时，请尝试较小的文件"}}), 504
     except Exception as e:
         return jsonify({"error": {"message": f"PDF split failed: {e}"}}), 500
     finally:
         Path(tmp_pdf.name).unlink(missing_ok=True)
         import shutil
         shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+@APP.route("/v1/toolbox/office-to-pdf", methods=["POST", "OPTIONS"])
+def office_to_pdf():
+    """Convert an Office document to PDF using LibreOffice in headless mode."""
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized", "type": "invalid_request_error"}}), 401
+
+    if "file" not in request.files:
+        return jsonify({"error": {"message": "No file provided", "type": "invalid_request_error"}}), 400
+    f = request.files["file"]
+    if not f.filename:
+        return jsonify({"error": {"message": "Empty filename", "type": "invalid_request_error"}}), 400
+
+    allowed_extensions = {".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp"}
+    ext = Path(f.filename).suffix.lower()
+    if ext not in allowed_extensions:
+        accepted = ", ".join(sorted(allowed_extensions))
+        return jsonify({"error": {"message": f"Unsupported file type: {ext}. Accepted: {accepted}"}}), 400
+
+    import shutil
+    office_cmd = shutil.which("soffice") or shutil.which("libreoffice")
+    if not office_cmd:
+        return jsonify({"error": {"message": "LibreOffice 未安装，暂时无法转换 Office 文件"}}), 503
+
+    tmp_file = tempfile.NamedTemporaryFile(suffix=ext, delete=False)
+    tmp_dir = tempfile.mkdtemp()
+    profile_dir = tempfile.mkdtemp()
+    try:
+        f.save(tmp_file.name)
+        tmp_file.close()
+
+        import subprocess
+        env = os.environ.copy()
+        env["HOME"] = tmp_dir
+        command = [
+            office_cmd,
+            f"-env:UserInstallation=file://{profile_dir}",
+            "--headless",
+            "--convert-to", "pdf",
+            "--outdir", tmp_dir,
+            tmp_file.name,
+        ]
+        result = subprocess.run(command, capture_output=True, timeout=120, env=env)
+        if result.returncode != 0:
+            detail = result.stderr.decode("utf-8", errors="replace").strip()
+            if not detail:
+                detail = result.stdout.decode("utf-8", errors="replace").strip()
+            return jsonify({"error": {"message": f"Office 转 PDF 失败：{detail or 'LibreOffice 返回错误'}"}}), 500
+
+        pdf_files = list(Path(tmp_dir).glob("*.pdf"))
+        if not pdf_files:
+            return jsonify({"error": {"message": "LibreOffice 未生成 PDF 文件"}}), 500
+
+        output_pdf = pdf_files[0]
+        with output_pdf.open("rb") as fh:
+            data = fh.read()
+        return Response(
+            data,
+            mimetype="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{_safe_upload_stem(f.filename)}.pdf"',
+            },
+        )
+    except subprocess.TimeoutExpired:
+        return jsonify({"error": {"message": "Office 转 PDF 超时，请尝试较小的文件"}}), 504
+    except Exception as e:
+        return jsonify({"error": {"message": f"Office 转 PDF 失败：{e}"}}), 500
+    finally:
+        Path(tmp_file.name).unlink(missing_ok=True)
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        shutil.rmtree(profile_dir, ignore_errors=True)
 
 
 @APP.route("/v1/toolbox/pdf-compress", methods=["POST", "OPTIONS"])

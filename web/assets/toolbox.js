@@ -282,7 +282,9 @@ function renderPdfSplit(container) {
     </div>
     <input type="file" id="ps-input" accept=".pdf" style="display:none">
     <div id="ps-file-info" style="display:none;margin-bottom:16px"></div>
-    <div id="ps-page-info" style="margin-bottom:16px"></div>
+    <div id="ps-page-info" style="margin-bottom:12px;color:var(--muted)"></div>
+    <label for="ps-range-input" style="display:block;margin-bottom:6px;font-size:13px;color:var(--muted)">分割范围（可选）</label>
+    <input id="ps-range-input" type="text" placeholder="例如：1-3,5,8-10；留空表示全部分割" style="width:100%;box-sizing:border-box;margin-bottom:16px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text)">
     <div class="tb-actions">
       <button class="tb-btn tb-btn-outline" id="ps-split-all-btn" disabled>全部分割</button>
       <button class="tb-btn tb-btn-primary" id="ps-split-range-btn" disabled>按范围分割</button>
@@ -295,28 +297,55 @@ function renderPdfSplit(container) {
   `;
 
   let selectedFile = null;
+  let pageCount = 0;
   const zone = document.getElementById('ps-zone');
   const input = document.getElementById('ps-input');
   const info = document.getElementById('ps-file-info');
   const pageInfo = document.getElementById('ps-page-info');
+  const rangeInput = document.getElementById('ps-range-input');
   const splitAllBtn = document.getElementById('ps-split-all-btn');
   const splitRangeBtn = document.getElementById('ps-split-range-btn');
   const progress = document.getElementById('ps-progress');
   const progressFill = document.getElementById('ps-progress-fill');
   const resultEl = document.getElementById('ps-result');
 
-  function selectFile(file) {
-    if (!file || file.type !== 'application/pdf') {
+  async function selectFile(file) {
+    if (!file || (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name))) {
       resultEl.className = 'tb-result error';
       resultEl.textContent = '请选择 PDF 文件';
       return;
     }
     selectedFile = file;
     info.style.display = 'block';
-    info.innerHTML = `<div class="tb-file-item"><span class="tb-file-icon">📄</span><span class="tb-file-name">${file.name}</span><span class="tb-file-size">${(file.size / 1024).toFixed(1)} KB</span></div>`;
-    splitAllBtn.disabled = false;
-    splitRangeBtn.disabled = false;
+    info.innerHTML = `<div class="tb-file-item"><span class="tb-file-icon">📄</span><span class="tb-file-name">${escapeHtml(file.name)}</span><span class="tb-file-size">${(file.size / 1024).toFixed(1)} KB</span></div>`;
+    splitAllBtn.disabled = true;
+    splitRangeBtn.disabled = true;
+    pageInfo.textContent = '正在读取页数…';
     resultEl.innerHTML = '';
+    try {
+      const { PDFDocument } = PDFLib;
+      const doc = await PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true });
+      pageCount = doc.getPageCount();
+      pageInfo.textContent = `共 ${pageCount} 页；范围格式：1-3,5,8-10`;
+      splitAllBtn.disabled = pageCount === 0;
+      splitRangeBtn.disabled = pageCount === 0;
+    } catch (e) {
+      pageCount = 0;
+      pageInfo.textContent = '无法读取 PDF 页数，请重新选择有效的 PDF 文件';
+      resultEl.className = 'tb-result error';
+      resultEl.textContent = 'PDF 读取失败：' + (e.message || '文件可能已损坏或受密码保护');
+    }
+  }
+
+  function showDownload(blob, filename, message) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    resultEl.className = 'tb-result success';
+    resultEl.textContent = message;
   }
 
   zone.addEventListener('click', () => input.click());
@@ -329,15 +358,20 @@ function renderPdfSplit(container) {
     if (e.dataTransfer.files[0]) selectFile(e.dataTransfer.files[0]);
   });
 
-  splitAllBtn.addEventListener('click', async () => {
-    if (!selectedFile) return;
+  async function splitPdf(range, button, filenameSuffix, label) {
+    if (!selectedFile || !pageCount) return;
+    const rawRange = (range || '').trim();
+    button.disabled = true;
     splitAllBtn.disabled = true;
-    splitAllBtn.textContent = '处理中…';
+    splitRangeBtn.disabled = true;
+    button.textContent = '处理中…';
     progress.style.display = 'block';
+    progressFill.style.width = '30%';
     resultEl.innerHTML = '';
 
     const fd = new FormData();
     fd.append('file', selectedFile);
+    if (rawRange) fd.append('range', rawRange);
     try {
       const res = await fetch(apiUrl('/v1/toolbox/pdf-split'), { method: 'POST', headers: apiHeaders(), body: fd });
       progressFill.style.width = '90%';
@@ -346,24 +380,31 @@ function renderPdfSplit(container) {
         throw new Error(err?.error?.message || `服务器错误 (${res.status})`);
       }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = selectedFile.name.replace(/\.pdf$/i, '_split.zip');
-      a.click();
-      URL.revokeObjectURL(url);
+      showDownload(blob, selectedFile.name.replace(/\.pdf$/i, `_${filenameSuffix}.zip`), label);
       progressFill.style.width = '100%';
-      resultEl.className = 'tb-result success';
-      resultEl.textContent = '分割完成，已开始下载';
     } catch (e) {
       resultEl.className = 'tb-result error';
       resultEl.textContent = e.message || '分割失败';
     } finally {
-      splitAllBtn.disabled = false;
-      splitAllBtn.textContent = '全部分割';
+      button.disabled = false;
+      button.textContent = button === splitAllBtn ? '全部分割' : '按范围分割';
+      splitAllBtn.disabled = !pageCount;
+      splitRangeBtn.disabled = !pageCount;
       progress.style.display = 'none';
       progressFill.style.width = '0';
     }
+  }
+
+  splitAllBtn.addEventListener('click', () => splitPdf('', splitAllBtn, 'split', '全部分割完成，已开始下载'));
+  splitRangeBtn.addEventListener('click', () => {
+    const rawRange = rangeInput.value.trim();
+    if (!rawRange) {
+      resultEl.className = 'tb-result error';
+      resultEl.textContent = '请填写页码范围，例如：1-3,5';
+      rangeInput.focus();
+      return;
+    }
+    splitPdf(rawRange, splitRangeBtn, 'split_selected', '按范围分割完成，已开始下载');
   });
 }
 
@@ -611,13 +652,92 @@ function renderImageCompress(container) {
 /* ── Office to PDF (Server-side) ── */
 function renderOfficeToPdf(container) {
   container.innerHTML = `
-    <div style="padding:20px;text-align:center">
+    <div class="tb-upload-zone" id="otp-zone">
       <div class="tb-upload-icon">📊</div>
-      <div class="tb-upload-text" style="font-weight:500">Excel/Word → PDF</div>
-      <div class="tb-upload-hint" style="margin:12px 0">支持 .xlsx、.docx 格式</div>
-      <div class="tb-result error" style="margin-top:16px">此功能需要后端支持，尚未实现</div>
+      <div class="tb-upload-text">点击选择或拖拽 Office 文件</div>
+      <div class="tb-upload-hint">支持 Word、Excel、PowerPoint（.doc/.docx/.xls/.xlsx/.ppt/.pptx）</div>
     </div>
+    <input type="file" id="otp-input" accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp" style="display:none">
+    <div id="otp-file-info" style="display:none;margin-bottom:16px"></div>
+    <div class="tb-actions">
+      <button class="tb-btn tb-btn-primary" id="otp-btn" disabled>转换为 PDF</button>
+    </div>
+    <div id="otp-progress" class="tb-progress" style="display:none">
+      <span>正在转换…</span>
+      <div class="tb-progress-bar"><div class="tb-progress-fill" id="otp-progress-fill"></div></div>
+    </div>
+    <div id="otp-result"></div>
   `;
+
+  let selectedFile = null;
+  const zone = document.getElementById('otp-zone');
+  const input = document.getElementById('otp-input');
+  const info = document.getElementById('otp-file-info');
+  const btn = document.getElementById('otp-btn');
+  const progress = document.getElementById('otp-progress');
+  const progressFill = document.getElementById('otp-progress-fill');
+  const resultEl = document.getElementById('otp-result');
+  const allowed = /\.(doc|docx|xls|xlsx|ppt|pptx|odt|ods|odp)$/i;
+
+  function selectFile(file) {
+    if (!file || !allowed.test(file.name)) {
+      resultEl.className = 'tb-result error';
+      resultEl.textContent = '请选择 Word、Excel 或 PowerPoint 文件';
+      return;
+    }
+    selectedFile = file;
+    info.style.display = 'block';
+    info.innerHTML = '<div class="tb-file-item"><span class="tb-file-icon">📊</span><span class="tb-file-name">' + escapeHtml(file.name) + '</span><span class="tb-file-size">' + (file.size / 1024).toFixed(1) + ' KB</span></div>';
+    btn.disabled = false;
+    resultEl.innerHTML = '';
+  }
+
+  zone.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => { if (input.files[0]) selectFile(input.files[0]); });
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) selectFile(e.dataTransfer.files[0]);
+  });
+
+  btn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    btn.disabled = true;
+    btn.textContent = '转换中…';
+    progress.style.display = 'block';
+    progressFill.style.width = '30%';
+    resultEl.innerHTML = '';
+    const fd = new FormData();
+    fd.append('file', selectedFile);
+    try {
+      const res = await fetch(apiUrl('/v1/toolbox/office-to-pdf'), { method: 'POST', headers: apiHeaders(), body: fd });
+      progressFill.style.width = '90%';
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `服务器错误 (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = selectedFile.name.replace(/\.[^.]+$/, '.pdf');
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      progressFill.style.width = '100%';
+      resultEl.className = 'tb-result success';
+      resultEl.textContent = '转换完成，已开始下载';
+    } catch (e) {
+      resultEl.className = 'tb-result error';
+      resultEl.textContent = e.message || '转换失败';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '转换为 PDF';
+      progress.style.display = 'none';
+      progressFill.style.width = '0';
+    }
+  });
 }
 
 /* ── PDF Compress (Server-side) ── */

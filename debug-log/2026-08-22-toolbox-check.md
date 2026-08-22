@@ -66,3 +66,38 @@
 - 线上 HTML 已确认包含：`<script src="assets/toolbox.js?v=9"></script>`。
 - 线上浏览器验证通过：点击“工具箱”后，PDF→Excel、PDF合并、PDF分割、图片转换、图片压缩、Office→PDF、PDF压缩、OCR识别、表格提取 9 个入口均出现，默认 PDF→Excel 上传界面正常渲染。
 - 本次修复只解决线上入口脚本缺失问题；Office→PDF 和 PDF 分割“按范围分割”仍保持未实现状态。
+
+## 2026-08-22：修复 PDF 按范围分割与 Office→PDF
+
+### 修改内容
+- `web/assets/toolbox.js`
+  - PDF 分割新增页码范围输入框，支持 `1-3,5,8-10` 和中文逗号。
+  - 选择 PDF 后用 `pdf-lib` 读取页数并显示页数提示。
+  - “按范围分割”绑定真实事件，向 `/v1/toolbox/pdf-split` 提交 `range` 字段。
+  - 保留“全部分割”行为；下载文件名区分全部分割和范围分割。
+  - Office→PDF 从占位提示改为真实上传、转换、下载界面，调用 `/v1/toolbox/office-to-pdf`。
+- `server/app.py`
+  - `/v1/toolbox/pdf-split` 支持 `range` 参数，使用 `pdfinfo` 读取页数、`pdfseparate -f/-l` 生成所需页，再按用户顺序打包 ZIP。
+  - 新增 `/v1/toolbox/office-to-pdf`，使用 LibreOffice/soffice headless 转换 doc/docx/xls/xlsx/ppt/pptx 及 OpenDocument 文件。
+  - 增加上传文件名清理和页码范围校验，错误返回 400/503/504。
+- `scripts/setup-server-remote.sh`
+  - 部署时自动检查并安装 LibreOffice；检查 `pdfseparate` 是否存在。
+- `scripts/deploy-api.sh`
+  - 增加 `.venv/`、`.venv-test/` 排除，避免 rsync --delete 误处理本地测试虚拟环境。
+- `web/index.html`
+  - `toolbox.js` cache bust 从 v9 更新为 v10。
+
+### 验证
+- 本地 `node --check web/assets/toolbox.js`：通过。
+- 本地 `python3 -m py_compile server/app.py`：通过。
+- Flask 测试客户端：新路由 OPTIONS=204、无文件=400、非法 Office 扩展名=400。
+- 远程服务器安装 LibreOffice 5.3.6.1，确认 `/usr/bin/soffice`、`pdfinfo`、`pdfseparate` 存在；Python 3.8 venv 已有 pypdfium2。
+- 远程 API `/health`：200。
+- 远程真实 PDF（5 页）范围 `2-3,5`：HTTP 200，ZIP 包含第 2、3、5 页。
+- 远程真实 PDF 范围 `5,2-3,3`：HTTP 200，ZIP 按第 5、2、3 页输出并去重。
+- 远程真实 XLSX：Office→PDF HTTP 200，返回 PDF 文件。
+- 远程非法页码范围 `2-9`（5 页 PDF）：HTTP 400，返回页码超出范围。
+
+### 部署注意
+- API 后端已通过 SSH 同步并重启 uWSGI，远程真实文件测试已通过。
+- Web 前端需要随本次 Git 提交推送后由 GitHub Actions 部署；部署后需验证线上 `toolbox.js?v=10` 和两个新界面。

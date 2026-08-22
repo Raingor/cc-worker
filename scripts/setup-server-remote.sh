@@ -25,6 +25,23 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
+# Office→PDF uses LibreOffice headless. Install it only when the server does not
+# already provide soffice/libreoffice. Keep this outside the Python venv because
+# it is a system binary used by server/app.py.
+if ! command -v soffice >/dev/null 2>&1 && ! command -v libreoffice >/dev/null 2>&1; then
+  echo "==> Install LibreOffice headless for Office→PDF"
+  yum install -y libreoffice
+fi
+
+if ! command -v soffice >/dev/null 2>&1 && ! command -v libreoffice >/dev/null 2>&1; then
+  echo "ERROR: LibreOffice installation completed but no soffice/libreoffice binary was found"
+  exit 1
+fi
+
+if ! command -v pdfseparate >/dev/null 2>&1; then
+  echo "WARNING: pdfseparate is not installed; PDF splitting endpoints will return 503"
+fi
+
 if [ ! -d venv ]; then
   python3 -m venv venv
 fi

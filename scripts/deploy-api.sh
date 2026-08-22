@@ -13,6 +13,8 @@ echo "==> Rsync server files"
 rsync -avz --delete \
   --exclude '.env' \
   --exclude 'venv/' \
+  --exclude '.venv/' \
+  --exclude '.venv-test/' \
   --exclude '__pycache__/' \
   --exclude 'data/' \
   --exclude 'uwsgi.pid' \
