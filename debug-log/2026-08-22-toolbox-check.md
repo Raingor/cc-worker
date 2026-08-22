@@ -59,3 +59,10 @@
 - 2026-08-22：将 `web/index.html` 中 `assets/toolbox.js` 的缓存版本从 `v=8` 更新为 `v=9`。
 - 该提交用于触发 GitHub Actions 的 GitHub Pages 部署，使线上入口重新发布并加载工具箱脚本。
 - 部署完成后需要验证线上 HTML 包含 `assets/toolbox.js?v=9`，并通过浏览器切换 9 个工具入口确认界面渲染。
+
+## 部署验证
+- 修复提交：`07ffbd9 fix: republish toolbox script on GitHub Pages`。
+- 已推送到 `origin/main`，GitHub Actions workflow run `32583917796` 返回 `completed/success`。
+- 线上 HTML 已确认包含：`<script src="assets/toolbox.js?v=9"></script>`。
+- 线上浏览器验证通过：点击“工具箱”后，PDF→Excel、PDF合并、PDF分割、图片转换、图片压缩、Office→PDF、PDF压缩、OCR识别、表格提取 9 个入口均出现，默认 PDF→Excel 上传界面正常渲染。
+- 本次修复只解决线上入口脚本缺失问题；Office→PDF 和 PDF 分割“按范围分割”仍保持未实现状态。
