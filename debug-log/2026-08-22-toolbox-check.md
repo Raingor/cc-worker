@@ -101,3 +101,12 @@
 ### 部署注意
 - API 后端已通过 SSH 同步并重启 uWSGI，远程真实文件测试已通过。
 - Web 前端需要随本次 Git 提交推送后由 GitHub Actions 部署；部署后需验证线上 `toolbox.js?v=10` 和两个新界面。
+
+### 最终线上验证
+- 修复提交：`365558a feat: implement PDF range split and Office to PDF`，已推送 `origin/main`。
+- GitHub Pages 已发布 `assets/toolbox.js?v=10`，线上资源 HTTP 200，线上与本地脚本 SHA-1 一致。
+- 浏览器线上验证：
+  - PDF 分割页面显示范围输入框、全部分割和按范围分割按钮。
+  - Office→PDF 页面显示 Office 文件上传区和“转换为 PDF”按钮。
+  - 页面脚本及工具依赖均 HTTP 200，控制台无工具箱 JavaScript 错误。
+- Office 测试生成的 PDF 为 1 页有效 PDF，能够提取英文、中文和数字内容。
