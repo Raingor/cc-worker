@@ -263,16 +263,24 @@
     document.addEventListener('click', function (e) {
       if (getLayout() !== 'mac') return;
 
-      // Toggle nav-group dropdown on nav-item click
-      var item = e.target.closest('.nav-item');
-      if (item) {
-        var group = item.closest('.nav-group');
+      // Only the chevron toggles a submenu. Clicking the label/icon is reserved
+      // for switching workspace, so a dropdown never opens unexpectedly.
+      var chevron = e.target.closest('.nav-chevron');
+      if (chevron) {
+        var item = chevron.closest('.nav-item');
+        var group = item && item.closest('.nav-group');
         if (!group) return;
         var wasOpen = group.classList.contains('open');
-        // Close all
         document.querySelectorAll('.nav-group').forEach(function (g) { g.classList.remove('open'); });
         if (!wasOpen) group.classList.add('open');
-        e.stopPropagation();
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
+
+      // A main menu click switches workspace through app.js and keeps menus closed.
+      if (e.target.closest('.nav-item')) {
+        document.querySelectorAll('.nav-group').forEach(function (g) { g.classList.remove('open'); });
         return;
       }
 

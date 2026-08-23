@@ -130,16 +130,12 @@ function initAnalysis() {
 }
 
 function bindUi() {
-  document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => {
-    const group = n.closest('.nav-group');
-    const isOpen = group?.classList.contains('open');
+  document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', e => {
+    // Desktop mode separates the two intentions:
+    // label/icon switches workspace; the small chevron only opens its submenu.
+    if (document.documentElement.getAttribute('data-layout') === 'mac' && e.target.closest('.nav-chevron')) return;
     document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'));
-    if (!isOpen) {
-      switchPanel(n.dataset.panel);
-    } else {
-      // clicking same already-open item — just switch panel
-      switchPanel(n.dataset.panel);
-    }
+    switchPanel(n.dataset.panel);
   }));
   document.querySelectorAll('.nav-sub').forEach(s => {
     s.addEventListener('click', () => {

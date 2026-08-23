@@ -1132,3 +1132,21 @@
     transform: translateY(-.5px);
   }
 }
+
+/* The chevron is the explicit submenu trigger in desktop mode. */
+@media (min-width: 769px) {
+  html[data-layout="mac"] .nav-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 24px;
+    margin-right: -5px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  html[data-layout="mac"] .nav-chevron:hover {
+    background: color-mix(in srgb, var(--jade) 14%, transparent);
+    opacity: 1;
+  }
+}
