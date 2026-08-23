@@ -1119,3 +1119,16 @@
     left: auto !important;
   }
 }
+
+/* Header glyph alignment: inherited 36px line-height pushed symbols below their tiles. */
+@media (min-width: 769px) {
+  html[data-layout="mac"] .nav-item::before {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0 0 1px;
+    transform: translateY(-.5px);
+  }
+}
