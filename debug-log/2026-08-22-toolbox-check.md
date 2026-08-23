@@ -174,3 +174,13 @@
   - 扩大箭头点击区域并增加 hover 反馈，使展开入口更明确。
 - 本地验证：点击“工具箱”文字后 `panel-toolbox` 激活且 `open=false`；点击箭头后 `open=true`，再次点击后关闭。
 - 缓存版本：`app.js?v=10`、`layout-switcher.js?v=13`、`mac-layout.css?v=10`。
+
+## 2026-08-23：移除非 JokeBear 动图
+- 用户要求：项目中只保留 JokeBear 系列动态图。
+- 处理范围：`web/assets/bear-corner.js` 主动态图池、`web/assets/dashboard.js` 回退动态图池、`web/index.html` 锁屏图、旧版 `origin-html.html` 预览图及对应 CSP。
+- 移除内容：来源不明确的 Aigei 动图、通用 bear/非 JokeBear 文件名动图、旧版锁屏中的非白名单动态图。
+- 保留规则：仅保留文件名属于 `joke-bear`、`jokebear`、`nongdamgom`、`yenkim`、`ivory`、`nagano` 系列的 JokeBear 家族动态图。
+- 当前 `BEAR_GIFS` 从 75 个收敛为 45 个；所有现存 GIF URL 均通过 JokeBear 家族文件名白名单检查。
+- 回退池也只保留 JokeBear 动图，避免 `BEAR_GIFS` 缺失时重新加载非白名单资源。
+- 移除 `https://s1.aigei.com` 图片域名授权；锁屏图和旧版预览统一改为 `media.tenor.com` 的 JokeBear 资源。
+- 语法验证：`node --check web/assets/bear-corner.js`、`node --check web/assets/dashboard.js`、`git diff --check` 通过。

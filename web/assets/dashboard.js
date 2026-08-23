@@ -151,11 +151,9 @@ function randomBearImg(size, round) {
   return '<img class="bear-img" src="' + src + '" alt="" style="width:' + s + 'px;height:' + s + 'px;border-radius:' + r + 'px;object-fit:cover;display:block">';
 }
 var FALLBACK_BEARS = [
-  "https://media.tenor.com/IIWFOaA_TfoAAAAj/joke-bear.gif",
-  "https://media.tenor.com/5nzLdhWL7GoAAAAj/sad-bear-joke-bear-sad.gif",
-  "https://media.tenor.com/N-rSTqzfCOEAAAAj/bear-so-cute-funny-point-flower-so-cute.gif",
-  "https://media.tenor.com/pjH4YkUVZTcAAAAj/joke-bear.gif",
-  "https://media.tenor.com/m33QT3rELicAAAAj/joke-bear.gif"
+  "https://media.tenor.com/4bMDX6ox1JgAAAAj/joke-bear-jokebear.gif",
+  "https://media.tenor.com/eJcxJf7gjkYAAAAj/joke-bear-jokebear.gif",
+  "https://media.tenor.com/MiVO5ntD6JEAAAAM/jokebear.gif"
 ];
 
 function renderGreeting(data) {
