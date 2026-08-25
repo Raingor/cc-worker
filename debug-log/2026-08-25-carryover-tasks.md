@@ -53,3 +53,35 @@
 - 后端：`REMOTE_HOST=cc-worker bash scripts/deploy-api.sh`（rsync + 重启 uwsgi，注意 pkill 后 sleep 释放端口）。
 - 前端：推 main → GitHub Actions 自动发布。
 - （部署待用户确认后执行。）
+
+---
+
+## 部署记录（2026-08-25 实际执行）
+
+### 1. push 前 rebase 冲突
+本地 commit 后 `git push` 被拒——远端 `origin/main` 已被别人推了 9 个提交（桌面模式重构 + 工具箱 PDF range split / Office→PDF）。
+`git rebase origin/main` 在 `web/index.html` 冲突：双方都改了资产版本号。
+手动解决，取并集：`style.css?v=10` + `mac-layout.css?v=10`（远端桌面模式）+ 保留 `dashboard.js?v=10` 与远端新增的 `toolbox.js?v=10`。
+`dashboard.js` 自动合并成功（结转代码与远端改动不重叠）。rebase 后重新验证结转逻辑仍通过，push 成功。
+
+### 2. deploy 卡在 yum 装 LibreOffice
+`deploy-api.sh` → `setup-server-remote.sh` 里那批工具箱提交新增了 `yum install -y libreoffice`（Office→PDF 依赖，与本次结转无关）。首次安装体积大、耗时长，命令跑了 5+ 分钟没结束。
+代码此时已 rsync 到服务器（`/health` 仍 ok，跑的是旧进程）。按用户决定：停掉部署任务，只重启 uwsgi 让新代码生效，跳过 LibreOffice。
+
+### 3. uwsgi 重启踩坑：nohup 后台起不来
+坑：`ssh cc-worker 'nohup ./venv/bin/uwsgi --ini uwsgi.ini &'` 这类后台方式，SSH 一断开进程就没真正监听 5001（`curl 127.0.0.1:5001/health` 一直 Connection refused），`setsid` / `disown` 也无效——uWSGI 需要正确 daemon 化才能脱离 SSH 会话存活。
+解决：改用 uWSGI 原生守护参数：
+```bash
+ssh cc-worker 'cd /home/www/html/cc-worker-api && pkill -9 -f "venv/bin/uwsgi"; sleep 2; \
+  ./venv/bin/uwsgi --ini uwsgi.ini --daemonize uwsgi.log --pidfile uwsgi.pid'
+```
+起来后 4 进程（master + 2 worker + http），`/health` 返回 ok。
+
+### 4. 生产验证
+`GET https://api.sz-hrhb.com/v1/checklist?date=<今天>`：今天(周二)模板正常，返回 4 条 `is_carried` 项、`carried_from=2026-08-24`（如「CFC 出运资料版本锁定确认」），与今天模板同名项已按 label 去重。前端 GitHub Pages 已发布，强刷即见「📌 昨日未完成」分组。
+
+### 教训 / 遗留
+- **手动重启 uwsgi 必须用 `--daemonize`**，不能靠 nohup/setsid；这条已是本项目第 N 次踩 uwsgi 进程管理的坑（见 2026-06-09 / 2026-08-05 / 2026-08-12）。
+- `setup-server-remote.sh` 的 `yum install libreoffice` 会拖慢每次全新部署；已有 `command -v` 判断（装过就跳过），本次是该服务器首次装才卡。若该机不需要 Office→PDF 可考虑移除该步。
+- 部署脚本 rsync 与重启是两段：即使重启段失败，代码也已上传，可单独重启补救。
+
