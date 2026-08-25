@@ -1,0 +1,1152 @@
+/* ══════════════════════════════════════════════
+   CC 工作台 — macOS Desktop Layout
+   顶部菜单栏 + 浮动窗口 + 底部 Dock
+   ══════════════════════════════════════════════ */
+
+/* ── Shell: column layout ── */
+[data-layout="mac"] #app-screen {
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── Menu Bar (repurposed nav-bar) ── */
+[data-layout="mac"] .nav-bar {
+  min-width: unset;
+  width: 100%;
+  height: 30px;
+  flex-direction: row;
+  align-items: center;
+  border-right: none;
+  border-bottom: 1px solid var(--hairline);
+  padding: 0 14px;
+  gap: 2px;
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  z-index: 100;
+  flex-shrink: 0;
+  overflow: visible;
+}
+[data-layout="mac"] .nav-brand {
+  padding: 0 10px 0 0;
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+  border-bottom: none;
+  line-height: 30px;
+  flex-shrink: 0;
+}
+[data-layout="mac"] .nav-items {
+  flex-direction: row;
+  padding: 0;
+  gap: 0;
+  align-items: center;
+  flex: 1;
+  overflow: visible;
+}
+[data-layout="mac"] .nav-group {
+  position: relative;
+}
+[data-layout="mac"] .nav-item {
+  padding: 0 10px;
+  font-size: 13px;
+  line-height: 30px;
+  height: 30px;
+  border-radius: 4px;
+  gap: 4px;
+  letter-spacing: 0;
+}
+[data-layout="mac"] .nav-item::before { display: none; }
+[data-layout="mac"] .nav-item:hover {
+  background: color-mix(in srgb, var(--jade) 12%, transparent);
+  color: var(--ink);
+}
+[data-layout="mac"] .nav-item.active {
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600;
+}
+[data-layout="mac"] .nav-chevron {
+  font-size: 8px;
+  transition: transform .15s;
+}
+[data-layout="mac"] .nav-group.open .nav-chevron {
+  transform: rotate(180deg);
+}
+/* Dropdown: horizontal flyout below menu item */
+[data-layout="mac"] .nav-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  padding: 4px 0;
+  margin-left: 0;
+  border-left: none;
+  min-width: 160px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+}
+[data-layout="mac"] .nav-group.open .nav-dropdown {
+  display: block;
+  animation: fadeSlide .15s ease;
+}
+[data-layout="mac"] .nav-sub {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: 4px;
+  margin: 0 4px;
+  width: calc(100% - 8px);
+}
+[data-layout="mac"] .nav-sub:hover {
+  background: var(--jade);
+  color: #fff;
+}
+[data-layout="mac"] .nav-sub.active {
+  color: var(--jade);
+  font-weight: 600;
+  background: transparent;
+}
+/* Lock button is positioned in the refined desktop command bar below. */
+
+/* ── Desktop (app-main) ── */
+[data-layout="mac"] .app-main {
+  flex: 1;
+  padding: 16px;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 25% 25%, color-mix(in srgb, var(--jade) 8%, var(--bg)), transparent 55%),
+    radial-gradient(ellipse at 75% 75%, color-mix(in srgb, var(--terracotta) 5%, var(--bg)), transparent 55%),
+    var(--bg);
+}
+
+/* ── Window Panels ── */
+[data-layout="mac"] .panel {
+  position: absolute;
+  inset: 12px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  max-width: 1200px;
+  max-height: 85vh;
+  width: 100%;
+  /* Centered within desktop */
+  margin: auto;
+  top: 12px; bottom: 12px; left: 12px; right: 12px;
+}
+[data-layout="mac"] .panel.active {
+  display: flex;
+  animation: macWindowIn .25s ease;
+}
+@keyframes macWindowIn {
+  from { opacity: 0; transform: scale(.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Wallpaper Button (top-right of desktop) ── */
+#wallpaper-btn {
+  position: fixed;
+  top: 40px; right: 24px;
+  z-index: 99;
+}
+.wallpaper-toggle {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition: all .2s;
+  color: var(--muted);
+  line-height: 1;
+  font-weight: 500;
+  font-family: var(--font-body);
+}
+.wallpaper-toggle:hover {
+  border-color: var(--jade);
+  color: var(--jade);
+  box-shadow: var(--shadow-md);
+  transform: scale(1.1);
+}
+.wallpaper-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  min-width: 120px;
+  display: none;
+  z-index: 200;
+  overflow: hidden;
+}
+.wallpaper-menu.open { display: block; animation: fadeSlide .15s ease; }
+.wallpaper-menu-item {
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--body);
+  transition: background .12s;
+  font-family: var(--font-body);
+  white-space: nowrap;
+}
+.wallpaper-menu-item:hover {
+  background: var(--jade);
+  color: #fff;
+}
+
+/* Window title bar via ::before on panel-body */
+[data-layout="mac"] .panel-body {
+  padding-top: 48px;
+  border-radius: var(--radius-lg);
+}
+[data-layout="mac"] .panel-body::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 38px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--surface) 96%, transparent),
+    color-mix(in srgb, var(--bg) 90%, transparent)
+  );
+  border-bottom: 1px solid var(--hairline);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Traffic lights on the panel itself */
+[data-layout="mac"] .panel::after {
+  content: "";
+  position: absolute;
+  top: 14px; left: 14px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: #ff5f57;
+  box-shadow:
+    20px 0 0 #febc2e,
+    40px 0 0 #28c840;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* ── Dock (above panels) ── */
+.mac-dock {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 6px 14px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 500;
+}
+.mac-dock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1);
+  position: relative;
+}
+.mac-dock-item:hover {
+  transform: translateY(-10px) scale(1.18);
+}
+.mac-dock-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  transition: all .2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+  position: relative;
+}
+.mac-dock-icon.active::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.mac-dock-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  font-family: var(--font-body);
+  opacity: 0;
+  transition: opacity .15s;
+  position: absolute;
+  top: -22px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+}
+.mac-dock-item:hover .mac-dock-label {
+  opacity: 1;
+}
+
+/* ── Layout Switcher (bottom-left) ── */
+#layout-switcher {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 999;
+}
+.layout-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all .2s;
+  font-family: var(--font-body);
+}
+.layout-toggle:hover {
+  border-color: var(--jade);
+  color: var(--jade);
+  box-shadow: var(--shadow-md);
+}
+.layout-toggle-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* ── In Mac mode, move theme switcher above dock ── */
+[data-layout="mac"] #theme-switcher-wrap {
+  position: fixed;
+  bottom: 80px;
+  left: 16px;
+  z-index: 999;
+  margin: 0;
+}
+[data-layout="mac"] #theme-switcher {
+  margin: 0;
+}
+
+/* ── Mac scrollbar ── */
+[data-layout="mac"] .panel-body::-webkit-scrollbar { width: 8px; }
+[data-layout="mac"] .panel-body::-webkit-scrollbar-track { background: transparent; }
+[data-layout="mac"] .panel-body::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--charcoal) 60%, transparent);
+  border-radius: 4px;
+}
+
+/* ── Responsive: Mac layout on tablets & phones ── */
+@media (max-width: 768px) {
+  [data-layout="mac"] .nav-bar { height: 36px; padding: 0 8px; }
+  [data-layout="mac"] .nav-brand { font-size: 13px; padding-right: 8px; }
+  [data-layout="mac"] .nav-item { font-size: 11px; padding: 0 7px; line-height: 36px; height: 36px; }
+  [data-layout="mac"] .nav-chevron { display: none; }
+  [data-layout="mac"] .nav-dropdown { min-width: 130px; }
+  [data-layout="mac"] .nav-sub { font-size: 12px; padding: 5px 10px; }
+  [data-layout="mac"] .panel { inset: 6px; border-radius: var(--radius-md); }
+  [data-layout="mac"] .panel-body { padding: 42px 14px 14px; }
+  [data-layout="mac"] .panel-body::before { height: 32px; }
+  [data-layout="mac"] .panel::after { top: 10px; left: 10px; width: 10px; height: 10px; box-shadow: 16px 0 0 #febc2e, 32px 0 0 #28c840; }
+  [data-layout="mac"] .mac-dock {
+    bottom: 8px; padding: 4px 10px; gap: 4px;
+    border-radius: var(--radius-md);
+  }
+  [data-layout="mac"] .mac-dock-icon { width: 40px; height: 40px; font-size: 18px; border-radius: 10px; }
+  [data-layout="mac"] .mac-dock-label { display: none; }
+  [data-layout="mac"] .app-main { padding: 8px; }
+  #layout-switcher { bottom: 10px; left: 10px; }
+  #wallpaper-btn { top: 46px; right: 10px; }
+  .wallpaper-toggle { padding: 4px 10px; font-size: 11px; }
+
+  /* Compact content inside mac panels */
+  [data-layout="mac"] .oa-task-grid { grid-template-columns: 1fr 1fr !important; }
+  [data-layout="mac"] .oa-greeting { padding: 18px 20px; gap: 14px; }
+  [data-layout="mac"] .oa-greeting-title { font-size: 17px; }
+  [data-layout="mac"] .analysis-btn { padding: 12px 28px; font-size: 14px; }
+  [data-layout="mac"] .board-wrap,
+  [data-layout="mac"] .memo-wrap,
+  [data-layout="mac"] .analysis-wrap { max-width: 100%; }
+  [data-layout="mac"] .memo-modal-content { width: 92%; max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  [data-layout="mac"] .nav-bar { height: 32px; padding: 0 4px; gap: 0; }
+  [data-layout="mac"] .nav-brand { font-size: 12px; padding-right: 4px; }
+  [data-layout="mac"] .nav-item { font-size: 10px; padding: 0 5px; line-height: 32px; height: 32px; }
+  [data-layout="mac"] .nav-dropdown { min-width: 110px; }
+  [data-layout="mac"] .panel { inset: 4px; border-radius: var(--radius-sm); }
+  [data-layout="mac"] .panel-body { padding: 36px 10px 10px; }
+  [data-layout="mac"] .panel-body::before { height: 28px; }
+  [data-layout="mac"] .panel::after { top: 8px; left: 8px; width: 8px; height: 8px; box-shadow: 13px 0 0 #febc2e, 26px 0 0 #28c840; }
+  [data-layout="mac"] .app-main { padding: 4px; }
+  [data-layout="mac"] .mac-dock-icon { width: 34px; height: 34px; font-size: 15px; border-radius: 8px; }
+  [data-layout="mac"] .mac-dock { bottom: 4px; padding: 3px 6px; gap: 2px; }
+  [data-layout="mac"] .oa-task-grid { grid-template-columns: 1fr !important; }
+  [data-layout="mac"] .oa-history-list { grid-template-columns: 1fr !important; }
+  [data-layout="mac"] .analysis-btn { padding: 10px 20px; font-size: 13px; }
+  [data-layout="mac"] .analysis-title { font-size: 18px; }
+
+  /* Hide layout switcher & wallpaper btn on tiny screens */
+  #layout-switcher { display: none; }
+  #wallpaper-btn { display: none !important; }
+}
+
+/* Fix mobile sidebar not opening under Mac layout */
+@media(max-width:767px){
+  /* Mac mode also gets the mobile hamburger */
+  [data-layout="mac"] #mobile-menu-btn { display: flex; top: 6px; left: 8px; width: 30px; height: 30px; font-size: 15px; z-index: 1001; }
+  [data-layout="mac"] .nav-overlay { display: block; z-index: 400; }
+  [data-layout="mac"] body.sidebar-open .nav-bar {
+    position: fixed !important;
+    top: 0; left: 0; bottom: 0;
+    width: 75vw; max-width: 280px;
+    transform: translateX(-105%);
+    transition: transform .3s cubic-bezier(.22,1,.36,1);
+    background: var(--surface);
+    border-right: 1px solid var(--hairline);
+    box-shadow: var(--shadow-lg);
+    z-index: 1002;
+    overflow-y: auto;
+    flex-direction: column !important;
+    height: 100% !important;
+    padding: 0 !important;
+  }
+  [data-layout="mac"] body.sidebar-open .nav-bar {
+    transform: translateX(0);
+  }
+  [data-layout="mac"] body.sidebar-open .nav-bar .nav-brand {
+    padding: 20px 16px 16px !important;
+    font-size: 18px !important;
+    border-bottom: 1px solid var(--hairline);
+    display: block !important;
+  }
+  [data-layout="mac"] body.sidebar-open .nav-bar .nav-items {
+    flex-direction: column !important;
+    padding: 12px !important;
+    gap: 2px;
+  }
+  [data-layout="mac"] body.sidebar-open .nav-bar .nav-item {
+    padding: 10px 14px !important;
+    height: auto !important;
+    line-height: 1.4 !important;
+    font-size: 14px !important;
+    border-radius: 6px;
+  }
+  [data-layout="mac"] body.sidebar-open .nav-bar .nav-chevron { display: inline !important; }
+  [data-layout="mac"] body.sidebar-open .nav-bar .nav-dropdown {
+    position: static !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 4px 0 4px 12px !important;
+    min-width: auto !important;
+  }
+  [data-layout="mac"] body.sidebar-open .nav-bar .nav-lock { display: flex !important; }
+}
+
+/* ══════════════════════════════════════════════
+   Desktop refinement v3 — Calm Operations Desk
+   更清晰的层级、更大的有效工作区、更安静的辅助元素
+   ══════════════════════════════════════════════ */
+@media (min-width: 769px) {
+  [data-layout="mac"] {
+    --mac-bar: color-mix(in srgb, var(--surface) 88%, rgba(255,255,255,.72));
+    --mac-window: color-mix(in srgb, var(--surface) 91%, #fff 9%);
+    --mac-canvas: color-mix(in srgb, var(--bg) 88%, #dff5ef 12%);
+    --mac-border: color-mix(in srgb, var(--border) 72%, rgba(255,255,255,.75));
+    --mac-shadow: 0 28px 75px rgba(86, 69, 42, .17), 0 4px 14px rgba(86, 69, 42, .08);
+  }
+
+  [data-layout="mac"] body::before {
+    opacity: .58;
+  }
+
+  [data-layout="mac"] #app-screen {
+    isolation: isolate;
+    background: var(--mac-canvas);
+  }
+
+  /* Top command bar */
+  [data-layout="mac"] .nav-bar {
+    height: 52px;
+    min-height: 52px;
+    padding: 0 18px;
+    gap: 10px;
+    border: 0;
+    border-bottom: 1px solid var(--mac-border);
+    background: var(--mac-bar);
+    box-shadow: 0 1px 0 rgba(255,255,255,.75), 0 7px 22px rgba(94,75,45,.06);
+    backdrop-filter: saturate(150%) blur(24px);
+    -webkit-backdrop-filter: saturate(150%) blur(24px);
+  }
+
+  [data-layout="mac"] .nav-brand {
+    width: auto;
+    padding: 0 14px 0 0;
+    margin-right: 2px;
+    border: 0;
+    line-height: 1;
+  }
+  [data-layout="mac"] .nav-brand .ai-title {
+    height: 34px;
+    margin: 0 !important;
+    padding: 0;
+    filter: none;
+    font-size: 13px;
+  }
+  [data-layout="mac"] .nav-brand .ai-title__back,
+  [data-layout="mac"] .nav-brand .ai-title__fold { display: none; }
+  [data-layout="mac"] .nav-brand .ai-title__front {
+    inset: auto;
+    transform: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 15px 0 12px;
+    border-radius: 11px;
+    background: linear-gradient(145deg, color-mix(in srgb, var(--jade) 88%, #fff), var(--jade));
+    box-shadow: 0 6px 15px color-mix(in srgb, var(--jade) 22%, transparent), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  [data-layout="mac"] .nav-brand .ai-title__front::before {
+    content: "CC";
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    background: rgba(255,255,255,.22);
+    color: #fff;
+    font-size: 10px;
+    letter-spacing: -.02em;
+  }
+  [data-layout="mac"] .nav-brand .ai-title__text {
+    padding: 0;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: .03em;
+  }
+
+  [data-layout="mac"] .nav-items {
+    gap: 4px;
+    overflow: visible;
+  }
+  [data-layout="mac"] .nav-group { position: relative; }
+  [data-layout="mac"] .nav-item {
+    width: auto;
+    height: 36px;
+    padding: 0 12px;
+    gap: 7px;
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 36px;
+    font-weight: 650;
+    letter-spacing: .01em;
+  }
+  [data-layout="mac"] .nav-item::before {
+    display: inline-grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--jade) 10%, transparent);
+    color: var(--jade);
+    font-size: 11px;
+    font-weight: 900;
+  }
+  [data-layout="mac"] .nav-item[data-panel="dashboard"]::before { content: "✓"; }
+  [data-layout="mac"] .nav-item[data-panel="toolbox"]::before { content: "◇"; }
+  [data-layout="mac"] .nav-item[data-panel="board"]::before { content: "✦"; }
+  [data-layout="mac"] .nav-item[data-panel="memo"]::before { content: "✎"; }
+  [data-layout="mac"] .nav-item[data-panel="analysis"]::before { content: "↗"; }
+  [data-layout="mac"] .nav-item:hover {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--jade) 9%, rgba(255,255,255,.5));
+  }
+  [data-layout="mac"] .nav-item.active {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--jade) 14%, rgba(255,255,255,.65));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--jade) 17%, transparent);
+  }
+  [data-layout="mac"] .nav-item.active::before {
+    background: var(--jade);
+    color: #fff;
+  }
+  [data-layout="mac"] .nav-chevron { font-size: 8px; opacity: .55; }
+
+  [data-layout="mac"] .nav-dropdown {
+    top: calc(100% + 8px);
+    min-width: 205px;
+    padding: 7px;
+    border: 1px solid var(--mac-border);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--surface) 94%, rgba(255,255,255,.85));
+    box-shadow: 0 18px 42px rgba(74,58,36,.16), inset 0 1px 0 rgba(255,255,255,.8);
+    backdrop-filter: saturate(150%) blur(26px);
+    -webkit-backdrop-filter: saturate(150%) blur(26px);
+  }
+  [data-layout="mac"] .nav-sub {
+    min-height: 36px;
+    margin: 0;
+    padding: 8px 11px;
+    border-radius: 9px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 650;
+  }
+  [data-layout="mac"] .nav-sub + .nav-sub { margin-top: 2px; }
+  [data-layout="mac"] .nav-sub:hover {
+    background: color-mix(in srgb, var(--jade) 12%, rgba(255,255,255,.55));
+    color: var(--ink);
+  }
+  [data-layout="mac"] .nav-sub.active {
+    background: var(--jade);
+    color: #fff;
+    box-shadow: 0 5px 12px color-mix(in srgb, var(--jade) 20%, transparent);
+  }
+
+  /* Right-side status and controls */
+  [data-layout="mac"] #theme-switcher-wrap {
+    position: static;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    margin: 0 0 0 auto;
+    z-index: 220;
+  }
+  [data-layout="mac"] #theme-switcher-wrap + #mac-status {
+    margin-left: 0;
+  }
+  [data-layout="mac"] #theme-switcher-wrap { order: 6; }
+  [data-layout="mac"] #theme-switcher { margin: 0; }
+  [data-layout="mac"] #theme-btn,
+  [data-layout="mac"] .lock-btn {
+    min-height: 34px;
+    padding: 0 11px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    box-shadow: none;
+  }
+  [data-layout="mac"] #theme-btn:hover,
+  [data-layout="mac"] .lock-btn:hover {
+    background: color-mix(in srgb, var(--jade) 9%, rgba(255,255,255,.55));
+    border-color: color-mix(in srgb, var(--jade) 13%, transparent);
+    color: var(--ink);
+  }
+  [data-layout="mac"] .nav-lock {
+    display: flex !important;
+    order: 9;
+    padding: 0;
+    border: 0;
+  }
+  [data-layout="mac"] #mac-status {
+    order: 7;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 148px;
+    height: 34px;
+    padding: 0 11px;
+    border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+    border-radius: 10px;
+    background: rgba(255,255,255,.32);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  [data-layout="mac"] #mac-status strong { color: var(--ink); font-size: 12px; }
+  [data-layout="mac"] .mac-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 12%, transparent);
+  }
+
+  /* Desktop canvas */
+  [data-layout="mac"] .app-main {
+    padding: 0;
+    overflow: hidden;
+    background-color: var(--mac-canvas);
+    background-image:
+      linear-gradient(rgba(255,255,255,.22) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.22) 1px, transparent 1px),
+      radial-gradient(circle at 18% 16%, color-mix(in srgb, var(--jade) 13%, transparent), transparent 30%),
+      radial-gradient(circle at 82% 82%, color-mix(in srgb, var(--warning) 9%, transparent), transparent 34%);
+    background-size: 28px 28px, 28px 28px, auto, auto;
+  }
+
+  /* Main workspace window */
+  [data-layout="mac"] .panel {
+    top: 20px;
+    bottom: 98px;
+    left: 30px;
+    right: 30px;
+    width: auto;
+    max-width: 1620px;
+    max-height: none;
+    margin: auto;
+    overflow: hidden;
+    border: 1px solid var(--mac-border);
+    border-radius: 22px;
+    background: var(--mac-window);
+    box-shadow: var(--mac-shadow);
+  }
+  [data-layout="mac"] .panel.active {
+    animation: macWindowIn .34s cubic-bezier(.22,1,.36,1);
+  }
+  @keyframes macWindowIn {
+    from { opacity: 0; transform: translateY(12px) scale(.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  [data-layout="mac"] .panel-body {
+    padding: 82px 34px 36px;
+    border-radius: 22px;
+    scrollbar-gutter: stable;
+  }
+  [data-layout="mac"] .panel-body::before {
+    height: 58px;
+    border-radius: 22px 22px 0 0;
+    border-bottom: 1px solid var(--mac-border);
+    background: linear-gradient(180deg, rgba(255,255,255,.68), color-mix(in srgb, var(--surface) 88%, rgba(255,255,255,.52)));
+    box-shadow: 0 1px 0 rgba(255,255,255,.72);
+  }
+  [data-layout="mac"] .panel::before {
+    content: attr(data-mac-title);
+    position: absolute;
+    top: 17px;
+    left: 112px;
+    z-index: 12;
+    max-width: calc(100% - 230px);
+    overflow: hidden;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .015em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  [data-layout="mac"] .panel::after {
+    top: 21px;
+    left: 22px;
+    width: 11px;
+    height: 11px;
+    background: #ff6b61;
+    box-shadow: 19px 0 0 #f5bd3e, 38px 0 0 #39bf65;
+  }
+  [data-layout="mac"] .panel-body::after {
+    content: attr(data-mac-eyebrow);
+    position: absolute;
+    top: 22px;
+    right: 25px;
+    z-index: 12;
+    color: var(--text-secondary);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .16em;
+    opacity: .72;
+    pointer-events: none;
+  }
+
+  /* Content hierarchy */
+  [data-layout="mac"] .oa-greeting {
+    min-height: 128px;
+    margin-bottom: 24px;
+    padding: 24px 28px;
+    border: 1px solid color-mix(in srgb, var(--jade) 35%, transparent);
+    border-radius: 18px;
+    background:
+      radial-gradient(circle at 92% 20%, rgba(255,255,255,.7), transparent 24%),
+      linear-gradient(120deg, color-mix(in srgb, var(--jade-light) 82%, #fff), color-mix(in srgb, var(--surface) 76%, #fff));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 10px 26px rgba(63,107,96,.08);
+  }
+  [data-layout="mac"] .oa-greeting-title { font-size: 24px; letter-spacing: -.015em; }
+  [data-layout="mac"] .oa-greeting-sub { font-size: 12px; font-weight: 650; letter-spacing: .035em; }
+  [data-layout="mac"] .oa-greeting-ring { width: 68px; height: 68px; }
+
+  [data-layout="mac"] .oa-trello {
+    gap: 18px;
+    min-height: 360px;
+    padding: 2px 2px 12px;
+    overflow-x: auto;
+  }
+  [data-layout="mac"] .oa-trello-col {
+    min-width: 260px;
+    max-width: none;
+    padding: 16px;
+    border: 1px solid color-mix(in srgb, var(--border) 56%, transparent);
+    border-radius: 17px;
+    background: color-mix(in srgb, var(--bg) 72%, rgba(255,255,255,.68));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.72);
+  }
+  [data-layout="mac"] .oa-trello:has(.oa-trello-col:only-child) .oa-trello-col {
+    flex: 0 1 520px;
+    min-height: 360px;
+  }
+  [data-layout="mac"] .oa-trello-header { margin-bottom: 14px; }
+  [data-layout="mac"] .oa-trello-header-label { font-size: 13px; }
+  [data-layout="mac"] .oa-trello-card {
+    border-width: 1px 1px 1px 4px;
+    border-radius: 12px;
+    padding: 13px 14px;
+    box-shadow: 0 4px 12px rgba(71,57,39,.06);
+  }
+  [data-layout="mac"] .oa-trello-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(71,57,39,.11);
+  }
+  [data-layout="mac"] .oa-trello-empty {
+    display: grid;
+    place-items: center;
+    min-height: 170px;
+    border: 1px dashed color-mix(in srgb, var(--border) 70%, transparent);
+    border-radius: 12px;
+    background: rgba(255,255,255,.23);
+  }
+
+  /* Toolbox: keep the action in a comfortable focal column */
+  [data-layout="mac"] #panel-toolbox .panel-body {
+    padding-left: max(34px, calc((100% - 920px) / 2));
+    padding-right: max(34px, calc((100% - 920px) / 2));
+  }
+  [data-layout="mac"] .tb-upload-zone {
+    min-height: 240px;
+    margin: 26px auto 18px;
+    border-width: 1.5px;
+    border-radius: 20px;
+    background:
+      radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--jade) 10%, transparent), transparent 52%),
+      color-mix(in srgb, var(--bg) 64%, rgba(255,255,255,.65));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  [data-layout="mac"] .tb-upload-zone:hover,
+  [data-layout="mac"] .tb-upload-zone.dragover {
+    transform: translateY(-2px);
+    border-color: var(--jade);
+    box-shadow: 0 14px 34px color-mix(in srgb, var(--jade) 11%, transparent), inset 0 1px 0 rgba(255,255,255,.85);
+  }
+  [data-layout="mac"] .tb-upload-icon { font-size: 34px; margin-bottom: 10px; }
+  [data-layout="mac"] .tb-upload-text { font-size: 16px; font-weight: 800; color: var(--ink); }
+  [data-layout="mac"] .tb-upload-hint { margin-top: 7px; font-size: 12px; }
+  [data-layout="mac"] .tb-actions { justify-content: center; gap: 10px; }
+  [data-layout="mac"] .tb-btn { min-width: 142px; border-radius: 12px; }
+  [data-layout="mac"] .tb-file-list,
+  [data-layout="mac"] [id$="-file-info"],
+  [data-layout="mac"] .tb-progress,
+  [data-layout="mac"] .tb-result { max-width: 920px; margin-left: auto; margin-right: auto; }
+
+  /* Long-form modules */
+  [data-layout="mac"] .board-wrap,
+  [data-layout="mac"] .memo-wrap,
+  [data-layout="mac"] .analysis-wrap { max-width: 1180px; }
+  [data-layout="mac"] .analysis-wrap { padding: 30px !important; }
+  [data-layout="mac"] .analysis-guide,
+  [data-layout="mac"] .analysis-card,
+  [data-layout="mac"] .board-item,
+  [data-layout="mac"] .memo-item {
+    border-color: color-mix(in srgb, var(--border) 62%, transparent);
+    box-shadow: 0 5px 16px rgba(70,55,36,.05);
+  }
+
+  /* Dock becomes a clear task switcher, not decorative icons */
+  [data-layout="mac"] .mac-dock {
+    bottom: 18px;
+    gap: 5px;
+    padding: 7px;
+    border: 1px solid var(--mac-border);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--surface) 82%, rgba(255,255,255,.64));
+    box-shadow: 0 18px 42px rgba(69,54,34,.19), inset 0 1px 0 rgba(255,255,255,.78);
+    backdrop-filter: saturate(150%) blur(25px);
+    -webkit-backdrop-filter: saturate(150%) blur(25px);
+  }
+  [data-layout="mac"] .mac-dock-item {
+    appearance: none;
+    display: grid;
+    grid-template-columns: 36px auto 16px;
+    align-items: center;
+    gap: 8px;
+    min-width: 112px;
+    height: 50px;
+    padding: 6px 9px 6px 7px;
+    border: 1px solid transparent;
+    border-radius: 13px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: transform .18s ease, background .18s ease, border-color .18s ease, color .18s ease;
+  }
+  [data-layout="mac"] .mac-dock-item:hover {
+    transform: translateY(-3px);
+    background: rgba(255,255,255,.46);
+    border-color: color-mix(in srgb, var(--border) 50%, transparent);
+    color: var(--ink);
+  }
+  [data-layout="mac"] .mac-dock-item.active {
+    background: color-mix(in srgb, var(--jade) 11%, rgba(255,255,255,.55));
+    border-color: color-mix(in srgb, var(--jade) 22%, transparent);
+    color: var(--ink);
+  }
+  [data-layout="mac"] .mac-dock-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 850;
+    box-shadow: 0 5px 12px rgba(54,44,31,.14), inset 0 1px 0 rgba(255,255,255,.28);
+  }
+  [data-layout="mac"] .mac-dock-icon.active::after {
+    right: -7px;
+    bottom: auto;
+    left: auto;
+    top: 50%;
+    width: 4px;
+    height: 16px;
+    transform: translateY(-50%);
+    border-radius: 4px;
+    background: var(--jade);
+  }
+  [data-layout="mac"] .mac-dock-label {
+    position: static;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+    opacity: 1;
+    font-size: 11px;
+    font-weight: 750;
+    pointer-events: none;
+  }
+  [data-layout="mac"] .mac-dock-shortcut {
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    background: rgba(255,255,255,.4);
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 800;
+  }
+
+  /* Secondary controls */
+  [data-layout="mac"] #layout-switcher {
+    bottom: 22px;
+    left: 22px;
+  }
+  [data-layout="mac"] .layout-toggle,
+  [data-layout="mac"] .wallpaper-toggle {
+    min-height: 36px;
+    gap: 7px;
+    padding: 0 13px;
+    border: 1px solid var(--mac-border);
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--surface) 84%, rgba(255,255,255,.6));
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 750;
+    box-shadow: 0 8px 22px rgba(76,60,38,.10), inset 0 1px 0 rgba(255,255,255,.75);
+  }
+  [data-layout="mac"] .layout-toggle:hover,
+  [data-layout="mac"] .wallpaper-toggle:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--jade) 35%, transparent);
+    color: var(--ink);
+  }
+  [data-layout="mac"] #wallpaper-btn {
+    top: 68px;
+    right: 28px;
+  }
+  [data-layout="mac"] .wallpaper-menu { border-radius: 12px; padding: 5px; min-width: 140px; }
+  [data-layout="mac"] .wallpaper-menu-item { border-radius: 8px; }
+
+  /* De-clutter the desktop chrome; personality stays inside the app */
+  [data-layout="mac"] #bear-corner,
+  [data-layout="mac"] #inspire-quote,
+  [data-layout="mac"] .c3-badge { display: none !important; }
+
+  [data-layout="mac"] .panel-body::-webkit-scrollbar { width: 10px; }
+  [data-layout="mac"] .panel-body::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--text-secondary) 42%, transparent);
+    background-clip: padding-box;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1180px) {
+  [data-layout="mac"] .nav-bar { padding: 0 10px; gap: 4px; }
+  [data-layout="mac"] .nav-brand { padding-right: 5px; }
+  [data-layout="mac"] .nav-item { padding: 0 8px; font-size: 11px; gap: 5px; }
+  [data-layout="mac"] .nav-item::before { width: 18px; height: 18px; }
+  [data-layout="mac"] #mac-status { display: none; }
+  [data-layout="mac"] #theme-btn { font-size: 0; width: 36px; padding: 0; }
+  [data-layout="mac"] #theme-btn span { font-size: 14px !important; }
+  [data-layout="mac"] #mac-status { min-width: 118px; padding: 0 8px; }
+  [data-layout="mac"] .panel { left: 16px; right: 16px; bottom: 90px; }
+  [data-layout="mac"] .panel-body { padding: 76px 22px 28px; }
+  [data-layout="mac"] .mac-dock-item { min-width: 88px; grid-template-columns: 34px auto; }
+  [data-layout="mac"] .mac-dock-shortcut { display: none; }
+  [data-layout="mac"] .mac-dock-label { font-size: 10px; }
+}
+
+
+/* Desktop layering patch: keep the command bar visually above the workspace. */
+@media (min-width: 769px) {
+  [data-layout="mac"] .nav-bar {
+    position: relative;
+    z-index: 1200;
+  }
+  [data-layout="mac"] .app-main {
+    z-index: 1;
+  }
+  [data-layout="mac"] #mac-status {
+    position: relative;
+    z-index: 3;
+  }
+  [data-layout="mac"] #theme-switcher-wrap,
+  [data-layout="mac"] #theme-switcher,
+  [data-layout="mac"] #theme-btn {
+    position: relative;
+    z-index: 3;
+  }
+}
+
+@media (min-width: 769px) {
+  html[data-layout="mac"] .nav-bar .nav-lock { display: flex !important; }
+}
+
+
+@media (min-width: 769px) {
+  [data-layout="mac"] .nav-item:focus-visible,
+  [data-layout="mac"] .nav-sub:focus-visible,
+  [data-layout="mac"] .mac-dock-item:focus-visible,
+  [data-layout="mac"] .layout-toggle:focus-visible,
+  [data-layout="mac"] .wallpaper-toggle:focus-visible,
+  [data-layout="mac"] #theme-btn:focus-visible,
+  [data-layout="mac"] .lock-btn:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--focus-yellow) 72%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-layout="mac"] .panel.active,
+  [data-layout="mac"] .mac-dock-item,
+  [data-layout="mac"] .tb-upload-zone,
+  [data-layout="mac"] .oa-trello-card {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* Dynamic desktop-only status must never leak into classic/mobile layouts. */
+#mac-status { display: none; }
+@media (min-width: 769px) {
+  html[data-layout="mac"] #mac-status { display: flex; }
+}
+
+
+@media (min-width: 769px) {
+  html[data-layout="mac"] #theme-switcher-wrap {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    margin: 0 0 0 auto !important;
+    order: 6 !important;
+  }
+  html[data-layout="mac"] #theme-switcher-wrap #theme-switcher,
+  html[data-layout="mac"] #theme-switcher-wrap #theme-btn {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+  }
+}
+
+/* Header glyph alignment: inherited 36px line-height pushed symbols below their tiles. */
+@media (min-width: 769px) {
+  html[data-layout="mac"] .nav-item::before {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0 0 1px;
+    transform: translateY(-.5px);
+  }
+}
+
+/* The chevron is the explicit submenu trigger in desktop mode. */
+@media (min-width: 769px) {
+  html[data-layout="mac"] .nav-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 24px;
+    margin-right: -5px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  html[data-layout="mac"] .nav-chevron:hover {
+    background: color-mix(in srgb, var(--jade) 14%, transparent);
+    opacity: 1;
+  }
+}

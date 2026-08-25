@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob: https://media.tenor.com; connect-src 'self' https://api.sz-hrhb.com http://127.0.0.1:5001 https://cdn.jsdelivr.net https://opencode.ai">
+<title>CC 工作台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/animal-island.css?v=1">
+<link rel="stylesheet" href="assets/style.css?v=10">
+<link rel="stylesheet" href="assets/mac-layout.css?v=10">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js"></script>
+   <script src="config.example.js"></script>
+   <script src="config.js"></script>
+</head>
+<body>
+
+<svg style="position:absolute;width:0;height:0" aria-hidden="true">
+  <defs>
+    <clipPath id="animal-modal-clip" clipPathUnits="objectBoundingBox">
+      <path d="M0.501,0.005 L0.501,0.005 L0.523,0.005 L0.549,0.006 C0.704,0.01,0.796,0.017,0.825,0.027 L0.827,0.028 C0.872,0.045,0.939,0.044,0.978,0.17 C1,0.254,1,0.365,0.99,0.505 L0.988,0.513 C0.979,0.558,0.971,0.598,0.965,0.633 C0.956,0.689,0.979,0.77,0.964,0.865 C0.953,0.928,0.921,0.966,0.869,0.979 C0.821,0.986,0.773,0.992,0.726,0.995 L0.712,0.996 L0.694,0.997 C0.648,1,0.586,1,0.507,1 L0.501,1 L0.464,1 C0.385,1,0.325,0.998,0.283,0.995 C0.234,0.992,0.184,0.987,0.133,0.979 C0.081,0.966,0.05,0.928,0.039,0.865 C0.023,0.77,0.047,0.689,0.037,0.633 C0.031,0.595,0.023,0.552,0.013,0.505 C-0.006,0.365,-0.002,0.254,0.024,0.17 C0.064,0.045,0.13,0.045,0.174,0.028 L0.175,0.028 C0.204,0.017,0.303,0.009,0.474,0.005 L0.501,0.005"/>
+    </clipPath>
+  </defs>
+</svg>
+
+<!-- Mobile hamburger -->
+<button id="mobile-menu-btn" type="button" aria-label="菜单">☰</button>
+
+<div id="app-screen" class="active">
+  <aside class="nav-bar">
+    <div class="nav-brand">
+      <span class="ai-title ai-title--small ai-title--app-teal" style="margin:0">
+        <span class="ai-title__back ai-title__back--left"></span>
+        <span class="ai-title__back ai-title__back--right"></span>
+        <span class="ai-title__fold ai-title__fold--left"></span>
+        <span class="ai-title__fold ai-title__fold--right"></span>
+        <span class="ai-title__front"><span class="ai-title__text">CC 工作台</span></span>
+      </span>
+    </div>
+    <nav class="nav-items">
+      <div class="nav-group">
+        <button class="nav-item" data-panel="dashboard">
+          <span class="nav-item-label">工作面板</span>
+          <span class="nav-chevron">▾</span>
+        </button>
+        <div class="nav-dropdown">
+          <button class="nav-sub" data-tab="tasks">今日任务</button>
+          <button class="nav-sub" data-tab="calendar">工作日历</button>
+          <button class="nav-sub" data-tab="history">每日总结</button>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button class="nav-item" data-panel="toolbox">
+          <span class="nav-item-label">工具箱</span>
+          <span class="nav-chevron">▾</span>
+        </button>
+        <div class="nav-dropdown">
+          <button class="nav-sub" data-tool="pdf-to-excel">PDF→Excel</button>
+          <button class="nav-sub" data-tool="pdf-merge">PDF合并</button>
+          <button class="nav-sub" data-tool="pdf-split">PDF分割</button>
+          <button class="nav-sub" data-tool="image-convert">图片转换</button>
+          <button class="nav-sub" data-tool="image-compress">图片压缩</button>
+          <button class="nav-sub" data-tool="office-to-pdf">Office→PDF</button>
+          <button class="nav-sub" data-tool="pdf-compress">PDF压缩</button>
+          <button class="nav-sub" data-tool="ocr">OCR识别</button>
+          <button class="nav-sub" data-tool="table-extract">表格提取</button>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button class="nav-item" data-panel="board">
+          <span class="nav-item-label">留言板</span>
+          <span class="nav-chevron">▾</span>
+        </button>
+        <div class="nav-dropdown">
+          <button class="nav-sub" data-tab="board-list">全部留言</button>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button class="nav-item" data-panel="memo">
+          <span class="nav-item-label">备忘录</span>
+          <span class="nav-chevron">▾</span>
+        </button>
+        <div class="nav-dropdown">
+          <button class="nav-sub" data-tab="memo-list">全部备忘</button>
+        </div>
+      </div>
+      <div class="nav-group">
+        <button class="nav-item" data-panel="analysis">
+          <span class="nav-item-label">数据分析</span>
+          <span class="nav-chevron">▾</span>
+        </button>
+        <div class="nav-dropdown">
+          <button class="nav-sub" data-tab="analyze">分析任务</button>
+        </div>
+      </div>
+    </nav>
+    <div class="nav-lock">
+      <button class="lock-btn" id="lock-btn" type="button" title="锁屏">🔒</button>
+    </div>
+  </aside>
+  <main class="app-main">
+
+    <!-- Panel: Dashboard -->
+    <div class="panel" id="panel-dashboard">
+      <div class="panel-body" id="dash-body">
+        <div class="dash-loading">加载中…</div>
+      </div>
+    </div>
+
+    <!-- Panel: Toolbox -->
+    <div class="panel active" id="panel-toolbox">
+      <div class="panel-body" id="toolbox-body">
+        <div class="panel-empty">选择工具开始使用</div>
+      </div>
+    </div>
+
+    <!-- Panel: Board -->
+    <div class="panel" id="panel-board">
+      <div class="panel-body" id="board-body">
+        <div class="dash-loading">加载中…</div>
+      </div>
+    </div>
+
+    <!-- Panel: Memo -->
+    <div class="panel" id="panel-memo">
+      <div class="panel-body" id="memo-body">
+        <div class="dash-loading">加载中…</div>
+      </div>
+    </div>
+
+    <!-- Panel: Analysis -->
+    <div class="panel" id="panel-analysis">
+      <div class="panel-body" id="analysis-body">
+          <div class="analysis-wrap ai-pattern-default" style="padding:24px;border-radius:20px">
+          <div class="analysis-header">
+            <div class="ai-title ai-title--app-yellow" style="display:inline-flex;margin-bottom:12px">
+              <span class="ai-title__back ai-title__back--left"></span>
+              <span class="ai-title__back ai-title__back--right"></span>
+              <span class="ai-title__fold ai-title__fold--left"></span>
+              <span class="ai-title__fold ai-title__fold--right"></span>
+              <span class="ai-title__front"><span class="ai-title__text">邮箱数据分析</span></span>
+            </div>
+            <p class="analysis-desc">自动检查 sylvia.tan@assaabloy.com 发送的最新邮件，通过 AI 读取邮件内容和附件 Excel，完成任务分析。</p>
+          </div>
+
+          <!-- 使用说明 -->
+          <details class="analysis-guide" id="analysis-guide">
+            <summary class="analysis-guide-summary">📖 使用说明（点击展开）</summary>
+            <div class="analysis-guide-body">
+              <div class="analysis-guide-step">
+                <span class="guide-step-num">1</span>
+                <div class="guide-step-content">
+                  <strong>检查并分析邮件</strong>
+                  <p>点击下方「📬 检查邮件并分析」按钮，系统将自动登录 QQ 邮箱，获取 sylvia.tan@assaabloy.com 的<em>最新一封邮件</em>（含附件 Excel）。AI 将读取邮件正文和附件表格数据，生成分析报告。</p>
+                </div>
+              </div>
+              <div class="analysis-guide-step">
+                <span class="guide-step-num">2</span>
+                <div class="guide-step-content">
+                  <strong>查看分析结果</strong>
+                  <p>分析完成后，页面顶部会显示本次分析结果的详细报告，包含邮件摘要、AI 分析结论和数据洞察。关闭后仍可在下方「分析历史」中随时查看。</p>
+                </div>
+              </div>
+              <div class="analysis-guide-step">
+                <span class="guide-step-num">3</span>
+                <div class="guide-step-content">
+                  <strong>管理分析历史</strong>
+                  <p>每次分析自动保存为历史卡片。每张卡片可：</p>
+                  <ul>
+                    <li><strong>查看详情</strong> — 展开完整 AI 分析报告</li>
+                    <li><strong>标记状态</strong> — 确认是否已生成 PDF ✅、是否导出 XLSX 📊、是否已回复邮件 📬</li>
+                    <li><strong>删除记录</strong> — 点击右上角 ✕ 移除不需要的记录</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="analysis-guide-step">
+                <span class="guide-step-num">4</span>
+                <div class="guide-step-content">
+                  <strong>工作流提醒</strong>
+                  <p>为了保障数据准确性，建议每次收到 sylvia 的新邮件后，先进行 AI 分析确认数据变化，再根据分析结果做后续下单、出货等操作。标记已完成步骤，方便后续追溯。</p>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <div class="analysis-actions">
+            <button class="analysis-btn" id="btn-check-email" onclick="startEmailAnalysis()">
+              <span class="analysis-btn-icon">📬</span>
+              <span class="analysis-btn-text">检查邮件并分析</span>
+            </button>
+            <div class="analysis-status" id="analysis-status" style="display:none"></div>
+          </div>
+          <div class="analysis-result" id="analysis-result" style="display:none">
+            <div class="analysis-result-header">
+              <h3>本次分析结果</h3>
+              <button class="analysis-result-close" onclick="closeAnalysisResult()">✕</button>
+            </div>
+            <div class="analysis-result-body" id="analysis-result-body"></div>
+          </div>
+          <div class="analysis-records-section">
+            <div class="analysis-records-header">
+              <h3>📋 分析历史</h3>
+            </div>
+            <div class="analysis-records-list" id="analysis-records-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+<!-- 3C Certification Badge -->
+<div class="c3-badge" id="c3-badge" title="本产品通过 CCC 认证">
+  <svg viewBox="0 0 120 40" width="96" height="32" aria-hidden="true">
+    <rect x="1" y="1" width="118" height="38" rx="6" fill="none" stroke="currentColor" stroke-width="2.5"/>
+    <text x="60" y="27" text-anchor="middle" font-family="Arial,sans-serif" font-weight="bold" font-size="20" fill="currentColor">CCC</text>
+  </svg>
+  <span class="c3-badge-label">认证</span>
+</div>
+<!-- Mobile overlay (outside app-screen for correct stacking) -->
+<div class="nav-overlay" id="nav-overlay"></div>
+
+<div id="lock-screen">
+  <img class="lock-bear" src="https://media.tenor.com/4bMDX6ox1JgAAAAj/joke-bear-jokebear.gif" alt="bear">
+  <span class="lock-hint">点击解锁</span>
+</div>
+<script src="assets/app.js?v=10"></script>
+<script src="assets/analysis.js?v=8"></script>
+<script src="assets/dashboard.js?v=10"></script>
+<script src="assets/toolbox.js?v=10"></script>
+<script src="assets/board.js?v=8"></script>
+<script src="assets/memo.js?v=8"></script>
+<script src="assets/theme.js?v=8"></script>
+<script src="assets/layout-switcher.js?v=13"></script>
+<script src="assets/bear-corner.js?v=9"></script>
+</body>
+</html>
