@@ -36,7 +36,18 @@ def _init_db():
         conn.commit()
 
 
+def _migrate_db():
+    """Add carry_seeded flag (safe to run multiple times)."""
+    with _conn() as conn:
+        try:
+            conn.execute("ALTER TABLE checklists ADD COLUMN carry_seeded INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass  # column already exists
+        conn.commit()
+
+
 _init_db()
+_migrate_db()
 
 
 def _load_template(js_day: int) -> dict | None:
@@ -59,14 +70,132 @@ def _load_template(js_day: int) -> dict | None:
     }
 
 
-def get_or_create(token: str, date: str) -> dict:
-    """Return checklist for a date, merging template with saved state."""
+def _recent_prior_date(token_hash: str, date: str) -> str | None:
+    """Return the most recent prior date (< date) with real saved task state.
+
+    Skips rows that only exist as an empty carry-seed placeholder (items '[]'),
+    so a day CC never actually worked on doesn't dump its whole template forward.
+    """
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT date FROM checklists WHERE token_hash = ? AND date < ? "
+            "AND items IS NOT NULL AND items != '[]' AND items != '' "
+            "ORDER BY date DESC LIMIT 1",
+            (token_hash, date),
+        ).fetchone()
+    return row["date"] if row else None
+
+
+def _seed_carryovers(token: str, date: str) -> None:
+    """Inject yesterday's unfinished tasks into today's saved items (once).
+
+    Only runs for today, when today has a template (weekday) and hasn't been
+    seeded yet. Carried items are deduped against today's items by label, so
+    daily-repeating template tasks don't stack up.
+    """
+    h = _token_hash(token)
+
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT items, carry_seeded FROM checklists WHERE token_hash = ? AND date = ?",
+            (h, date),
+        ).fetchone()
+
+    already_seeded = bool(row["carry_seeded"]) if row else False
+    if already_seeded:
+        return
+
+    prior = _recent_prior_date(h, date)
+    if not prior:
+        _mark_seeded(h, date)
+        return
+
+    # Fully-merged prior-day checklist (guard recursion via _seed=False)
+    prior_data = get_or_create(token, prior, _seed=False)
+    unfinished = [
+        i for i in prior_data.get("items", [])
+        if not i.get("checked") and i.get("status") != "done"
+    ]
+    if not unfinished:
+        _mark_seeded(h, date)
+        return
+
+    # Today's current items (template + saved), for label-based dedup
+    today_data = get_or_create(token, date, _seed=False)
+    today_labels = {(i.get("label") or "").strip() for i in today_data.get("items", [])}
+
+    now = datetime.now().isoformat()
+    saved_list = []
+    if row and row["items"]:
+        try:
+            saved_list = json.loads(row["items"])
+        except (json.JSONDecodeError, TypeError):
+            saved_list = []
+
+    added = 0
+    for src in unfinished:
+        label = (src.get("label") or "").strip()
+        if not label or label in today_labels:
+            continue
+        today_labels.add(label)
+        saved_list.append({
+            "id": f"carry_{prior}_{src.get('id', '')}",
+            "label": label,
+            "checked": False,
+            "status": "todo",
+            "note": src.get("note", "") or "",
+            "is_carried": True,
+            "carried_from": prior,
+            "updated_at": now,
+        })
+        added += 1
+
+    if added:
+        _upsert(h, date, {
+            "items": json.dumps(saved_list, ensure_ascii=False),
+            "updated_at": now,
+        })
+    _mark_seeded(h, date)
+
+
+def _mark_seeded(token_hash: str, date: str) -> None:
+    """Set carry_seeded=1 for a row, creating it if absent."""
+    now = datetime.now().isoformat()
+    with _conn() as conn:
+        existing = conn.execute(
+            "SELECT 1 FROM checklists WHERE token_hash = ? AND date = ?",
+            (token_hash, date),
+        ).fetchone()
+        if existing:
+            conn.execute(
+                "UPDATE checklists SET carry_seeded = 1 WHERE token_hash = ? AND date = ?",
+                (token_hash, date),
+            )
+        else:
+            conn.execute(
+                "INSERT INTO checklists (token_hash, date, items, updated_at, carry_seeded) "
+                "VALUES (?, ?, '[]', ?, 1)",
+                (token_hash, date, now),
+            )
+        conn.commit()
+
+
+def get_or_create(token: str, date: str, _seed: bool = True) -> dict:
+    """Return checklist for a date, merging template with saved state.
+
+    On first load of *today* (weekday with a template), unfinished tasks from
+    the most recent prior day are seeded in as carried-over items. `_seed` is
+    an internal guard to prevent recursion from `_seed_carryovers`.
+    """
     h = _token_hash(token)
     today = datetime.now().strftime("%Y-%m-%d")
     is_today = date == today
 
     weekday = _date_to_weekday(date)
     template = _load_template(weekday)
+
+    if _seed and is_today and template:
+        _seed_carryovers(token, date)
 
     with _conn() as conn:
         row = conn.execute(
@@ -99,9 +228,21 @@ def get_or_create(token: str, date: str) -> dict:
             item["note"] = ""
         merged.append(item)
 
-    # Append user-created custom items (not part of template)
+    # Append user-created custom items and carried-over items (not part of template)
     for sid, saved in saved_items.items():
-        if sid.startswith("custom_") and sid not in template_ids:
+        if sid in template_ids:
+            continue
+        if saved.get("is_carried"):
+            merged.append({
+                "id": sid,
+                "label": saved.get("label", ""),
+                "checked": saved.get("checked", False),
+                "status": saved.get("status", "done" if saved.get("checked") else "todo"),
+                "note": saved.get("note", ""),
+                "is_carried": True,
+                "carried_from": saved.get("carried_from", ""),
+            })
+        elif sid.startswith("custom_"):
             merged.append({
                 "id": sid,
                 "label": saved.get("label", ""),
@@ -171,6 +312,8 @@ def save_items(token: str, date: str, items: list[dict]) -> dict:
             "note": item.get("note", "") or "",
             "label": item.get("label", ""),
             "is_custom": item.get("is_custom", False),
+            "is_carried": item.get("is_carried", False),
+            "carried_from": item.get("carried_from", ""),
             "updated_at": now,
         })
 
