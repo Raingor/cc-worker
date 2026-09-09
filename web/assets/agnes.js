@@ -112,9 +112,34 @@ function renderImageView() {
     agnesField('返回格式', agnesSelect('agnes-image-format', ['url', 'b64_json'], 'url', { url: '图片 URL', b64_json: 'Base64' })) + '</div>' +
     agnesField('提示词', '<textarea id="agnes-image-prompt" class="agnes-input" rows="3" placeholder="主体 + 场景 / 风格 + 光照 + 构图 + 质量要求"></textarea>') +
     '<div class="agnes-grid two">' + agnesField('尺寸档位', agnesSelect('agnes-image-size', AGNES_IMAGE_SIZES, '1K')) + agnesField('宽高比', agnesSelect('agnes-image-ratio', AGNES_IMAGE_RATIOS, '1:1')) + '</div>' +
-    agnesField('参考图（可选，一行一个 URL 或 data URI）', '<textarea id="agnes-image-refs" class="agnes-input agnes-mono" rows="2" placeholder="填写后为图生图；多张则为多图合成"></textarea>') +
+    agnesField('参考图（可选，支持上传或 URL）', '<div class="agnes-reference-box"><textarea id="agnes-image-refs" class="agnes-input agnes-mono" rows="2" placeholder="填写 URL 或 data URI；多张则为多图合成"></textarea><div class="agnes-reference-tools"><input id="agnes-image-upload" class="agnes-file-input" type="file" accept="image/*" multiple><button id="agnes-image-upload-btn" class="agnes-upload-btn" type="button">⌑ 上传图片</button><span>支持 JPG、PNG、WebP</span></div><div id="agnes-image-upload-list" class="agnes-upload-list"></div></div>') +
     '<button id="agnes-image-run" class="agnes-btn agnes-btn-primary" type="button">✧ 生成图片</button><div id="agnes-image-result"></div></div>';
   document.getElementById('agnes-image-run').addEventListener('click', runAgnesImage);
+  var uploadInput = document.getElementById('agnes-image-upload');
+  var uploadButton = document.getElementById('agnes-image-upload-btn');
+  var uploadList = document.getElementById('agnes-image-upload-list');
+  var refsInput = document.getElementById('agnes-image-refs');
+  uploadButton.addEventListener('click', function () { uploadInput.click(); });
+  uploadInput.addEventListener('change', function () {
+    var files = Array.from(uploadInput.files || []);
+    if (!files.length) return;
+    var validFiles = files.filter(function (file) { return file.type.indexOf('image/') === 0 && file.size <= 15 * 1024 * 1024; });
+    if (validFiles.length !== files.length) uploadList.innerHTML = '<span class="agnes-upload-error">仅支持图片，且单张不超过 15MB</span>';
+    Promise.all(validFiles.map(function (file) {
+      return new Promise(function (resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function () { resolve({ name: file.name, data: reader.result }); };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    })).then(function (items) {
+      var refs = agnesLines(refsInput.value);
+      items.forEach(function (item) { refs.push(item.data); });
+      refsInput.value = refs.join('\n');
+      uploadList.innerHTML = items.map(function (item) { return '<span class="agnes-upload-item">✓ ' + agnesEscape(item.name) + '</span>'; }).join('');
+      uploadInput.value = '';
+    }).catch(function () { uploadList.innerHTML = '<span class="agnes-upload-error">图片读取失败，请重试</span>'; });
+  });
 }
 function runAgnesImage() {
   var prompt = document.getElementById('agnes-image-prompt').value.trim();
