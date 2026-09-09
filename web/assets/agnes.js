@@ -125,20 +125,30 @@ function renderImageView() {
     if (!files.length) return;
     var validFiles = files.filter(function (file) { return file.type.indexOf('image/') === 0 && file.size <= 15 * 1024 * 1024; });
     if (validFiles.length !== files.length) uploadList.innerHTML = '<span class="agnes-upload-error">仅支持图片，且单张不超过 15MB</span>';
+    if (!validFiles.length) { uploadInput.value = ''; return; }
+    uploadButton.disabled = true;
+    uploadButton.textContent = '上传中…';
+    uploadList.innerHTML = '<span class="agnes-upload-item">正在上传 ' + validFiles.length + ' 张图片…</span>';
     Promise.all(validFiles.map(function (file) {
-      return new Promise(function (resolve, reject) {
-        var reader = new FileReader();
-        reader.onload = function () { resolve({ name: file.name, data: reader.result }); };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+      var form = new FormData();
+      form.append('file', file);
+      return agnesJson('/v1/agnes/image-upload', { method: 'POST', body: form }).then(function (data) {
+        if (!data.url) throw new Error(data.message || '图片上传失败');
+        return { name: file.name, url: data.url };
       });
     })).then(function (items) {
       var refs = agnesLines(refsInput.value);
-      items.forEach(function (item) { refs.push(item.data); });
+      items.forEach(function (item) { refs.push(item.url); });
       refsInput.value = refs.join('\n');
       uploadList.innerHTML = items.map(function (item) { return '<span class="agnes-upload-item">✓ ' + agnesEscape(item.name) + '</span>'; }).join('');
       uploadInput.value = '';
-    }).catch(function () { uploadList.innerHTML = '<span class="agnes-upload-error">图片读取失败，请重试</span>'; });
+    }).catch(function (error) {
+      uploadList.innerHTML = '<span class="agnes-upload-error">' + agnesEscape(error.message || '图片上传失败，请重试') + '</span>';
+      uploadInput.value = '';
+    }).finally(function () {
+      uploadButton.disabled = false;
+      uploadButton.textContent = '⌑ 上传图片';
+    });
   });
 }
 function runAgnesImage() {

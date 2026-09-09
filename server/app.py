@@ -5,13 +5,14 @@ import os
 import re
 import tempfile
 from datetime import datetime
+from uuid import uuid4
 from pathlib import Path
 from typing import List, Optional, Tuple
 from urllib.parse import urlparse
 
 import requests
 from dotenv import load_dotenv
-from flask import Flask, Response, jsonify, request
+from flask import Flask, Response, jsonify, request, send_file
 from flask_cors import CORS
 
 from analysis.analyzer import analyze as analyze_excel
@@ -59,6 +60,18 @@ AGNES_CONFIG_PATH = Path(os.getenv(
     "AGNES_CONFIG_PATH",
     str(Path(__file__).resolve().parent / "data" / "agnes-config.json"),
 ))
+AGNES_UPLOAD_DIR = Path(os.getenv(
+    "AGNES_UPLOAD_DIR",
+    str(Path(__file__).resolve().parent / "data" / "agnes-uploads"),
+))
+AGNES_UPLOAD_PUBLIC_BASE = os.getenv("AGNES_UPLOAD_PUBLIC_BASE", "https://api.sz-hrhb.com").rstrip("/")
+AGNES_UPLOAD_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
+AGNES_UPLOAD_MAX_BYTES = 15 * 1024 * 1024
 
 # AgentMail config (for sending reminder emails)
 AGENTMAIL_INBOX = os.getenv("AGENTMAIL_INBOX", "oc-player-5823@agentmail.to")
@@ -325,6 +338,64 @@ def agnes_chat():
     except (requests.RequestException, ValueError, TypeError) as exc:
         error, status = _agnes_failure(exc)
         return jsonify(error), status
+
+
+def _cleanup_agnes_uploads() -> None:
+    """Remove temporary reference images after one hour."""
+    if not AGNES_UPLOAD_DIR.is_dir():
+        return
+    cutoff = datetime.now().timestamp() - 3600
+    for path in AGNES_UPLOAD_DIR.iterdir():
+        try:
+            if path.is_file() and path.stat().st_mtime < cutoff:
+                path.unlink()
+        except OSError:
+            continue
+
+
+@APP.route("/v1/agnes/image-upload", methods=["POST", "OPTIONS"])
+def agnes_image_upload():
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    image = request.files.get("file")
+    extension = AGNES_UPLOAD_TYPES.get(image.mimetype if image else "")
+    if not image or not extension:
+        return jsonify({"success": False, "message": "只支持 JPG、PNG、WebP 或 GIF 图片"}), 400
+    try:
+        AGNES_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        _cleanup_agnes_uploads()
+        token = uuid4().hex
+        path = AGNES_UPLOAD_DIR / (token + extension)
+        image.save(str(path))
+        if path.stat().st_size > AGNES_UPLOAD_MAX_BYTES:
+            try:
+                path.unlink()
+            except OSError:
+                pass
+            return jsonify({"success": False, "message": "图片不能超过 15MB"}), 413
+        return jsonify({"success": True, "url": AGNES_UPLOAD_PUBLIC_BASE + "/v1/agnes/upload/" + token})
+    except (OSError, ValueError):
+        return jsonify({"success": False, "message": "图片上传失败，请重试"}), 500
+
+
+@APP.route("/v1/agnes/upload/<token>", methods=["GET"])
+def agnes_uploaded_image(token):
+    if not re.fullmatch(r"[a-f0-9]{32}", token):
+        return jsonify({"success": False, "message": "图片地址无效"}), 404
+    matches = list(AGNES_UPLOAD_DIR.glob(token + ".*"))
+    if not matches:
+        return jsonify({"success": False, "message": "图片已过期或不存在"}), 404
+    path = matches[0]
+    try:
+        if path.stat().st_mtime < datetime.now().timestamp() - 3600:
+            path.unlink()
+            return jsonify({"success": False, "message": "图片已过期"}), 404
+        mime = next((kind for kind, ext in AGNES_UPLOAD_TYPES.items() if path.suffix == ext), "application/octet-stream")
+        return send_file(str(path), mimetype=mime, max_age=3600)
+    except OSError:
+        return jsonify({"success": False, "message": "图片读取失败"}), 404
 
 
 @APP.route("/v1/agnes/image-generate", methods=["POST", "OPTIONS"])

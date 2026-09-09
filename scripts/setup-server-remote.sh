@@ -47,6 +47,13 @@ if [ ! -d venv ]; then
 fi
 ./venv/bin/pip install -q -r requirements.txt
 
+# Agnes reference images are uploaded temporarily before Agnes fetches them.
+NGINX_API_CONF="/etc/nginx/conf.d/api.sz-hrhb.com.conf"
+if [ -f "$NGINX_API_CONF" ] && ! grep -q "client_max_body_size 25m;" "$NGINX_API_CONF"; then
+  sed -i "/listen 443 ssl;/a\\    client_max_body_size 25m;" "$NGINX_API_CONF"
+  nginx -t && nginx -s reload
+fi
+
 if [ -f uwsgi.pid ] && kill -0 "$(cat uwsgi.pid)" 2>/dev/null; then
   ./venv/bin/uwsgi --stop uwsgi.pid || true
   sleep 1
