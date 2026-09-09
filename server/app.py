@@ -414,11 +414,16 @@ def agnes_video_create():
         )
         if not response.ok:
             error, status = _agnes_upstream_error(response)
+            if status == 429 or status >= 500:
+                error["retryable"] = True
             return jsonify(error), status
         data = response.json()
         video_id = data.get("video_id")
         if not video_id:
-            return jsonify({"success": False, "message": "Agnes 返回中没有 video_id"}), 502
+            message = str(data.get("message") or data.get("detail") or "Agnes 返回中没有 video_id")
+            if "queue is full" in message.lower():
+                return jsonify({"success": False, "retryable": True, "message": message}), 503
+            return jsonify({"success": False, "message": message}), 502
         return jsonify({"success": True, "videoId": video_id, "taskStatus": data.get("status")})
     except (requests.RequestException, ValueError, TypeError) as exc:
         error, status = _agnes_failure(exc)

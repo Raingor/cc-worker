@@ -24,7 +24,12 @@ function agnesJson(path, options) {
   options.headers = Object.assign({}, apiHeaders(), options.headers || {});
   return fetch(apiUrl(path), options).then(function (res) {
     return res.json().catch(function () { return {}; }).then(function (data) {
-      if (!res.ok) throw new Error(data.message || data.error?.message || ('服务器错误 (' + res.status + ')'));
+      if (!res.ok) {
+        var error = new Error(data.message || data.error?.message || ('服务器错误 (' + res.status + ')'));
+        error.status = res.status;
+        error.retryable = !!data.retryable;
+        throw error;
+      }
       return data;
     });
   });
@@ -161,11 +166,24 @@ function runAgnesVideo() {
   var payload = { model: document.getElementById('agnes-video-model').value.trim(), prompt: prompt, mode: mode, seconds: document.getElementById('agnes-video-seconds').value, aspectRatio: document.getElementById('agnes-video-ratio').value };
   if (mode === 'keyframe') { payload.firstFrame = document.getElementById('agnes-first-frame').value.trim(); payload.lastFrame = document.getElementById('agnes-last-frame').value.trim(); }
   if (mode === 'reference') { payload.images = agnesLines(document.getElementById('agnes-video-images').value); payload.audios = agnesLines(document.getElementById('agnes-video-audios').value); }
+  startAgnesVideoCreate(payload, button, result, 0);
+}
+function startAgnesVideoCreate(payload, button, result, retryCount) {
   agnesJson('/v1/agnes/video-create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(function (data) {
     renderVideoResult(data, true);
     if (data.videoId) pollAgnesVideo(data.videoId, payload.model);
     else button.disabled = false;
-  }).catch(function (e) { result.innerHTML = agnesError({ message: e.message }); button.disabled = false; });
+  }).catch(function (e) {
+    var queueBusy = e.retryable || e.status === 429 || e.status >= 500 || /queue is full|retry later/i.test(e.message || '');
+    if (queueBusy && retryCount < 3) {
+      var waitSeconds = 15 * (retryCount + 1);
+      result.innerHTML = '<div class="agnes-progress">视频队列繁忙，' + waitSeconds + ' 秒后自动重试（' + (retryCount + 1) + '/3）…</div>';
+      _agnesVideoTimer = setTimeout(function () { startAgnesVideoCreate(payload, button, result, retryCount + 1); }, waitSeconds * 1000);
+      return;
+    }
+    result.innerHTML = agnesError(e);
+    button.disabled = false;
+  });
 }
 function renderVideoResult(data, busy) {
   var result = document.getElementById('agnes-video-result');
