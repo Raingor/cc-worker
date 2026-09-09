@@ -6,7 +6,8 @@ import re
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import List
+from typing import List, Optional, Tuple
+from urllib.parse import urlparse
 
 import requests
 from dotenv import load_dotenv
@@ -49,6 +50,15 @@ AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
 EMAIL_AI_API_BASE = os.getenv("EMAIL_AI_API_BASE", AI_API_BASE)
 EMAIL_AI_API_KEY = os.getenv("EMAIL_AI_API_KEY", AI_API_KEY)
 EMAIL_AI_MODEL = os.getenv("EMAIL_AI_MODEL", AI_MODEL)
+
+# Agnes generation config. The API key is kept on the server and never returned
+# to the browser. Environment variables are preferred for production; the small
+# JSON file makes the local web UI's "保存 Key" flow work without a second app.
+AGNES_DEFAULT_BASE_URL = "https://apihub.agnes-ai.com/v1"
+AGNES_CONFIG_PATH = Path(os.getenv(
+    "AGNES_CONFIG_PATH",
+    str(Path(__file__).resolve().parent / "data" / "agnes-config.json"),
+))
 
 # AgentMail config (for sending reminder emails)
 AGENTMAIL_INBOX = os.getenv("AGENTMAIL_INBOX", "oc-player-5823@agentmail.to")
@@ -154,9 +164,300 @@ def _client_messages(body: dict) -> list:
     return out
 
 
+def _read_agnes_config() -> dict:
+    """Read Agnes credentials without ever exposing the raw key in a response."""
+    env_key = os.getenv("AGNES_API_KEY", "").strip()
+    env_base = os.getenv("AGNES_API_BASE", "").strip()
+    file_config = {}
+    try:
+        if AGNES_CONFIG_PATH.is_file():
+            file_config = json.loads(AGNES_CONFIG_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        file_config = {}
+    api_key = env_key or (file_config.get("apiKey", "") if isinstance(file_config, dict) else "")
+    base_url = env_base or (file_config.get("baseUrl", "") if isinstance(file_config, dict) else "")
+    return {
+        "apiKey": str(api_key).strip(),
+        "baseUrl": str(base_url).strip() or AGNES_DEFAULT_BASE_URL,
+    }
+
+
+def _write_agnes_config(api_key: str, base_url: Optional[str] = None) -> bool:
+    try:
+        parsed = urlparse(base_url or _read_agnes_config()["baseUrl"])
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            return False
+        AGNES_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        AGNES_CONFIG_PATH.write_text(json.dumps({
+            "apiKey": api_key.strip(),
+            "baseUrl": (base_url or AGNES_DEFAULT_BASE_URL).strip().rstrip("/"),
+        }, ensure_ascii=False, indent=2), encoding="utf-8")
+        os.chmod(AGNES_CONFIG_PATH, 0o600)
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def _agnes_endpoint(base_url: str, path: str) -> str:
+    return base_url.rstrip("/") + "/" + path.lstrip("/")
+
+
+def _agnes_headers(api_key: str) -> dict:
+    return {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+
+
+def _agnes_upstream_error(response: requests.Response) -> Tuple[dict, int]:
+    try:
+        payload = response.json()
+    except ValueError:
+        payload = {}
+    message = payload.get("error", {}).get("message") if isinstance(payload, dict) else None
+    message = message or (payload.get("detail") if isinstance(payload, dict) else None)
+    message = message or (payload.get("message") if isinstance(payload, dict) else None)
+    return {"success": False, "status": response.status_code, "message": str(message or f"HTTP {response.status_code}")[:400]}, response.status_code
+
+
+def _agnes_failure(exc: Exception) -> Tuple[dict, int]:
+    return {"success": False, "message": str(exc)[:400]}, 502
+
+
+def _find_video_url(value, depth: int = 0) -> Optional[str]:
+    if depth > 6 or not isinstance(value, (dict, list)):
+        return None
+    entries = value.items() if isinstance(value, dict) else enumerate(value)
+    for key, child in entries:
+        if isinstance(child, str) and child.startswith(("http://", "https://")):
+            key_name = str(key).lower().replace("_", "")
+            if "video" in key_name or key_name in ("url", "download") or re.search(r"\.(mp4|mov|webm|m4v)(\?|$)", child, re.I):
+                return child
+        found = _find_video_url(child, depth + 1)
+        if found:
+            return found
+    return None
+
+
+def _agnes_content_text(content) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "\n".join(str(part.get("text", "")) for part in content if isinstance(part, dict) and part.get("type") == "text")
+    return ""
+
+
 @APP.route("/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok", "service": "cc-worker-api"})
+
+
+# ── Agnes 生图 / 生视频 ─────────────────────────────────────────
+
+@APP.route("/v1/agnes/config", methods=["GET", "POST", "OPTIONS"])
+def agnes_config():
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    config = _read_agnes_config()
+    if request.method == "POST":
+        body = request.get_json(silent=True) or {}
+        api_key = str(body.get("apiKey") or "").strip()
+        base_url = str(body.get("baseUrl") or config["baseUrl"]).strip()
+        if not api_key:
+            return jsonify({"success": False, "message": "请输入 Agnes API Key"}), 400
+        if not _write_agnes_config(api_key, base_url):
+            return jsonify({"success": False, "message": "Agnes API 地址无效"}), 400
+        config = _read_agnes_config()
+        return jsonify({"success": True, "hasKey": bool(config["apiKey"])})
+    key = config["apiKey"]
+    masked = f"{key[:7]}…{key[-4:]}" if len(key) > 12 else ("••••••••" if key else "")
+    return jsonify({"baseUrl": config["baseUrl"], "hasKey": bool(key), "maskedKey": masked})
+
+
+@APP.route("/v1/agnes/chat", methods=["POST", "OPTIONS"])
+def agnes_chat():
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    body = request.get_json(silent=True) or {}
+    config = _read_agnes_config()
+    messages = body.get("messages")
+    if not config["apiKey"] or not isinstance(messages, list) or not messages:
+        return jsonify({"success": False, "message": "Agnes API Key 和 messages 为必填项"}), 400
+    valid_messages = [
+        {"role": item.get("role"), "content": item.get("content")}
+        for item in messages
+        if isinstance(item, dict)
+        and item.get("role") in ("system", "user", "assistant")
+        and item.get("content")
+    ]
+    if len(valid_messages) != len(messages):
+        return jsonify({"success": False, "message": "messages 格式无效"}), 400
+    payload = {
+        "model": str(body.get("model") or "agnes-3.0-flash"),
+        "messages": valid_messages,
+        "stream": False,
+    }
+    if body.get("maxTokens") is not None:
+        payload["max_tokens"] = int(body.get("maxTokens") or 1024)
+    if body.get("temperature") is not None:
+        payload["temperature"] = float(body.get("temperature"))
+    started = datetime.now().timestamp()
+    try:
+        response = requests.post(
+            _agnes_endpoint(config["baseUrl"], "/chat/completions"),
+            headers=_agnes_headers(config["apiKey"]), json=payload, timeout=120,
+        )
+        if not response.ok:
+            error, status = _agnes_upstream_error(response)
+            return jsonify(error), status
+        data = response.json()
+        choice = (data.get("choices") or [{}])[0]
+        reply = _agnes_content_text((choice.get("message") or {}).get("content"))
+        if not reply:
+            return jsonify({"success": False, "message": "Agnes 返回内容为空"}), 502
+        return jsonify({
+            "success": True,
+            "latencyMs": round((datetime.now().timestamp() - started) * 1000),
+            "reply": reply,
+            "usage": data.get("usage"),
+        })
+    except (requests.RequestException, ValueError, TypeError) as exc:
+        error, status = _agnes_failure(exc)
+        return jsonify(error), status
+
+
+@APP.route("/v1/agnes/image-generate", methods=["POST", "OPTIONS"])
+def agnes_image_generate():
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    body = request.get_json(silent=True) or {}
+    config = _read_agnes_config()
+    model = str(body.get("model") or "").strip()
+    prompt = str(body.get("prompt") or "").strip()
+    if not config["apiKey"] or not model or not prompt:
+        return jsonify({"success": False, "message": "Agnes API Key、模型和提示词为必填项"}), 400
+    references = [str(item).strip() for item in (body.get("image") or []) if str(item).strip()]
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "size": body.get("size") or "1K",
+        "extra_body": {"response_format": body.get("responseFormat") or "url"},
+    }
+    if references:
+        payload["extra_body"]["image"] = references
+    if body.get("ratio"):
+        payload["ratio"] = body["ratio"]
+    if payload["extra_body"]["response_format"] == "b64_json" and not references:
+        payload["return_base64"] = True
+    started = datetime.now().timestamp()
+    try:
+        response = requests.post(
+            _agnes_endpoint(config["baseUrl"], "/images/generations"),
+            headers=_agnes_headers(config["apiKey"]), json=payload, timeout=360,
+        )
+        if not response.ok:
+            error, status = _agnes_upstream_error(response)
+            return jsonify(error), status
+        data = response.json()
+        images = []
+        for item in data.get("data") or []:
+            if isinstance(item, dict) and item.get("url"):
+                images.append(item["url"])
+            elif isinstance(item, dict) and item.get("b64_json"):
+                images.append("data:image/png;base64," + item["b64_json"])
+        if not images:
+            return jsonify({"success": False, "message": "Agnes 返回中没有图片"}), 502
+        return jsonify({"success": True, "latencyMs": round((datetime.now().timestamp() - started) * 1000), "images": images})
+    except (requests.RequestException, ValueError, TypeError) as exc:
+        error, status = _agnes_failure(exc)
+        return jsonify(error), status
+
+
+@APP.route("/v1/agnes/video-create", methods=["POST", "OPTIONS"])
+def agnes_video_create():
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    body = request.get_json(silent=True) or {}
+    config = _read_agnes_config()
+    model = str(body.get("model") or "").strip()
+    prompt = str(body.get("prompt") or "").strip()
+    if not config["apiKey"] or not model or not prompt:
+        return jsonify({"success": False, "message": "Agnes API Key、模型和提示词为必填项"}), 400
+    mode = body.get("mode") or "text"
+    payload = {
+        "model": model, "prompt": prompt, "mode": mode,
+        "seconds": body.get("seconds") or "5", "size": body.get("size") or "720P",
+    }
+    if body.get("aspectRatio"):
+        payload["aspect_ratio"] = body["aspectRatio"]
+    if mode == "keyframe":
+        if not body.get("firstFrame") and not body.get("lastFrame"):
+            return jsonify({"success": False, "message": "首尾帧模式至少需要一张图片"}), 400
+        if body.get("firstFrame"): payload["first_frame"] = body["firstFrame"]
+        if body.get("lastFrame"): payload["last_frame"] = body["lastFrame"]
+    elif mode == "reference":
+        images = [str(item).strip() for item in (body.get("images") or []) if str(item).strip()]
+        audios = [str(item).strip() for item in (body.get("audios") or []) if str(item).strip()]
+        if not images and not audios:
+            return jsonify({"success": False, "message": "参考模式至少需要图片或音频"}), 400
+        if images: payload["images"] = images
+        if audios: payload["audios"] = audios
+    try:
+        response = requests.post(
+            _agnes_endpoint(config["baseUrl"], "/videos"),
+            headers=_agnes_headers(config["apiKey"]), json=payload, timeout=120,
+        )
+        if not response.ok:
+            error, status = _agnes_upstream_error(response)
+            return jsonify(error), status
+        data = response.json()
+        video_id = data.get("video_id")
+        if not video_id:
+            return jsonify({"success": False, "message": "Agnes 返回中没有 video_id"}), 502
+        return jsonify({"success": True, "videoId": video_id, "taskStatus": data.get("status")})
+    except (requests.RequestException, ValueError, TypeError) as exc:
+        error, status = _agnes_failure(exc)
+        return jsonify(error), status
+
+
+@APP.route("/v1/agnes/video-status", methods=["GET", "OPTIONS"])
+def agnes_video_status():
+    if request.method == "OPTIONS":
+        return "", 204
+    if not _verify_token():
+        return jsonify({"error": {"message": "Unauthorized"}}), 401
+    config = _read_agnes_config()
+    video_id = request.args.get("videoId", "")
+    if not config["apiKey"] or not re.fullmatch(r"[\w-]{1,200}", video_id):
+        return jsonify({"success": False, "message": "videoId 无效或 Agnes API Key 未配置"}), 400
+    root = re.sub(r"/v\d+/?$", "", config["baseUrl"].rstrip("/"))
+    params = {"video_id": video_id}
+    if request.args.get("model"):
+        params["model_name"] = request.args["model"]
+    try:
+        response = requests.get(
+            _agnes_endpoint(root, "/agnesapi"), headers=_agnes_headers(config["apiKey"]),
+            params=params, timeout=30,
+        )
+        if not response.ok:
+            error, status = _agnes_upstream_error(response)
+            if status == 429 or status >= 500:
+                error.update({"videoId": video_id, "retryable": True})
+            return jsonify(error), status
+        data = response.json()
+        return jsonify({
+            "success": True, "videoId": video_id, "taskStatus": data.get("status"),
+            "progress": data.get("progress"), "videoUrl": _find_video_url(data),
+        })
+    except (requests.RequestException, ValueError, TypeError) as exc:
+        error, status = _agnes_failure(exc)
+        error.update({"videoId": video_id, "retryable": True})
+        return jsonify(error), status
 
 
 @APP.route("/v1/chat/upload", methods=["POST", "OPTIONS"])

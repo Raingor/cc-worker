@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/animal-island.css?v=1">
-<link rel="stylesheet" href="assets/style.css?v=10">
+<link rel="stylesheet" href="assets/style.css?v=11">
 <link rel="stylesheet" href="assets/mac-layout.css?v=10">
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
    <script src="https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js"></script>
@@ -94,6 +94,7 @@
         </button>
         <div class="nav-dropdown">
           <button class="nav-sub" data-tab="analyze">分析任务</button>
+          <button class="nav-sub" data-tab="agnes-generate">Agnes 生图生视频</button>
         </div>
       </div>
     </nav>
@@ -134,7 +135,8 @@
     <!-- Panel: Analysis -->
     <div class="panel" id="panel-analysis">
       <div class="panel-body" id="analysis-body">
-          <div class="analysis-wrap ai-pattern-default" style="padding:24px;border-radius:20px">
+          <div class="analysis-subpanel active" data-analysis-view="analyze">
+        <div class="analysis-wrap ai-pattern-default" style="padding:24px;border-radius:20px">
           <div class="analysis-header">
             <div class="ai-title ai-title--app-yellow" style="display:inline-flex;margin-bottom:12px">
               <span class="ai-title__back ai-title__back--left"></span>
@@ -207,6 +209,10 @@
             <div class="analysis-records-list" id="analysis-records-list"></div>
           </div>
         </div>
+        </div>
+        <div class="analysis-subpanel" data-analysis-view="agnes-generate">
+          <div id="agnes-generate-body"></div>
+        </div>
       </div>
     </div>
 
@@ -227,8 +233,9 @@
   <img class="lock-bear" src="https://media.tenor.com/4bMDX6ox1JgAAAAj/joke-bear-jokebear.gif" alt="bear">
   <span class="lock-hint">点击解锁</span>
 </div>
-<script src="assets/app.js?v=10"></script>
+<script src="assets/app.js?v=11"></script>
 <script src="assets/analysis.js?v=8"></script>
+<script src="assets/agnes.js?v=1"></script>
 <script src="assets/dashboard.js?v=10"></script>
 <script src="assets/toolbox.js?v=10"></script>
 <script src="assets/board.js?v=8"></script>

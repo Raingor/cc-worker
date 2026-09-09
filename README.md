@@ -10,6 +10,7 @@
 - 前端：<https://raingor.github.io/cc-worker/>
 - API：`https://api.sz-hrhb.com`
 - 指令来源：`appPackage/declarativeAgent.json`（经 `scripts/sync-instructions.py` 同步）
+- 数据分析 → **Agnes 生图生视频**：支持 Agnes 图片、视频任务和 Agnes 3.0 Flash 对话；Key 可在页面保存，也可由服务端 `AGNES_API_KEY` 配置。
 
 ### 本地预览前端
 

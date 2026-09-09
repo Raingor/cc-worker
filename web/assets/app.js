@@ -52,8 +52,7 @@ function switchPanel(name, tab) {
     if (tab) setMemoTab(tab); else setMemoTab('memo-list');
   }
   if (name === 'analysis') {
-    if (tab) setAnalysisTab(tab); else setAnalysisTab('analyze');
-    initAnalysis();
+    setAnalysisTab(tab || 'analyze');
   }
   const group = document.querySelector(`.nav-item[data-panel="${name}"]`)?.closest('.nav-group');
   if (group && document.documentElement.getAttribute('data-layout') !== 'mac') group.classList.add('open');
@@ -119,7 +118,14 @@ function initMemo() {
   renderMemo();
 }
 function setAnalysisTab(tab) {
-  document.querySelectorAll('.nav-sub[data-tab="analyze"]').forEach(s => s.classList.toggle('active', s.dataset.tab === tab));
+  const activeTab = tab || 'analyze';
+  document.querySelectorAll('.nav-sub[data-tab="analyze"], .nav-sub[data-tab="agnes-generate"]').forEach(s => s.classList.toggle('active', s.dataset.tab === activeTab));
+  document.querySelectorAll('[data-analysis-view]').forEach(view => view.classList.toggle('active', view.dataset.analysisView === activeTab));
+  if (activeTab === 'agnes-generate') {
+    if (typeof initAgnesPanel === 'function') initAgnesPanel();
+  } else {
+    initAnalysis();
+  }
 }
 function initAnalysis() {
   if (typeof initAnalysisPanel === 'function') {
