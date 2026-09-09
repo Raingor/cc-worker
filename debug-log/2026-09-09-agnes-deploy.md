@@ -16,4 +16,6 @@
 - `https://api.sz-hrhb.com/health` 返回 HTTP 200。
 - `https://api.sz-hrhb.com/v1/agnes/config` 返回 `hasKey: true`，仅返回脱敏 Key。
 - Agnes 配置接口 CORS 预检返回 HTTP 204。
+- 生产实测图片生成：`agnes-image-2.5-flash` 返回 1 张图片，HTTP 200。
+- 生产实测视频生成：`agnes-video-2.5-flash` 创建任务并轮询至 `completed`，进度 100%，返回视频 URL。
 - GitHub Actions `Deploy GitHub Pages #130` 成功，线上页面已包含 Agnes 菜单和脚本。
