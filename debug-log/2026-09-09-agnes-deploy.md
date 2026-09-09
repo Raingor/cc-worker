@@ -19,4 +19,5 @@
 - 生产实测图片生成：`agnes-image-2.5-flash` 返回 1 张图片，HTTP 200。
 - 生产实测视频生成：`agnes-video-2.5-flash` 创建任务并轮询至 `completed`，进度 100%，返回视频 URL。
 - 页面图片显示为破图：接口已成功返回图片 URL，但前端 CSP 的 `img-src` 未允许 `platform-outputs.agnes-ai.space`。已补充该图片域名，并同时加入 `media-src` 以支持视频预览。
+- 视频接口偶发返回 `video queue is full, please retry later`：这是 Agnes 上游队列暂满，不是参数错误。后端已将 429/5xx 标记为可重试，前端遇到队列繁忙会按 15/30/45 秒自动重试 3 次，最终失败才提示错误。
 - GitHub Actions `Deploy GitHub Pages #130` 成功，线上页面已包含 Agnes 菜单和脚本。
