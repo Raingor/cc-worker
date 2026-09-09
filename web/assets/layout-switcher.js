@@ -8,7 +8,8 @@
     { panel: 'toolbox',   icon: '◇', label: '工具箱', key: '2' },
     { panel: 'board',     icon: '✦', label: '留言板', key: '3' },
     { panel: 'memo',      icon: '✎', label: '备忘录', key: '4' },
-    { panel: 'analysis',  icon: '↗', label: '数据分析', key: '5' }
+    { panel: 'analysis',  icon: '↗', label: '数据分析', key: '5' },
+    { panel: 'agnes',     icon: '✧', label: 'Agnes 生图生视频', key: '6' }
   ];
 
   var DOCK_COLORS = [
@@ -16,7 +17,8 @@
     'linear-gradient(145deg, #f0bd58, #dd8f42)',
     'linear-gradient(145deg, #70a7df, #597fc0)',
     'linear-gradient(145deg, #e7909b, #c96778)',
-    'linear-gradient(145deg, #8f85cf, #665da9)'
+    'linear-gradient(145deg, #8f85cf, #665da9)',
+    'linear-gradient(145deg, #efae68, #c97945)'
   ];
 
   function getLayout() {
