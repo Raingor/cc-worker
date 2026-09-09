@@ -56,9 +56,6 @@ function initAgnesPanel() {
 function renderAgnesPanel(body) {
   body.innerHTML = '<div class="agnes-wrap ai-pattern-default">' +
     '<header class="agnes-header"><div class="agnes-mark">✦</div><div><div class="agnes-kicker">AGNES GENERATION</div><h2>Agnes 生图生视频</h2><p>把想法变成画面，也可以用 Agnes 3.0 Flash 继续完善创意。</p></div></header>' +
-    '<section class="agnes-key-card"><div class="agnes-key-title"><span>🔑 Agnes API Key</span><span id="agnes-key-badge">' + agnesConfigLabel() + '</span></div>' +
-    '<div class="agnes-key-row"><div class="agnes-key-input-wrap"><input id="agnes-key-input" class="agnes-input agnes-mono" type="password" placeholder="输入 Agnes API Key" autocomplete="off"><button id="agnes-key-toggle" class="agnes-icon-btn" type="button" title="显示或隐藏">◉</button></div><button id="agnes-save-key" class="agnes-btn agnes-btn-secondary" type="button">保存 Key</button></div>' +
-    '<p class="agnes-note">Key 只保存到服务器，不会回传浏览器。服务端也可通过 <code>AGNES_API_KEY</code> 环境变量配置。</p><p id="agnes-key-error" class="agnes-error" hidden></p></section>' +
     '<div class="agnes-tabs"><button class="agnes-tab" data-agnes-tab="image" type="button">▧ 图片</button><button class="agnes-tab" data-agnes-tab="video" type="button">▶ 视频</button><button class="agnes-tab" data-agnes-tab="chat" type="button">◎ Agnes 3.0</button></div>' +
     '<div class="agnes-view" data-agnes-view="image"><div id="agnes-image-view"></div></div>' +
     '<div class="agnes-view" data-agnes-view="video"><div id="agnes-video-view"></div></div>' +
@@ -69,11 +66,6 @@ function renderAgnesPanel(body) {
   renderChatView();
   body.querySelectorAll('[data-agnes-tab]').forEach(function (button) {
     button.addEventListener('click', function () { setAgnesTab(button.dataset.agnesTab); });
-  });
-  document.getElementById('agnes-save-key').addEventListener('click', saveAgnesKey);
-  document.getElementById('agnes-key-toggle').addEventListener('click', function () {
-    var input = document.getElementById('agnes-key-input');
-    input.type = input.type === 'password' ? 'text' : 'password';
   });
 }
 function setAgnesTab(tab) {
