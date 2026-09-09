@@ -20,4 +20,5 @@
 - 生产实测视频生成：`agnes-video-2.5-flash` 创建任务并轮询至 `completed`，进度 100%，返回视频 URL。
 - 页面图片显示为破图：接口已成功返回图片 URL，但前端 CSP 的 `img-src` 未允许 `platform-outputs.agnes-ai.space`。已补充该图片域名，并同时加入 `media-src` 以支持视频预览。
 - 视频接口偶发返回 `video queue is full, please retry later`：这是 Agnes 上游队列暂满，不是参数错误。后端已将 429/5xx 标记为可重试，前端遇到队列繁忙会按 15/30/45 秒自动重试 3 次，最终失败才提示错误。
+- 上传参考图后出现 `Failed to fetch`：浏览器把图片转成 data URI 后请求体约 5MB，Nginx 默认 body 限制拦截；即使放宽 Nginx，Agnes 图片接口也不接受 data URI（返回 500）。现改为上传到 API 临时目录，返回 1 小时有效的公开图片 URL，再将 URL 传给 Agnes；Nginx body 限制同步设为 25MB。已实测上传、公开访问和 URL 参考生图均成功。
 - GitHub Actions `Deploy GitHub Pages #130` 成功，线上页面已包含 Agnes 菜单和脚本。
