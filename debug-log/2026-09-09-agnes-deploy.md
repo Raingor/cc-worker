@@ -18,4 +18,5 @@
 - Agnes 配置接口 CORS 预检返回 HTTP 204。
 - 生产实测图片生成：`agnes-image-2.5-flash` 返回 1 张图片，HTTP 200。
 - 生产实测视频生成：`agnes-video-2.5-flash` 创建任务并轮询至 `completed`，进度 100%，返回视频 URL。
+- 页面图片显示为破图：接口已成功返回图片 URL，但前端 CSP 的 `img-src` 未允许 `platform-outputs.agnes-ai.space`。已补充该图片域名，并同时加入 `media-src` 以支持视频预览。
 - GitHub Actions `Deploy GitHub Pages #130` 成功，线上页面已包含 Agnes 菜单和脚本。
