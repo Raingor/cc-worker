@@ -48,6 +48,11 @@ function dashDateStr(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
+function renderDashboardUnavailable(body, message) {
+  body.innerHTML = '<header class="workspace-page-heading"><span class="page-eyebrow">YOUR DAY, AT YOUR PACE</span><h1>把今天，安排得从容一点。</h1><p>你的工作安排，会在连接恢复后显示。</p></header><div class="workspace-error"><svg class="icon"><use href="#i-dashboard"/></svg><h2>暂时未能载入工作清单</h2><p>' + escapeHtml(message) + '</p><button type="button" class="oa-btn">重新连接</button></div>';
+  body.querySelector('button').addEventListener('click', loadDashboard);
+}
+
 async function loadDashboard() {
   const body = document.getElementById('dash-body');
   body.innerHTML = '<div class="dash-loading" style="display:flex;flex-direction:column;align-items:center;gap:12px">' + randomBearImg(40, 8) + '<span>加载中…</span></div>';
@@ -55,14 +60,14 @@ async function loadDashboard() {
   // Safety timeout: show error if fetch hangs >15s
   const timeoutId = setTimeout(() => {
     if (dashState.loading) {
-      body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">请求超时，请检查网络或 API 地址</div>';
+      renderDashboardUnavailable(body, '请求超时，请检查网络或 API 地址。');
       dashState.loading = false;
     }
   }, 15000);
   try {
     const fetchOpts = { headers: dashHeaders(), signal: AbortSignal.timeout(12000) };
     const url = dashUrl('/v1/checklist?date=' + dashState.selectedDate);
-    if (!url) { clearTimeout(timeoutId); body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">配置错误：API 地址未设置</div>'; dashState.loading = false; return; }
+    if (!url) { clearTimeout(timeoutId); renderDashboardUnavailable(body, 'API 地址未设置，请检查工作台配置。'); dashState.loading = false; return; }
     const [checklistResp, historyResp] = await Promise.all([
       fetch(url, fetchOpts),
       fetch(dashUrl('/v1/checklist/history?year=' + dashState.viewDate.getFullYear() + '&month=' + (dashState.viewDate.getMonth() + 1)), fetchOpts),
@@ -78,7 +83,7 @@ async function loadDashboard() {
         showDashNotice('离线模式 — 上次保存的数据', 'warn');
         return;
       }
-      body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">加载失败：' + (errData.error?.message || checklistResp.statusText) + '</div>';
+      renderDashboardUnavailable(body, '加载失败：' + (errData.error?.message || checklistResp.statusText));
       return;
     }
     dashState.data = await checklistResp.json();
@@ -103,7 +108,7 @@ async function loadDashboard() {
   } catch (e) {
     clearTimeout(timeoutId);
     const msg = e.name === 'AbortError' ? '请求超时' : e.message;
-    body.innerHTML = '<div class="dash-loading" style="color:var(--accent-red)">网络错误：' + msg + '</div>';
+    renderDashboardUnavailable(body, '网络连接异常，请稍后重试。' + (msg ? '（' + msg + '）' : ''));
   } finally {
     dashState.loading = false;
   }
@@ -122,10 +127,8 @@ function renderActiveTabOnly() {
   const body = document.getElementById('dash-body');
   const data = dashState.data;
   if (!data) return;
-  const greeting = body.querySelector('.oa-greeting');
   body.innerHTML = '';
-  if (greeting) body.appendChild(greeting);
-  else body.appendChild(renderGreeting(data));
+  body.appendChild(renderGreeting(data));
   renderActiveTabInto(body, data);
 }
 
@@ -157,34 +160,30 @@ var FALLBACK_BEARS = [
 ];
 
 function renderGreeting(data) {
-  const el = document.createElement('div');
+  const el = document.createElement('header');
   el.className = 'oa-greeting';
   const dt = dashState.selectedDate.split('-');
   const d = new Date(+dt[0], +dt[1] - 1, +dt[2]);
-  const weekday = WEEKDAY_LABELS[d.getDay()];
-  const prog = data.progress || { checked: 0, total: 0 };
-  const pct = prog.total > 0 ? Math.round(prog.checked / prog.total * 100) : 0;
-  const circumference = 2 * Math.PI * 22;
-  const offset = circumference - (pct / 100) * circumference;
+  const items = data.items || [];
+  const total = items.length;
+  const checked = items.filter(item => item.status === 'done' || (!item.status && item.checked)).length;
+  const pct = total ? Math.round(checked / total * 100) : 0;
+  const circumference = 2 * Math.PI * 30;
+  const offset = circumference * (1 - pct / 100);
   el.innerHTML =
-    '<div class="oa-greeting-text">' +
-    '  <div class="oa-greeting-sub">' + dt[0] + '年' + (+dt[1]) + '月' + (+dt[2]) + '日 · 星期' + weekday + (data.is_today ? ' · 今天' : '') + '</div>' +
-    '  <div class="oa-greeting-title">' + escapeHtml(data.title || '工作面板') + '</div>' +
-    '</div>' +
-    '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' +
-    '  <div class="bear-wrap">' + randomBearImg(52, 12) + '</div>' +
-    '  <svg class="oa-greeting-ring" viewBox="0 0 52 52">' +
-    '    <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="3"/>' +
-    '    <circle cx="26" cy="26" r="22" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" transform="rotate(-90 26 26)"/>' +
-    '    <text x="26" y="26" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="12" font-weight="600" font-family="Inter,sans-serif">' + pct + '%</text>' +
-    '  </svg>' +
-    '</div>';
+    '<div class="oa-greeting-text"><span class="page-eyebrow">YOUR DAY, AT YOUR PACE</span>' +
+    '<h1 class="oa-greeting-title">' + (data.is_today ? '把今天，安排得从容一点。' : '回看每一天的认真。') + '</h1>' +
+    '<p class="oa-greeting-sub">' + escapeHtml(data.title || '工作面板') + '<span class="greeting-separator">/</span>' + (+dt[1]) + ' 月 ' + (+dt[2]) + ' 日 · 星期' + WEEKDAY_LABELS[d.getDay()] + '</p>' +
+    '<p class="greeting-caption">理清优先次序，把注意力留给重要的事。</p></div>' +
+    '<div class="greeting-progress"><div><span class="progress-eyebrow">' + (data.is_today ? '今日完成' : '当日完成') + '</span><div class="progress-fraction">' + checked + '<span> / ' + total + '</span></div><span class="progress-note">' + (total && checked === total ? '做得很好，享受片刻轻松。' : '每前进一步，都算数。') + '</span></div>' +
+    '<svg class="oa-greeting-ring" viewBox="0 0 76 76" role="img" aria-label="完成进度 ' + pct + '%"><circle cx="38" cy="38" r="30" class="progress-track"/><circle cx="38" cy="38" r="30" class="progress-value" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" transform="rotate(-90 38 38)"/><text x="38" y="39" text-anchor="middle" dominant-baseline="central">' + pct + '%</text></svg></div>';
   return el;
 }
 
 /* ── Add Task UI helper ── */
 function createAddTaskUI(container, onAdd) {
-  const fab = document.createElement('div');
+  const fab = document.createElement('button');
+  fab.type = 'button';
   fab.className = 'oa-trello-add-fab';
   fab.innerHTML = '<span class="oa-trello-add-icon">＋</span><span class="oa-trello-add-label">添加任务</span>';
 
@@ -270,27 +269,6 @@ function renderTasksTab(data) {
   const carried = allItems.filter(i => i.is_carried);
   const items = allItems.filter(i => !i.is_carried);
 
-  if (allItems.length === 0) {
-    const el = document.createElement('div');
-    el.className = 'oa-trello';
-    const col = document.createElement('div');
-    col.className = 'oa-trello-col';
-    const header = document.createElement('div');
-    header.className = 'oa-trello-header';
-    header.innerHTML = '<span class="oa-trello-header-label">📋 未完成</span><span class="oa-trello-count">0</span>';
-    col.appendChild(header);
-    const list = document.createElement('div');
-    list.className = 'oa-trello-list';
-    createAddTaskUI(col, (label) => addCustomItem(label));
-    const empty = document.createElement('div');
-    empty.className = 'oa-trello-empty';
-    empty.textContent = '该日期没有工作任务安排';
-    list.appendChild(empty);
-    col.appendChild(list);
-    el.appendChild(col);
-    return el;
-  }
-
   const wrap = document.createElement('div');
 
   // Carried-over block (yesterday's unfinished tasks) — above the board
@@ -302,10 +280,14 @@ function renderTasksTab(data) {
     if (!item.status) item.status = item.checked ? 'done' : 'todo';
   }
 
+  const sectionHeading = document.createElement('div');
+  sectionHeading.className = 'task-section-heading';
+  sectionHeading.innerHTML = '<div><h2>工作清单<span>' + items.length + ' 项安排</span></h2><p>一步一步，让计划变成进展。</p></div><span class="task-view-label">看板视图</span>';
+  wrap.appendChild(sectionHeading);
   const columns = [
-    { key: 'todo', label: '📋 未完成' },
-    { key: 'in_progress', label: '🔄 完成中' },
-    { key: 'done', label: '✅ 已完成' },
+    { key: 'todo', label: '待开始' },
+    { key: 'in_progress', label: '进行中' },
+    { key: 'done', label: '已完成' },
   ];
 
   const board = document.createElement('div');
@@ -315,6 +297,7 @@ function renderTasksTab(data) {
     const colItems = items.filter(i => i.status === col.key);
     const section = document.createElement('div');
     section.className = 'oa-trello-col';
+    section.dataset.status = col.key;
 
     const header = document.createElement('div');
     header.className = 'oa-trello-header';
@@ -336,7 +319,7 @@ function renderTasksTab(data) {
     if (colItems.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'oa-trello-empty';
-      empty.textContent = '暂无';
+      empty.innerHTML = '<span class="task-empty-mark" aria-hidden="true">' + (col.key === 'done' ? '✓' : '—') + '</span><span>' + (col.key === 'done' ? '完成的任务会收集在这里' : '暂时没有任务，保持从容') + '</span>';
       list.appendChild(empty);
     }
 
@@ -352,7 +335,7 @@ function renderTasksTab(data) {
   const sumBtn = document.createElement('button');
   sumBtn.className = 'oa-btn';
   sumBtn.type = 'button';
-  sumBtn.textContent = dashState.summarizing ? 'AI 正在总结…' : '总结今天任务完成';
+  sumBtn.textContent = dashState.summarizing ? 'AI 正在总结…' : '✧ 生成今日工作总结';
   sumBtn.disabled = dashState.summarizing;
   sumBtn.addEventListener('click', onSummarize);
   sumWrap.appendChild(sumBtn);
@@ -386,8 +369,9 @@ function renderTaskCard(item) {
   const noteBtn = document.createElement('button');
   noteBtn.className = 'oa-trello-note-btn';
   noteBtn.type = 'button';
-  noteBtn.textContent = '📝';
+  noteBtn.innerHTML = '<svg class="icon"><use href="#i-memo"/></svg>';
   noteBtn.title = item.note ? '编辑备注' : '添加备注';
+  noteBtn.setAttribute('aria-label', noteBtn.title);
   actions.appendChild(noteBtn);
 
   // Advance status button
@@ -395,10 +379,10 @@ function renderTaskCard(item) {
   advBtn.className = 'oa-trello-adv-btn';
   advBtn.type = 'button';
   if (item.status === 'todo') {
-    advBtn.textContent = '→ 完成中';
+    advBtn.textContent = '开始任务 →';
     advBtn.title = '标记为完成中';
   } else if (item.status === 'in_progress') {
-    advBtn.textContent = '→ 已完成';
+    advBtn.textContent = '标记完成 ✓';
     advBtn.title = '标记为已完成';
   } else {
     advBtn.textContent = '↩ 重开';
@@ -414,7 +398,8 @@ function renderTaskCard(item) {
     const delBtn = document.createElement('button');
     delBtn.className = 'oa-trello-del-btn';
     delBtn.type = 'button';
-    delBtn.textContent = '🗑';
+    delBtn.textContent = '×';
+    delBtn.setAttribute('aria-label', '删除任务');
     delBtn.title = '删除任务';
     delBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -517,7 +502,7 @@ function advanceStatus(item, cardEl) {
 function addCustomItem(label) {
   const id = 'custom_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   const newItem = {
-    id, label, checked: false, status: 'todo', note: '',
+    id, label, checked: false, status: 'todo', note: '', is_custom: true,
   };
   dashState.data.items.push(newItem);
   saveChecklist();
@@ -556,13 +541,20 @@ function renderCalendarTab() {
   for (let i = 0; i < firstDay.getDay(); i++) { const e = document.createElement('div'); e.className = 'oa-cal-day other'; grid.appendChild(e); }
   for (let day = 1; day <= lastDay.getDate(); day++) {
     const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-    const cell = document.createElement('div');
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.setAttribute('aria-label', dateStr + '，查看当日任务');
     cell.className = 'oa-cal-day';
     if (dateStr === today) cell.classList.add('today');
     if (dateStr === selected) cell.classList.add('selected');
     if (historySet.has(dateStr)) cell.classList.add('has-data');
     cell.innerHTML = '<span class="oa-cal-num">' + day + '</span>';
-    cell.addEventListener('click', () => { dashState.selectedDate = dateStr; dashState.activeTab = 'tasks'; loadDashboard(); });
+    cell.addEventListener('click', () => {
+      dashState.selectedDate = dateStr;
+      dashState.activeTab = 'tasks';
+      if (window.CCWorkspace) window.CCWorkspace.sync('dashboard', 'tasks');
+      loadDashboard();
+    });
     grid.appendChild(cell);
   }
   cal.appendChild(grid);
@@ -607,7 +599,12 @@ async function renderHistoryTabAsync(body) {
     const item = document.createElement('div');
     item.className = 'oa-history-item';
     item.innerHTML = '<div class="oa-history-date">📅 ' + s.date + ' · 星期' + wd + '</div>' + (s.title ? '<div style="font-weight:600;font-size:13px;margin-bottom:6px">' + escapeHtml(s.title) + '</div>' : '') + '<div class="oa-history-body">' + formatSummary(s.summary) + '</div>';
-    item.addEventListener('click', () => { dashState.selectedDate = s.date; dashState.activeTab = 'tasks'; loadDashboard(); });
+    item.addEventListener('click', () => {
+      dashState.selectedDate = s.date;
+      dashState.activeTab = 'tasks';
+      if (window.CCWorkspace) window.CCWorkspace.sync('dashboard', 'tasks');
+      loadDashboard();
+    });
     list.appendChild(item);
   }
   container.innerHTML = '';
@@ -667,18 +664,7 @@ async function doSaveChecklist() {
   } finally { dashState.saving = false; }
 }
 function updateProgressRing() {
-  const prog = dashState.data?.progress || { checked: 0, total: 0 };
-  const pct = prog.total > 0 ? Math.round(prog.checked / prog.total * 100) : 0;
-  const circumference = 2 * Math.PI * 22;
-  const offset = circumference - (pct / 100) * circumference;
-  const ring = document.querySelector('.oa-greeting-ring');
-  if (ring) {
-    const circle = ring.querySelector('circle:last-of-type');
-    const text = ring.querySelector('text');
-    if (circle) circle.setAttribute('stroke-dashoffset', offset);
-    if (text) text.textContent = pct + '%';
-  }
-  // Full re-render Trello board after save
+  // The greeting and board share the same item-based progress calculation.
   renderActiveTabOnly();
 }
 async function onSummarize() {

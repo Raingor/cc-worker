@@ -1,253 +1,101 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-layout="workspace">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob: https://media.tenor.com https://platform-outputs.agnes-ai.space; media-src 'self' blob: https://platform-outputs.agnes-ai.space; connect-src 'self' https://api.sz-hrhb.com http://127.0.0.1:5001 https://cdn.jsdelivr.net https://opencode.ai">
-<title>CC 工作台</title>
+<title>CC 工作台 · 从容工作</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/animal-island.css?v=1">
 <link rel="stylesheet" href="assets/style.css?v=13">
-<link rel="stylesheet" href="assets/mac-layout.css?v=11">
+<link rel="stylesheet" href="assets/workspace.css?v=20261029-2">
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
-   <script src="https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js"></script>
-   <script src="config.example.js"></script>
-   <script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js"></script>
+<script src="config.example.js"></script>
+<script src="config.js"></script>
 </head>
 <body>
+<a class="skip-link" href="#workspace-content">跳到主要内容</a>
+<svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+  <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-tools" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="3"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M9 11v3m6-3v3"/></symbol>
+  <symbol id="i-board" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z"/><path d="M7 9h9M7 13h6"/></symbol>
+  <symbol id="i-memo" viewBox="0 0 24 24"><path d="M13 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-7M14 5l5-3 3 3-13 13-4 1 1-4Z"/></symbol>
+  <symbol id="i-analysis" viewBox="0 0 24 24"><path d="M4 3v17h17M8 15l4-5 4 2 5-7M17 5h4v4"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></symbol>
+  <symbol id="i-focus" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8ZM14 2v6h6M8 13h8m-8 4h5"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18m-13 4h2m4 0h2"/></symbol>
+</defs></svg>
 
-<svg style="position:absolute;width:0;height:0" aria-hidden="true">
-  <defs>
-    <clipPath id="animal-modal-clip" clipPathUnits="objectBoundingBox">
-      <path d="M0.501,0.005 L0.501,0.005 L0.523,0.005 L0.549,0.006 C0.704,0.01,0.796,0.017,0.825,0.027 L0.827,0.028 C0.872,0.045,0.939,0.044,0.978,0.17 C1,0.254,1,0.365,0.99,0.505 L0.988,0.513 C0.979,0.558,0.971,0.598,0.965,0.633 C0.956,0.689,0.979,0.77,0.964,0.865 C0.953,0.928,0.921,0.966,0.869,0.979 C0.821,0.986,0.773,0.992,0.726,0.995 L0.712,0.996 L0.694,0.997 C0.648,1,0.586,1,0.507,1 L0.501,1 L0.464,1 C0.385,1,0.325,0.998,0.283,0.995 C0.234,0.992,0.184,0.987,0.133,0.979 C0.081,0.966,0.05,0.928,0.039,0.865 C0.023,0.77,0.047,0.689,0.037,0.633 C0.031,0.595,0.023,0.552,0.013,0.505 C-0.006,0.365,-0.002,0.254,0.024,0.17 C0.064,0.045,0.13,0.045,0.174,0.028 L0.175,0.028 C0.204,0.017,0.303,0.009,0.474,0.005 L0.501,0.005"/>
-    </clipPath>
-  </defs>
-</svg>
-
-<!-- Mobile hamburger -->
-<button id="mobile-menu-btn" type="button" aria-label="菜单">☰</button>
-
+<button id="mobile-menu-btn" type="button" aria-label="打开导航" aria-expanded="false" aria-controls="workspace-nav">☰</button>
 <div id="app-screen" class="active">
-  <aside class="nav-bar">
-    <div class="nav-brand">
-      <span class="ai-title ai-title--small ai-title--app-teal" style="margin:0">
-        <span class="ai-title__back ai-title__back--left"></span>
-        <span class="ai-title__back ai-title__back--right"></span>
-        <span class="ai-title__fold ai-title__fold--left"></span>
-        <span class="ai-title__fold ai-title__fold--right"></span>
-        <span class="ai-title__front"><span class="ai-title__text">CC 工作台</span></span>
-      </span>
-    </div>
-    <nav class="nav-items">
-      <div class="nav-group">
-        <button class="nav-item" data-panel="dashboard">
-          <span class="nav-item-label">工作面板</span>
-          <span class="nav-chevron">▾</span>
-        </button>
-        <div class="nav-dropdown">
-          <button class="nav-sub" data-tab="tasks">今日任务</button>
-          <button class="nav-sub" data-tab="calendar">工作日历</button>
-          <button class="nav-sub" data-tab="history">每日总结</button>
-        </div>
-      </div>
-      <div class="nav-group">
-        <button class="nav-item" data-panel="toolbox">
-          <span class="nav-item-label">工具箱</span>
-          <span class="nav-chevron">▾</span>
-        </button>
-        <div class="nav-dropdown">
-          <button class="nav-sub" data-tool="pdf-to-excel">PDF→Excel</button>
-          <button class="nav-sub" data-tool="pdf-merge">PDF合并</button>
-          <button class="nav-sub" data-tool="pdf-split">PDF分割</button>
-          <button class="nav-sub" data-tool="image-convert">图片转换</button>
-          <button class="nav-sub" data-tool="image-compress">图片压缩</button>
-          <button class="nav-sub" data-tool="office-to-pdf">Office→PDF</button>
-          <button class="nav-sub" data-tool="pdf-compress">PDF压缩</button>
-          <button class="nav-sub" data-tool="ocr">OCR识别</button>
-          <button class="nav-sub" data-tool="table-extract">表格提取</button>
-        </div>
-      </div>
-      <div class="nav-group">
-        <button class="nav-item" data-panel="board">
-          <span class="nav-item-label">留言板</span>
-          <span class="nav-chevron">▾</span>
-        </button>
-        <div class="nav-dropdown">
-          <button class="nav-sub" data-tab="board-list">全部留言</button>
-        </div>
-      </div>
-      <div class="nav-group">
-        <button class="nav-item" data-panel="memo">
-          <span class="nav-item-label">备忘录</span>
-          <span class="nav-chevron">▾</span>
-        </button>
-        <div class="nav-dropdown">
-          <button class="nav-sub" data-tab="memo-list">全部备忘</button>
-        </div>
-      </div>
-      <div class="nav-group">
-        <button class="nav-item" data-panel="analysis">
-          <span class="nav-item-label">数据分析</span>
-          <span class="nav-chevron">▾</span>
-        </button>
-        <div class="nav-dropdown">
-          <button class="nav-sub" data-tab="analyze">分析任务</button>
-        </div>
-      </div>
-      <div class="nav-group">
-        <button class="nav-item" data-panel="agnes">
-          <span class="nav-item-label">Agnes 生图生视频</span>
-        </button>
-      </div>
+  <aside class="nav-bar" id="workspace-nav" aria-label="主导航">
+    <a class="nav-brand" href="#dashboard" aria-label="CC 工作台首页">
+      <span class="brand-mark">cc<span></span></span>
+      <span class="brand-wordmark">CC 工作台<small>A LITTLE SPACE TO FOCUS</small></span>
+    </a>
+    <nav class="nav-items" aria-label="工作空间">
+      <div class="nav-section-label">日常工作 <span>WORKSPACE</span></div>
+      <div class="nav-group"><button class="nav-item" data-panel="dashboard"><svg class="icon"><use href="#i-dashboard"/></svg><span class="nav-item-label">工作面板</span><span class="nav-shortcut">1</span></button></div>
+      <div class="nav-group"><button class="nav-item" data-panel="memo"><svg class="icon"><use href="#i-memo"/></svg><span class="nav-item-label">备忘录</span><span class="nav-shortcut">2</span></button></div>
+      <div class="nav-group"><button class="nav-item" data-panel="board"><svg class="icon"><use href="#i-board"/></svg><span class="nav-item-label">留言板</span><span class="nav-shortcut">3</span></button></div>
+      <div class="nav-section-label nav-section-label--second">效率与创作 <span>CREATE</span></div>
+      <div class="nav-group"><button class="nav-item" data-panel="toolbox"><svg class="icon"><use href="#i-tools"/></svg><span class="nav-item-label">工具箱</span><span class="nav-shortcut">4</span></button></div>
+      <div class="nav-group"><button class="nav-item" data-panel="analysis"><svg class="icon"><use href="#i-analysis"/></svg><span class="nav-item-label">数据分析</span><span class="nav-shortcut">5</span></button></div>
+      <div class="nav-group"><button class="nav-item" data-panel="agnes"><svg class="icon"><use href="#i-spark"/></svg><span class="nav-item-label">Agnes 创作室</span><span class="nav-new-dot" aria-label="AI 创作"></span></button></div>
     </nav>
-    <div class="nav-lock">
-      <button class="lock-btn" id="lock-btn" type="button" title="锁屏">🔒</button>
-    </div>
+    <div class="sidebar-note"><span class="sidebar-note-leaf">✳</span><p>事情一件件做，<br>今天也可以很从容。</p><span class="sidebar-note-line"></span></div>
+    <div id="sidebar-preferences"></div>
+    <div class="nav-profile"><span class="profile-avatar">CC</span><div><strong>谭斯雅</strong><small>EVA · 生产计划与订单协调</small></div><button class="lock-btn" id="lock-btn" type="button" title="锁定工作台" aria-label="锁定工作台"><svg class="icon"><use href="#i-lock"/></svg></button></div>
   </aside>
-  <main class="app-main">
-
-    <!-- Panel: Dashboard -->
-    <div class="panel" id="panel-dashboard">
-      <div class="panel-body" id="dash-body">
-        <div class="dash-loading">加载中…</div>
-      </div>
+  <main class="app-main" id="workspace-content" tabindex="-1">
+    <header class="workspace-topbar">
+      <div class="workspace-breadcrumb"><span class="breadcrumb-root">我的工作空间</span><span class="breadcrumb-divider">/</span><strong id="workspace-current">工作面板</strong></div>
+      <div class="workspace-topbar-actions"><span class="workspace-date" id="workspace-date"></span><button class="focus-toggle" id="focus-toggle" type="button" aria-pressed="false" title="收起侧栏，专注当前工作"><svg class="icon"><use href="#i-focus"/></svg><span>专注模式</span></button></div>
+    </header>
+    <nav class="workspace-tabs" id="workspace-tabs" aria-label="工作面板分区"></nav>
+    <div class="workspace-panels">
+      <section class="panel active" id="panel-dashboard" aria-label="工作面板"><div class="panel-body" id="dash-body"><div class="dash-loading">正在准备你的工作空间…</div></div></section>
+      <section class="panel" id="panel-toolbox" aria-label="工具箱"><div class="panel-body" id="toolbox-body"></div></section>
+      <section class="panel" id="panel-board" aria-label="留言板"><div class="panel-body" id="board-body"></div></section>
+      <section class="panel" id="panel-memo" aria-label="备忘录"><div class="panel-body" id="memo-body"></div></section>
+      <section class="panel" id="panel-analysis" aria-label="数据分析">
+        <div class="panel-body" id="analysis-body"><div class="analysis-subpanel active" data-analysis-view="analyze"><div class="analysis-wrap">
+          <header class="analysis-header workspace-page-heading"><span class="page-eyebrow">A CLEARER PICTURE</span><h1>让数据，说得更清楚。</h1><p class="analysis-desc">从一封邮件开始，整理订单与预测，把变化变成下一步行动。</p></header>
+          <div class="analysis-start-card"><div class="analysis-start-icon"><svg class="icon"><use href="#i-analysis"/></svg></div><div><h2>邮箱数据分析</h2><p>读取 Sylvia 的最新邮件及 Excel 附件，自动生成分析报告。</p><small>sylvia.tan@assaabloy.com</small></div><button class="analysis-btn" id="btn-check-email" onclick="startEmailAnalysis()"><span class="analysis-btn-text">检查邮件并分析</span><svg class="icon"><use href="#i-arrow"/></svg></button></div>
+          <div class="analysis-actions"><div class="analysis-status" id="analysis-status" style="display:none" role="status"></div></div>
+          <details class="analysis-guide" id="analysis-guide"><summary class="analysis-guide-summary">第一次使用？了解分析流程</summary><div class="analysis-guide-body">
+            <div class="analysis-guide-step"><span class="guide-step-num">1</span><div class="guide-step-content"><strong>检查并分析邮件</strong><p>点击「检查邮件并分析」，系统读取 Sylvia 最新一封邮件的正文与 Excel 附件，由 AI 完成任务分析。</p></div></div>
+            <div class="analysis-guide-step"><span class="guide-step-num">2</span><div class="guide-step-content"><strong>查看与核对结果</strong><p>本次报告会显示在下方，也会自动存入分析历史。请核对邮件摘要、数据变化及 AI 结论，再进行后续操作。</p></div></div>
+            <div class="analysis-guide-step"><span class="guide-step-num">3</span><div class="guide-step-content"><strong>跟踪后续工作</strong><p>在历史卡片查看详情、追加分析，并标记是否已生成 PDF、导出 XLSX、回复邮件；不需要的记录可以删除。</p></div></div>
+          </div></details>
+          <div class="analysis-result" id="analysis-result" style="display:none"><div class="analysis-result-header"><h3>本次分析结果</h3><button class="analysis-result-close" onclick="closeAnalysisResult()" aria-label="关闭本次结果">✕</button></div><div class="analysis-result-body" id="analysis-result-body"></div></div>
+          <div class="analysis-records-section"><div class="analysis-records-header"><h3>分析历史</h3><span>每一份洞察，都有迹可循</span></div><div class="analysis-records-list" id="analysis-records-list"></div></div>
+        </div></div></div>
+      </section>
+      <section class="panel" id="panel-agnes" aria-label="Agnes 创作室"><div class="panel-body" id="agnes-generate-body"></div></section>
     </div>
-
-    <!-- Panel: Toolbox -->
-    <div class="panel active" id="panel-toolbox">
-      <div class="panel-body" id="toolbox-body">
-        <div class="panel-empty">选择工具开始使用</div>
-      </div>
-    </div>
-
-    <!-- Panel: Board -->
-    <div class="panel" id="panel-board">
-      <div class="panel-body" id="board-body">
-        <div class="dash-loading">加载中…</div>
-      </div>
-    </div>
-
-    <!-- Panel: Memo -->
-    <div class="panel" id="panel-memo">
-      <div class="panel-body" id="memo-body">
-        <div class="dash-loading">加载中…</div>
-      </div>
-    </div>
-
-    <!-- Panel: Analysis -->
-    <div class="panel" id="panel-analysis">
-      <div class="panel-body" id="analysis-body">
-          <div class="analysis-subpanel active" data-analysis-view="analyze">
-        <div class="analysis-wrap ai-pattern-default" style="padding:24px;border-radius:20px">
-          <div class="analysis-header">
-            <div class="ai-title ai-title--app-yellow" style="display:inline-flex;margin-bottom:12px">
-              <span class="ai-title__back ai-title__back--left"></span>
-              <span class="ai-title__back ai-title__back--right"></span>
-              <span class="ai-title__fold ai-title__fold--left"></span>
-              <span class="ai-title__fold ai-title__fold--right"></span>
-              <span class="ai-title__front"><span class="ai-title__text">邮箱数据分析</span></span>
-            </div>
-            <p class="analysis-desc">自动检查 sylvia.tan@assaabloy.com 发送的最新邮件，通过 AI 读取邮件内容和附件 Excel，完成任务分析。</p>
-          </div>
-
-          <!-- 使用说明 -->
-          <details class="analysis-guide" id="analysis-guide">
-            <summary class="analysis-guide-summary">📖 使用说明（点击展开）</summary>
-            <div class="analysis-guide-body">
-              <div class="analysis-guide-step">
-                <span class="guide-step-num">1</span>
-                <div class="guide-step-content">
-                  <strong>检查并分析邮件</strong>
-                  <p>点击下方「📬 检查邮件并分析」按钮，系统将自动登录 QQ 邮箱，获取 sylvia.tan@assaabloy.com 的<em>最新一封邮件</em>（含附件 Excel）。AI 将读取邮件正文和附件表格数据，生成分析报告。</p>
-                </div>
-              </div>
-              <div class="analysis-guide-step">
-                <span class="guide-step-num">2</span>
-                <div class="guide-step-content">
-                  <strong>查看分析结果</strong>
-                  <p>分析完成后，页面顶部会显示本次分析结果的详细报告，包含邮件摘要、AI 分析结论和数据洞察。关闭后仍可在下方「分析历史」中随时查看。</p>
-                </div>
-              </div>
-              <div class="analysis-guide-step">
-                <span class="guide-step-num">3</span>
-                <div class="guide-step-content">
-                  <strong>管理分析历史</strong>
-                  <p>每次分析自动保存为历史卡片。每张卡片可：</p>
-                  <ul>
-                    <li><strong>查看详情</strong> — 展开完整 AI 分析报告</li>
-                    <li><strong>标记状态</strong> — 确认是否已生成 PDF ✅、是否导出 XLSX 📊、是否已回复邮件 📬</li>
-                    <li><strong>删除记录</strong> — 点击右上角 ✕ 移除不需要的记录</li>
-                  </ul>
-                </div>
-              </div>
-              <div class="analysis-guide-step">
-                <span class="guide-step-num">4</span>
-                <div class="guide-step-content">
-                  <strong>工作流提醒</strong>
-                  <p>为了保障数据准确性，建议每次收到 sylvia 的新邮件后，先进行 AI 分析确认数据变化，再根据分析结果做后续下单、出货等操作。标记已完成步骤，方便后续追溯。</p>
-                </div>
-              </div>
-            </div>
-          </details>
-
-          <div class="analysis-actions">
-            <button class="analysis-btn" id="btn-check-email" onclick="startEmailAnalysis()">
-              <span class="analysis-btn-icon">📬</span>
-              <span class="analysis-btn-text">检查邮件并分析</span>
-            </button>
-            <div class="analysis-status" id="analysis-status" style="display:none"></div>
-          </div>
-          <div class="analysis-result" id="analysis-result" style="display:none">
-            <div class="analysis-result-header">
-              <h3>本次分析结果</h3>
-              <button class="analysis-result-close" onclick="closeAnalysisResult()">✕</button>
-            </div>
-            <div class="analysis-result-body" id="analysis-result-body"></div>
-          </div>
-          <div class="analysis-records-section">
-            <div class="analysis-records-header">
-              <h3>📋 分析历史</h3>
-            </div>
-            <div class="analysis-records-list" id="analysis-records-list"></div>
-          </div>
-        </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Panel: Agnes Generation -->
-    <div class="panel" id="panel-agnes">
-      <div class="panel-body" id="agnes-generate-body"></div>
-    </div>
-
   </main>
 </div>
-<!-- 3C Certification Badge -->
-<div class="c3-badge" id="c3-badge" title="本产品通过 CCC 认证">
-  <svg viewBox="0 0 120 40" width="96" height="32" aria-hidden="true">
-    <rect x="1" y="1" width="118" height="38" rx="6" fill="none" stroke="currentColor" stroke-width="2.5"/>
-    <text x="60" y="27" text-anchor="middle" font-family="Arial,sans-serif" font-weight="bold" font-size="20" fill="currentColor">CCC</text>
-  </svg>
-  <span class="c3-badge-label">认证</span>
-</div>
-<!-- Mobile overlay (outside app-screen for correct stacking) -->
 <div class="nav-overlay" id="nav-overlay"></div>
-
-<div id="lock-screen">
-  <img class="lock-bear" src="https://media.tenor.com/4bMDX6ox1JgAAAAj/joke-bear-jokebear.gif" alt="bear">
-  <span class="lock-hint">点击解锁</span>
-</div>
-<script src="assets/app.js?v=12"></script>
-<script src="assets/analysis.js?v=8"></script>
-<script src="assets/agnes.js?v=5"></script>
-<script src="assets/dashboard.js?v=10"></script>
-<script src="assets/toolbox.js?v=10"></script>
+<div id="lock-screen"><span class="lock-wordmark">cc.</span><img class="lock-bear" src="https://media.tenor.com/4bMDX6ox1JgAAAAj/joke-bear-jokebear.gif" alt="点击解锁工作台" tabindex="0" role="button"><span class="lock-hint">休息一下，再从容出发。点击小熊解锁</span></div>
+<script src="assets/app.js?v=20261029"></script>
+<script src="assets/analysis.js?v=20261029"></script>
+<script src="assets/agnes.js?v=20261029"></script>
+<script src="assets/dashboard.js?v=20261029"></script>
+<script src="assets/toolbox.js?v=20261029-2"></script>
 <script src="assets/board.js?v=8"></script>
 <script src="assets/memo.js?v=8"></script>
-<script src="assets/theme.js?v=8"></script>
-<script src="assets/layout-switcher.js?v=14"></script>
-<script src="assets/bear-corner.js?v=9"></script>
+<script src="assets/theme.js?v=20261029"></script>
+<script src="assets/workspace.js?v=20261029"></script>
 </body>
 </html>

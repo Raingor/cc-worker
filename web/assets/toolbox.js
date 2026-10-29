@@ -1,6 +1,39 @@
 /* CC 工作台 — 工具箱 */
 
-let _toolboxActiveTab = 'pdf-to-excel';
+let _toolboxActiveTab = 'overview';
+const WORKSPACE_TOOLS = [
+  { id: 'pdf-to-excel', title: 'PDF 转 Excel', description: '把 PDF 中的表格，变成可编辑的数据。', category: 'data', icon: 'analysis', tag: '表格提取', accept: 'PDF 文件', local: false },
+  { id: 'pdf-merge', title: 'PDF 合并', description: '多份文件，整理成一份有序的文档。', category: 'pdf', icon: 'file', tag: '文档整理', accept: '多个 PDF 文件', local: true },
+  { id: 'pdf-split', title: 'PDF 分割', description: '按页拆分，只留下你需要的部分。', category: 'pdf', icon: 'file', tag: '文档整理', accept: 'PDF 文件', local: false },
+  { id: 'image-convert', title: '图片格式转换', description: '轻松切换 PNG、JPG 和 WebP 格式。', category: 'image', icon: 'image', tag: '图片处理', accept: 'JPG、PNG、WebP 等图片', local: true },
+  { id: 'image-compress', title: '图片压缩', description: '保持清晰，让图片的体积更轻一点。', category: 'image', icon: 'image', tag: '图片处理', accept: '图片文件', local: true },
+  { id: 'office-to-pdf', title: 'Office 转 PDF', description: '将 Word、Excel 或 PPT 转为 PDF。', category: 'pdf', icon: 'file', tag: '格式转换', accept: 'Word、Excel、PowerPoint', local: false },
+  { id: 'pdf-compress', title: 'PDF 压缩', description: '缩小文件体积，发送和分享更方便。', category: 'pdf', icon: 'file', tag: '文件优化', accept: 'PDF 文件', local: false },
+  { id: 'ocr', title: '文字识别', description: '从图片或扫描文档中，取出文字。', category: 'data', icon: 'search', tag: 'OCR 识别', accept: '图片或 PDF 文件', local: false },
+  { id: 'table-extract', title: '表格提取', description: '识别 PDF 表格，减少手动录入。', category: 'data', icon: 'analysis', tag: '表格提取', accept: 'PDF 文件', local: false }
+];
+
+function renderToolGallery(body) {
+  body.innerHTML = '<div class="tool-gallery"><header class="workspace-page-heading"><span class="page-eyebrow">LESS BUSYWORK, MORE POSSIBILITY</span><h1>把繁琐的，交给工具。</h1><p>文件转换、图片处理、数据提取。常用的小帮手，都在这里。</p></header>' +
+    '<div class="tool-gallery-toolbar"><div class="tool-filters" aria-label="工具分类">' + [['all', '全部工具'], ['pdf', 'PDF 文档'], ['image', '图片处理'], ['data', '文字与表格']].map(([id, label]) => '<button type="button" class="tool-filter' + (id === 'all' ? ' active' : '') + '" data-category="' + id + '" aria-pressed="' + (id === 'all') + '">' + label + '</button>').join('') + '</div><label class="tool-search"><svg class="icon"><use href="#i-search"/></svg><input type="search" placeholder="找一个工具…" aria-label="搜索工具"></label></div>' +
+    '<div class="tool-gallery-grid"></div><div class="tool-gallery-footer"><span>为日常工作，省一点时间。</span><span>9 个实用工具 · 随时就绪</span></div></div>';
+  let category = 'all';
+  const input = body.querySelector('.tool-search input');
+  function renderCards() {
+    const query = input.value.trim().toLowerCase();
+    const tools = WORKSPACE_TOOLS.filter(tool => (category === 'all' || tool.category === category) && (tool.title + tool.description + tool.tag).toLowerCase().includes(query));
+    const grid = body.querySelector('.tool-gallery-grid');
+    grid.innerHTML = tools.length ? tools.map((tool, index) => '<button type="button" class="tool-card tool-card--' + tool.category + '" data-tool-id="' + tool.id + '" style="--card-order:' + index + '"><span class="tool-card-top"><span class="tool-card-icon"><svg class="icon"><use href="#i-' + tool.icon + '"/></svg></span><span class="tool-card-arrow" aria-hidden="true">↗</span></span><h2>' + tool.title + '</h2><p>' + tool.description + '</p><span class="tool-card-foot"><span>' + tool.tag + '</span><span>' + (tool.local ? '本地处理' : '服务端处理') + '</span></span></button>').join('') : '<div class="tool-search-empty">没有找到相关工具，试试其他关键词。</div>';
+    grid.querySelectorAll('[data-tool-id]').forEach(button => button.addEventListener('click', () => switchPanel('toolbox', button.dataset.toolId)));
+  }
+  body.querySelectorAll('.tool-filter').forEach(button => button.addEventListener('click', () => {
+    category = button.dataset.category;
+    body.querySelectorAll('.tool-filter').forEach(filter => { filter.classList.toggle('active', filter === button); filter.setAttribute('aria-pressed', String(filter === button)); });
+    renderCards();
+  }));
+  input.addEventListener('input', renderCards);
+  renderCards();
+}
 let _mergeFiles = [];
 let _splitFiles = [];
 let _convertFiles = [];
@@ -16,25 +49,21 @@ function renderToolbox() {
 
 function renderActiveTool() {
   const body = document.getElementById('toolbox-body');
-  if (_toolboxActiveTab === 'pdf-to-excel') {
-    renderPdfToExcel(body);
-  } else if (_toolboxActiveTab === 'pdf-merge') {
-    renderPdfMerge(body);
-  } else if (_toolboxActiveTab === 'pdf-split') {
-    renderPdfSplit(body);
-  } else if (_toolboxActiveTab === 'image-convert') {
-    renderImageConvert(body);
-  } else if (_toolboxActiveTab === 'image-compress') {
-    renderImageCompress(body);
-  } else if (_toolboxActiveTab === 'office-to-pdf') {
-    renderOfficeToPdf(body);
-  } else if (_toolboxActiveTab === 'pdf-compress') {
-    renderPdfCompress(body);
-  } else if (_toolboxActiveTab === 'ocr') {
-    renderOcr(body);
-  } else if (_toolboxActiveTab === 'table-extract') {
-    renderTableExtract(body);
-  }
+  const tool = WORKSPACE_TOOLS.find(entry => entry.id === _toolboxActiveTab);
+  if (!tool) { renderToolGallery(body); return; }
+  body.innerHTML = '<div class="tool-detail"><button type="button" class="tool-back"><span aria-hidden="true">←</span> 全部工具</button><header class="workspace-page-heading"><span class="page-eyebrow">A LITTLE HELP WITH THE DETAILS</span><h1>' + tool.title + '</h1><p>' + tool.description + '</p></header><div class="tool-workspace"><div class="tool-detail-card"></div><aside class="tool-detail-aside"><span class="page-eyebrow">HOW IT WORKS</span><h2>简单三步，轻松完成。</h2><ol><li><span>01</span><div><strong>选择文件</strong><p>拖入文件，或点击选择。</p></div></li><li><span>02</span><div><strong>确认并处理</strong><p>按需要设置选项，开始处理。</p></div></li><li><span>03</span><div><strong>保存结果</strong><p>处理完成后，下载到电脑。</p></div></li></ol><div class="tool-format-note"><strong>支持格式</strong><p>' + tool.accept + '</p><span>' + (tool.local ? '文件在浏览器内处理，无需上传。' : '文件将上传至工作台 API 进行处理。') + '</span></div></aside></div></div>';
+  body.querySelector('.tool-back').addEventListener('click', () => switchPanel('toolbox', 'overview'));
+  const stage = body.querySelector('.tool-detail-card');
+  const renderers = { 'pdf-to-excel': renderPdfToExcel, 'pdf-merge': renderPdfMerge, 'pdf-split': renderPdfSplit, 'image-convert': renderImageConvert, 'image-compress': renderImageCompress, 'office-to-pdf': renderOfficeToPdf, 'pdf-compress': renderPdfCompress, 'ocr': renderOcr, 'table-extract': renderTableExtract };
+  renderers[tool.id](stage);
+  stage.querySelectorAll('.tb-upload-zone').forEach(zone => {
+    zone.setAttribute('role', 'button');
+    zone.tabIndex = 0;
+    zone.setAttribute('aria-label', '选择' + tool.accept);
+    zone.querySelectorAll('img').forEach(image => image.parentElement.remove());
+    zone.insertAdjacentHTML('afterbegin', '<span class="upload-glyph"><svg class="icon"><use href="#i-upload"/></svg></span>');
+    zone.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); zone.click(); } });
+  });
 }
 
 /* ── PDF → Excel ── */
@@ -420,7 +449,7 @@ function renderImageConvert(container) {
     <input type="file" id="ic-input" accept=".jpg,.jpeg,.png,.webp" multiple style="display:none">
     <div class="tb-file-list" id="ic-file-list"></div>
     <div class="tb-actions">
-      <select id="ic-format-select" class="tb-btn tb-btn-outline" style="width:auto">
+      <select id="ic-format-select" aria-label="目标图片格式" class="tb-btn tb-btn-outline" style="width:auto">
         <option value="png">PNG</option>
         <option value="jpg">JPG</option>
         <option value="webp">WebP</option>
@@ -540,7 +569,7 @@ function renderImageCompress(container) {
     <div class="tb-file-list" id="imgc-file-list"></div>
     <div style="margin:16px 0">
       <label style="font-size:13px;color:var(--muted)">压缩质量: <span id="imgc-quality-val">80</span>%</label>
-      <input type="range" id="imgc-quality" min="10" max="100" value="80" style="width:100%">
+      <input type="range" id="imgc-quality" aria-label="图片压缩质量" min="10" max="100" value="80" style="width:100%">
     </div>
     <div class="tb-actions">
       <button class="tb-btn tb-btn-primary" id="imgc-compress-btn" disabled>压缩图片</button>

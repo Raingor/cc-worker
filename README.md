@@ -7,6 +7,8 @@
 
 ## Web 版
 
+当前界面采用 **Quiet Workspace（从容工作）**：宽松留白、单一侧栏、任务看板、可搜索工具目录及响应式手机布局。设计约定与验收清单见 [docs/UI-DESIGN.md](docs/UI-DESIGN.md)。
+
 - 前端：<https://raingor.github.io/cc-worker/>
 - API：`https://api.sz-hrhb.com`
 - 指令来源：`appPackage/declarativeAgent.json`（经 `scripts/sync-instructions.py` 同步）

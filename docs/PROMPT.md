@@ -1,5 +1,7 @@
 # animal-island-ui 一键提示词
 
+> 历史视觉参考：CC 工作台现已改用 Quiet Workspace。当前设计及维护入口以 [UI-DESIGN.md](UI-DESIGN.md) 与 `web/assets/workspace.css` 为准；下文保留为旧组件参考，不是当前页面的还原要求。
+
 > 给普通用户使用的 self-contained 提示词。把下面整块代码块复制到 Cursor / Claude / ChatGPT / v0 / Bolt / Lovable / Windsurf 等任意 AI 编程工具发送即可。
 >
 > **AI 会先反问你想做什么页面**（例如「做一个个人博客」、「做一个商品列表」、「做一个 FAQ 页面」），你回答后它再输出**一个 self-contained `index.html` 文件**，**保存后双击即可在浏览器预览**——不需要 npm、不需要打包工具、不需要任何安装。

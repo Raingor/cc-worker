@@ -43,7 +43,7 @@ function switchPanel(name, tab) {
     if (tab) setDashTab(tab); else setDashTab('tasks');
   }
   if (name === 'toolbox') {
-    if (tab) setToolboxTab(tab); else setToolboxTab('pdf-to-excel');
+    setToolboxTab(tab || 'overview');
   }
   if (name === 'board') {
     if (tab) setBoardTab(tab); else setBoardTab('board-list');
@@ -57,8 +57,7 @@ function switchPanel(name, tab) {
   if (name === 'agnes') {
     if (typeof initAgnesPanel === 'function') initAgnesPanel();
   }
-  const group = document.querySelector(`.nav-item[data-panel="${name}"]`)?.closest('.nav-group');
-  if (group && document.documentElement.getAttribute('data-layout') !== 'mac') group.classList.add('open');
+  if (window.CCWorkspace) window.CCWorkspace.sync(name, tab);
 }
 
 function setDashTab(tab) {
@@ -157,12 +156,19 @@ function toggleLock() {
   const screen = document.getElementById('lock-screen');
   locked = !locked;
   screen.classList.toggle('active', locked);
-  document.getElementById('lock-btn').textContent = locked ? '🔓' : '🔒';
+  document.getElementById('lock-btn').setAttribute('aria-label', locked ? '解锁工作台' : '锁定工作台');
+  document.getElementById('app-screen').inert = locked;
+  if (locked) document.querySelector('.lock-bear').focus();
+  else document.getElementById('lock-btn').focus();
 }
 async function init() {
   bindUi();
   document.getElementById('lock-btn').addEventListener('click', toggleLock);
-  document.getElementById('lock-screen').querySelector('.lock-bear').addEventListener('click', toggleLock);
+  const lockBear = document.querySelector('.lock-bear');
+  lockBear.addEventListener('click', toggleLock);
+  lockBear.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleLock(); }
+  });
   await loadMeta();
   loadState();
   if (!state.settings) { state.settings = getDefaultSettings(); saveState(); }
@@ -176,16 +182,13 @@ function toggleMobileMenu(force) {
   var overlay = document.getElementById('nav-overlay');
   var btn = document.getElementById('mobile-menu-btn');
   if (!overlay || !btn) return;
-  var isOpen = typeof force === 'boolean' ? force : body.classList.contains('sidebar-open');
-  if (isOpen) {
-    body.classList.remove('sidebar-open');
-    btn.textContent = '☰';
-    overlay.classList.remove('open');
-  } else {
-    body.classList.add('sidebar-open');
-    btn.textContent = '✕';
-    overlay.classList.add('open');
-  }
+  const open = typeof force === 'boolean' ? force : !body.classList.contains('sidebar-open');
+  body.classList.toggle('sidebar-open', open);
+  btn.textContent = open ? '✕' : '☰';
+  btn.setAttribute('aria-expanded', String(open));
+  btn.setAttribute('aria-label', open ? '关闭导航' : '打开导航');
+  overlay.classList.toggle('open', open);
+  if (window.CCWorkspace) window.CCWorkspace.syncNavigation();
 }
 
 /* Close mobile sidebar when a nav link is clicked */

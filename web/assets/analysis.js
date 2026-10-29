@@ -30,13 +30,12 @@ function initAnalysisPanel() {
   loadAnalysisRecords();
 }
 
-/* ── After records loaded, auto-open guide if empty ── */
+/* Keep help available, but never force it open over the user's workspace. */
 function afterAnalysisRecords() {
-  if (_analysisRecords.length === 0) {
-    var guide = document.getElementById('analysis-guide');
-    if (guide && !guide.open) {
-      guide.setAttribute('open', '');
-    }
+  var guide = document.getElementById('analysis-guide');
+  if (guide && !guide.dataset.preferenceLoaded) {
+    guide.open = localStorage.getItem('analysis_guide_open') === 'true';
+    guide.dataset.preferenceLoaded = 'true';
   }
 }
 

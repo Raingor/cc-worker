@@ -1,11 +1,11 @@
-/* CC 工作台 — 岛屿主题切换 */
+/* CC 工作台 — quiet accent palettes */
 
 var THEMES = [
-  { id: 'default', label: '薄荷青（默认）', swatch: '#19c8b9' },
-  { id: 'sakura', label: '樱花粉', swatch: '#f8a6b2' },
-  { id: 'meadow', label: '草地绿', swatch: '#8ac68a' },
-  { id: 'sunset', label: '夕阳橙', swatch: '#e59266' },
-  { id: 'lagoon', label: '湖水蓝', swatch: '#889df0' },
+  { id: 'default', label: '鼠尾草 · Sage', swatch: '#456655' },
+  { id: 'sakura', label: '玫瑰陶 · Rose', swatch: '#965d68' },
+  { id: 'meadow', label: '橄榄绿 · Olive', swatch: '#65713f' },
+  { id: 'sunset', label: '赤陶橙 · Clay', swatch: '#a46140' },
+  { id: 'lagoon', label: '雾海蓝 · Ocean', swatch: '#4c6f8b' },
 ];
 
 function getTheme() {
@@ -36,7 +36,9 @@ function initTheme() {
   var btn = document.createElement('button');
   btn.id = 'theme-btn';
   btn.type = 'button';
-  btn.innerHTML = '<span style="font-size:14px;line-height:1">🍃</span> 岛屿主题';
+  btn.innerHTML = '<span class="appearance-dot" aria-hidden="true"></span><span>外观配色</span><span class="appearance-chevron" aria-hidden="true">⌃</span>';
+  btn.setAttribute('aria-expanded', 'false');
+  btn.setAttribute('aria-controls', 'theme-panel');
 
   var panel = document.createElement('div');
   panel.id = 'theme-panel';
@@ -55,6 +57,8 @@ function initTheme() {
       return function () {
         setTheme(id);
         panel.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.focus();
       };
     }(t.id));
     panel.appendChild(opt);
@@ -69,17 +73,19 @@ function initTheme() {
   btn.addEventListener('click', function (e) {
     e.stopPropagation();
     panel.classList.toggle('open');
+    btn.setAttribute('aria-expanded', String(panel.classList.contains('open')));
   });
 
   document.addEventListener('click', function () {
     panel.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
   });
 
   panel.addEventListener('click', function (e) {
     e.stopPropagation();
   });
 
-  document.querySelector('.nav-bar').appendChild(wrap);
+  (document.getElementById('sidebar-preferences') || document.querySelector('.nav-bar')).appendChild(wrap);
   setTheme(saved);
 }
 

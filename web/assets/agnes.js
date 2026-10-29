@@ -60,7 +60,7 @@ function initAgnesPanel() {
 
 function renderAgnesPanel(body) {
   body.innerHTML = '<div class="agnes-wrap ai-pattern-default">' +
-    '<header class="agnes-header"><div class="agnes-mark">✦</div><div><div class="agnes-kicker">AGNES GENERATION</div><h2>Agnes 生图生视频</h2><p>把想法变成画面，也可以用 Agnes 3.0 Flash 继续完善创意。</p></div></header>' +
+    '<header class="agnes-header"><div><div class="agnes-kicker">MAKE ROOM FOR IMAGINATION</div><h2>给灵感，一个画面。</h2><p>用图片、视频和对话，把脑海里的想法慢慢变成现实。</p></div></header>' +
     '<div class="agnes-tabs"><button class="agnes-tab" data-agnes-tab="image" type="button">▧ 图片</button><button class="agnes-tab" data-agnes-tab="video" type="button">▶ 视频</button><button class="agnes-tab" data-agnes-tab="chat" type="button">◎ Agnes 3.0</button></div>' +
     '<div class="agnes-view" data-agnes-view="image"><div id="agnes-image-view"></div></div>' +
     '<div class="agnes-view" data-agnes-view="video"><div id="agnes-video-view"></div></div>' +
@@ -69,6 +69,18 @@ function renderAgnesPanel(body) {
   renderImageView();
   renderVideoView();
   renderChatView();
+  // Keep model/encoding controls available without competing with the prompt.
+  ['image', 'chat'].forEach(function (kind) {
+    var card = document.querySelector('#agnes-' + kind + '-view .agnes-form-card');
+    var grid = card.querySelector(':scope > .agnes-grid');
+    if (!grid) return;
+    var details = document.createElement('details');
+    details.className = 'agnes-advanced';
+    details.innerHTML = '<summary>' + (kind === 'image' ? '高级设置 · 模型与返回格式' : '对话设置 · 角色、图像与参数') + '</summary>';
+    var action = card.querySelector(kind === 'image' ? '#agnes-image-run' : '.agnes-chat-footer');
+    card.insertBefore(details, action);
+    details.appendChild(grid);
+  });
   body.querySelectorAll('[data-agnes-tab]').forEach(function (button) {
     button.addEventListener('click', function () { setAgnesTab(button.dataset.agnesTab); });
   });
@@ -112,7 +124,7 @@ function renderImageView() {
     agnesField('返回格式', agnesSelect('agnes-image-format', ['url', 'b64_json'], 'url', { url: '图片 URL', b64_json: 'Base64' })) + '</div>' +
     agnesField('提示词', '<textarea id="agnes-image-prompt" class="agnes-input" rows="3" placeholder="主体 + 场景 / 风格 + 光照 + 构图 + 质量要求"></textarea>') +
     '<div class="agnes-grid two">' + agnesField('尺寸档位', agnesSelect('agnes-image-size', AGNES_IMAGE_SIZES, '1K')) + agnesField('宽高比', agnesSelect('agnes-image-ratio', AGNES_IMAGE_RATIOS, '1:1')) + '</div>' +
-    agnesField('参考图（可选，支持上传或 URL）', '<div class="agnes-reference-box"><textarea id="agnes-image-refs" class="agnes-input agnes-mono" rows="2" placeholder="填写 URL 或 data URI；多张则为多图合成"></textarea><div class="agnes-reference-tools"><input id="agnes-image-upload" class="agnes-file-input" type="file" accept="image/*" multiple><button id="agnes-image-upload-btn" class="agnes-upload-btn" type="button">⌑ 上传图片</button><span>支持 JPG、PNG、WebP</span></div><div id="agnes-image-upload-list" class="agnes-upload-list"></div></div>') +
+    agnesField('参考图（可选，支持上传或 URL）', '<div class="agnes-reference-box"><textarea id="agnes-image-refs" class="agnes-input agnes-mono" rows="2" placeholder="上传图片，或填写图片 URL；多张图片一行一条"></textarea><div class="agnes-reference-tools"><input id="agnes-image-upload" class="agnes-file-input" type="file" accept="image/*" multiple><button id="agnes-image-upload-btn" class="agnes-upload-btn" type="button">⌑ 上传图片</button><span>支持 JPG、PNG、WebP</span></div><div id="agnes-image-upload-list" class="agnes-upload-list"></div></div>') +
     '<button id="agnes-image-run" class="agnes-btn agnes-btn-primary" type="button">✧ 生成图片</button><div id="agnes-image-result"></div></div>';
   document.getElementById('agnes-image-run').addEventListener('click', runAgnesImage);
   var uploadInput = document.getElementById('agnes-image-upload');
