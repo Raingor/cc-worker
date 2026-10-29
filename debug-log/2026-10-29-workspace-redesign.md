@@ -47,3 +47,16 @@
 ## 边界
 
 初次本地改版验收没有修改后端、业务指令或生产数据；Git 推送与正式发布验收另记于下方。静态 localhost 不在生产 API 的 CORS 白名单时，会显示可重试的连接提示；浏览器 UI 验收使用隔离 fixture，不将本地 CORS 错误视为线上故障。实际邮件、文件转换与 Agnes 上游服务不在本次端到端联调范围。
+
+## 正式部署验收
+
+- 用户确认按此设计上线后，于 2026-10-29 发布至 <https://raingor.github.io/cc-worker/>。
+- 发布源提交：`e09dee93687e730a4cc549b841fca5bcfc7cf80c`（`feat: redesign CC as a spacious quiet workspace`）。
+- `Deploy GitHub Pages` [run 40808483398](https://github.com/Raingor/cc-worker/actions/runs/40808483398) 成功，将静态文件发布到 `gh-pages`。
+- 随后的 `pages build and deployment` [run 40808499198](https://github.com/Raingor/cc-worker/actions/runs/40808499198) 同样成功；该运行更新时间为 2026-10-29 10:49:09 +08:00。
+- 线上验收时间：2026-10-29 10:50:43 +08:00。
+- 公网首页与 13 个引用的本地样式／脚本／图标均为 HTTP 200；共 14 项 SHA-256 与本地发布文件一致，确认新版内容实际已送达，不仅是 CI 显示成功。
+- 独立、无 fixture 的正式域名浏览器确认：`data-layout=workspace`，新版工作面板加载；六个入口导航与九工具目录正常；控制台没有 error／warn。
+- 390px 手机 viewport 确认工作面板、工具箱、分析、Agnes 无水平溢出，抽屉开关正常，控制台无 error／warn。
+- 本次仅发布前端与说明文件，未执行 API 部署，未更改生产后端或进行任务编辑、邮件分析／发送、付费生成操作。
+- 正式域名截图保存在忽略目录 `.pi/design-review/production-desktop.png`，未提交到公开仓库。
