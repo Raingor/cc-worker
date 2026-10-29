@@ -27,3 +27,13 @@
 ## 范围
 
 本次必填规则针对 Web 表单；API 既有默认作者逻辑保持兼容，不提供身份认证或冒名防护。没有改动后端、数据库或旧作者记录。
+
+## 线上发布
+
+- 源提交：`46a1314073d799b20d50eb36121efbfef4a7b289`。
+- `Deploy GitHub Pages` [40809957626](https://github.com/Raingor/cc-worker/actions/runs/40809957626) 与后续 `pages build and deployment` [40809971146](https://github.com/Raingor/cc-worker/actions/runs/40809971146) 均成功。
+- 验收时间：2026-10-29 11:06:10 +08:00。
+- 正式站首页、`assets/board.js?v=9`、`assets/workspace.css?v=20261029-3` 均 HTTP 200，SHA-256 与本地发布文件一致。
+- 无 fixture 的正式域名、390px 手机视口确认：发布及展开回复均显示必填名称；空名称、空白名称不发送提交；表单无水平溢出。验证时额外阻断所有写请求，实际写请求尝试数为 0。
+- 正式域名脚本验收需等待应用异步初始化完成（`state.settings` 就绪）后再切到留言板；过早调用 `switchPanel` 会触发现有的 `board-init: settings missing` 警告，不能据此误判新表单丢失。
+- 未部署 API，未在正式留言板写入或删除测试内容。
