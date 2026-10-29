@@ -282,6 +282,20 @@ button:disabled { cursor: not-allowed; }
 .board-form { background: #fff; padding: 26px; border: 1px solid var(--border); border-radius: 16px; margin-bottom: 32px; }
 .board-input { background: #fff; border: 0; border-radius: 0; line-height: 2; padding: 4px 0; font-size: 14px; min-height: 110px; }
 .board-input:focus { box-shadow: none; }
+.board-name-field { display: block; max-width: 340px; margin-bottom: 24px; }
+.board-name-field > span { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; color: var(--quiet-ink); }
+.board-name-required { font-size: 9px; font-weight: 400; border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; }
+.board-author-input { display: block; width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 9px; background: #fcfdf9; color: var(--text-body); font-size: 13px; }
+.board-author-input::placeholder { color: var(--text-secondary); }
+.board-author-input:focus { border-color: var(--accent); }
+.board-reply-form .board-name-field { max-width: 100%; margin-bottom: 20px; }
+.board-reply-form { padding: 22px; }
+.board-reply-submit { padding: 10px 18px; font: 500 12px var(--font-body); cursor: pointer; border: 1px solid var(--accent); border-radius: 9px; background: var(--accent); color: #fff; box-shadow: none; }
+.board-reply-submit:hover:not(:disabled) { background: var(--accent-deep); border-color: var(--accent-deep); transform: none; box-shadow: none; }
+.board-item-head { flex-wrap: wrap; }
+.board-item-author, .board-reply-author { overflow-wrap: anywhere; max-width: 100%; }
+.board-reply-author { display: inline-block; max-width: calc(100% - 24px); }
+.board-item-time { min-width: 0; overflow-wrap: anywhere; }
 .board-form-foot { padding-top: 16px; border-top: 1px solid #edf1e6; }
 .board-count { font-size: 10px; }
 .board-list { gap: 20px; }

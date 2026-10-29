@@ -11,6 +11,35 @@ function boardHeaders() {
   return apiHeaders();
 }
 
+function boardAuthorField(id) {
+  return '<label class="board-name-field" for="' + id + '">' +
+    '<span>你的名称 <span class="board-name-required">必填</span></span>' +
+    '<input class="board-author-input" id="' + id + '" name="author" type="text" placeholder="请输入你的名称" maxlength="50" autocomplete="off" required>' +
+    '</label>';
+}
+
+function bindBoardValidation(form) {
+  form.querySelectorAll('input, textarea').forEach(function (input) {
+    input.addEventListener('input', function () { input.setCustomValidity(''); });
+  });
+}
+
+function boardSubmission(form) {
+  var authorInput = form.querySelector('[name="author"]');
+  var textInput = form.querySelector('textarea');
+  var author = authorInput.value.trim();
+  var text = textInput.value.trim();
+  authorInput.setCustomValidity(author ? '' : '请先填写你的名称');
+  textInput.setCustomValidity(text ? '' : '请先填写内容');
+  if (!form.reportValidity()) return null;
+  return { text: text, author: author };
+}
+
+function resetBoardForm(form) {
+  form.reset();
+  form.querySelectorAll('input, textarea').forEach(function (input) { input.setCustomValidity(''); });
+}
+
 function loadBoardMessages() {
   if (_boardLoading) return;
   _boardLoading = true;
@@ -40,7 +69,8 @@ function renderBoard() {
         '<p class="board-sub">记录想法、备注、待办事项</p>' +
       '</div>' +
       '<form class="board-form" id="board-form">' +
-        '<textarea class="board-input" id="board-input" placeholder="写点什么…" rows="3" maxlength="1000"></textarea>' +
+        boardAuthorField('board-author') +
+        '<textarea class="board-input" id="board-input" aria-label="留言内容" placeholder="写点什么…" rows="3" maxlength="1000" required></textarea>' +
         '<div class="board-form-foot">' +
           '<span class="board-count" id="board-count">0/1000</span>' +
           '<button class="board-btn" type="submit" id="board-submit">发布</button>' +
@@ -51,22 +81,24 @@ function renderBoard() {
       '</div>' +
     '</div>';
 
-  document.getElementById('board-form').addEventListener('submit', function (e) {
+  var postForm = document.getElementById('board-form');
+  bindBoardValidation(postForm);
+  postForm.addEventListener('submit', function (e) {
     e.preventDefault();
-    var input = document.getElementById('board-input');
-    var text = input.value.trim();
-    if (!text) return;
     var btn = document.getElementById('board-submit');
+    if (btn.disabled) return;
+    var submission = boardSubmission(postForm);
+    if (!submission) return;
     btn.disabled = true;
     btn.textContent = '发布中…';
     fetch(boardApiUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': boardHeaders()['Authorization'] },
-      body: JSON.stringify({ text: text, author: 'CC' })
+      body: JSON.stringify(submission)
     })
     .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('发布失败')); })
     .then(function () {
-      input.value = '';
+      resetBoardForm(postForm);
       document.getElementById('board-count').textContent = '0/1000';
       loadBoardMessages();
     })
@@ -122,16 +154,17 @@ function renderBoardList() {
         '<button class="board-like-btn' + (m.liked ? ' liked' : '') + '" data-id="' + m.id + '">' +
           (m.liked ? '❤' : '♡') + ' <span class="board-like-cnt">' + (m.likes || 0) + '</span>' +
         '</button>' +
-        '<button class="board-reply-toggle" data-id="' + m.id + '">💬 回复</button>' +
+        '<button class="board-reply-toggle" aria-expanded="false" aria-controls="brf-' + m.id + '" data-id="' + m.id + '">💬 回复</button>' +
       '</div>' +
       repliesHtml +
-      '<div class="board-reply-form" id="brf-' + m.id + '" style="display:none">' +
-        '<textarea class="board-reply-input" placeholder="写下回复…" rows="2" maxlength="500"></textarea>' +
+      '<form class="board-reply-form" id="brf-' + m.id + '" data-id="' + m.id + '" style="display:none">' +
+        boardAuthorField('board-reply-author-' + m.id) +
+        '<textarea class="board-reply-input" aria-label="回复内容" placeholder="写下回复…" rows="2" maxlength="500" required></textarea>' +
         '<div class="board-reply-foot">' +
-          '<button class="board-reply-cancel" data-id="' + m.id + '">取消</button>' +
-          '<button class="board-reply-submit" data-id="' + m.id + '">回复</button>' +
+          '<button class="board-reply-cancel" type="button" data-id="' + m.id + '">取消</button>' +
+          '<button class="board-reply-submit" type="submit" data-id="' + m.id + '">回复</button>' +
         '</div>' +
-      '</div>' +
+      '</form>' +
     '</div>';
   }).join('');
 
@@ -182,7 +215,12 @@ function bindBoardEvents() {
     btn.addEventListener('click', function () {
       var id = parseInt(this.dataset.id);
       var form = document.getElementById('brf-' + id);
-      if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+      if (form) {
+        var open = form.style.display === 'none';
+        form.style.display = open ? 'block' : 'none';
+        btn.setAttribute('aria-expanded', String(open));
+        if (open) form.querySelector('[name="author"]').focus();
+      }
     });
   });
 
@@ -191,28 +229,36 @@ function bindBoardEvents() {
     btn.addEventListener('click', function () {
       var id = parseInt(this.dataset.id);
       var form = document.getElementById('brf-' + id);
-      if (form) { form.style.display = 'none'; form.querySelector('textarea').value = ''; }
+      if (form) {
+        form.style.display = 'none';
+        resetBoardForm(form);
+        var toggle = document.querySelector('.board-reply-toggle[data-id="' + id + '"]');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.focus();
+      }
     });
   });
 
   // Submit reply
-  document.querySelectorAll('.board-reply-submit').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var id = parseInt(this.dataset.id);
-      var form = document.getElementById('brf-' + id);
-      var input = form.querySelector('textarea');
-      var text = input.value.trim();
-      if (!text) return;
+  document.querySelectorAll('.board-reply-form').forEach(function (form) {
+    bindBoardValidation(form);
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var id = parseInt(form.dataset.id);
+      var btn = form.querySelector('.board-reply-submit');
+      if (btn.disabled) return;
+      var submission = boardSubmission(form);
+      if (!submission) return;
       btn.disabled = true;
       btn.textContent = '发送中…';
       fetch(boardApiUrl() + '/' + id + '/replies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': boardHeaders()['Authorization'] },
-        body: JSON.stringify({ text: text, author: 'CC' })
+        body: JSON.stringify(submission)
       })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('回复失败')); })
       .then(function () {
-        input.value = '';
+        resetBoardForm(form);
         form.style.display = 'none';
         loadBoardMessages();
       })
